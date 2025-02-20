@@ -6,11 +6,6 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-		401BCCD02D6747E100647C2D /* SVGKit in Frameworks */ = {isa = PBXBuildFile; productRef = 401BCCCF2D6747E100647C2D /* SVGKit */; };
-		401BCCD22D6747E100647C2D /* SVGKitSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 401BCCD12D6747E100647C2D /* SVGKitSwift */; };
-/* End PBXBuildFile section */
-
 /* Begin PBXFileReference section */
 		400256382D666B8800FCD299 /* timelapse.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = timelapse.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -41,8 +36,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				401BCCD22D6747E100647C2D /* SVGKitSwift in Frameworks */,
-				401BCCD02D6747E100647C2D /* SVGKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -85,8 +78,6 @@
 			);
 			name = timelapse;
 			packageProductDependencies = (
-				401BCCCF2D6747E100647C2D /* SVGKit */,
-				401BCCD12D6747E100647C2D /* SVGKitSwift */,
 			);
 			productName = timelapse;
 			productReference = 400256382D666B8800FCD299 /* timelapse.app */;
@@ -117,7 +108,6 @@
 			mainGroup = 4002562F2D666B8800FCD299;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				401BCCCE2D6747E100647C2D /* XCRemoteSwiftPackageReference "SVGKit" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 400256392D666B8800FCD299 /* Products */;
@@ -351,30 +341,6 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		401BCCCE2D6747E100647C2D /* XCRemoteSwiftPackageReference "SVGKit" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/SVGKit/SVGKit";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 3.0.0;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		401BCCCF2D6747E100647C2D /* SVGKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 401BCCCE2D6747E100647C2D /* XCRemoteSwiftPackageReference "SVGKit" */;
-			productName = SVGKit;
-		};
-		401BCCD12D6747E100647C2D /* SVGKitSwift */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 401BCCCE2D6747E100647C2D /* XCRemoteSwiftPackageReference "SVGKit" */;
-			productName = SVGKitSwift;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 400256302D666B8800FCD299 /* Project object */;
 }
