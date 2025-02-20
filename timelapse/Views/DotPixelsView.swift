@@ -47,42 +47,48 @@ struct DotPixelsView: View {
     
     private func calculateGridParameters(for size: CGSize) -> (columns: Int, dotSize: CGFloat) {
         let padding: CGFloat = 10
-        let bottomSpace: CGFloat = 80
+        let availableWidth = size.width - (padding * 2)
+        let availableHeight = size.height - (padding * 2)
         
-        // Calculate exact available space
-        let availableWidth = size.width - (padding * 2)  // 10px on left and right
-        let availableHeight = size.height - bottomSpace - padding  // 10px on top
-        
+        // For large numbers (>100), use fixed 20 columns
         if totalDays > 100 {
             let columns = 20
             let rows = ceil(Double(totalDays) / Double(columns))
             
-            // Calculate dot size to exactly fill the available space
-            let maxWidthDotSize = availableWidth / CGFloat(columns)
-            let maxHeightDotSize = availableHeight / CGFloat(rows)
+            // Calculate dot size based on available width first
+            let dotSize = availableWidth / CGFloat(columns)
             
-            // Use the smaller of the two sizes to ensure dots fit both horizontally and vertically
-            let dotSize = min(maxWidthDotSize, maxHeightDotSize) * 1.2 // Increase dot size by 20%
+            // Check if dots fit in height
+            let requiredHeight = dotSize * CGFloat(rows)
+            if requiredHeight <= availableHeight {
+                return (columns, dotSize)
+            }
             
-            return (columns, dotSize)
+            // If too tall, recalculate based on height
+            return (columns, availableHeight / CGFloat(rows))
         }
         
-        // For fewer dots, optimize to fill the space
+        // For fewer dots, find optimal layout
         var bestLayout = (columns: 1, dotSize: CGFloat(0))
-        var maxDotSize: CGFloat = 0
+        var minWastedSpace = CGFloat.infinity
         
+        // Try different column counts up to sqrt of totalDays
         for cols in 1...Int(ceil(sqrt(Double(totalDays)))) {
             let rows = Int(ceil(Double(totalDays) / Double(cols)))
             
-            // Calculate dot size to exactly fill the available space
-            let dotSize = min(
-                availableWidth / CGFloat(cols),
-                availableHeight / CGFloat(rows)
-            )
+            // Calculate dot size based on width
+            let dotSizeByWidth = availableWidth / CGFloat(cols)
             
-            if dotSize > maxDotSize {
-                maxDotSize = dotSize
-                bestLayout = (cols, dotSize)
+            // Calculate required height with this dot size
+            let requiredHeight = dotSizeByWidth * CGFloat(rows)
+            
+            // Calculate wasted space (difference between required and available height)
+            let wastedSpace = abs(availableHeight - requiredHeight)
+            
+            // If this layout wastes less space and fits within height constraints
+            if wastedSpace < minWastedSpace && requiredHeight <= availableHeight {
+                minWastedSpace = wastedSpace
+                bestLayout = (cols, dotSizeByWidth)
             }
         }
         
@@ -115,32 +121,22 @@ struct DotPixelsView: View {
         GeometryReader { geometry in
             let gridParams = calculateGridParameters(for: geometry.size)
             
-            // Main card container with 10px padding
             VStack(spacing: 0) {
-                // Invisible container with equal padding
-                VStack(spacing: 0) {
-                    // Dot grid at the top
-                    LazyVGrid(
-                        columns: Array(repeating: .init(.fixed(gridParams.dotSize), spacing: 0), 
-                                     count: gridParams.columns),
-                        spacing: 0
-                    ) {
-                        ForEach(0..<totalDays, id: \.self) { index in
-                            gridItem(index: index)
-                                .frame(width: gridParams.dotSize, height: gridParams.dotSize)
-                        }
+                LazyVGrid(
+                    columns: Array(repeating: .init(.fixed(gridParams.dotSize), spacing: 0), 
+                                 count: gridParams.columns),
+                    spacing: 0
+                ) {
+                    ForEach(0..<totalDays, id: \.self) { index in
+                        gridItem(index: index)
+                            .frame(width: gridParams.dotSize, height: gridParams.dotSize)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    
-                    // Spacer between grid and text elements
-                    Spacer(minLength: 20)
-                    
-                    // Add some bottom padding for spacing
-                    Spacer(minLength: 10)
                 }
-                .padding(10)
+                .frame(maxWidth: .infinity, alignment: .topLeading) // Changed alignment
+                
+                Spacer() // Add spacer to push content to top
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(10)
             
             // Overlay for date tooltip
             if let date = selectedDate, let index = tappedIndex {
