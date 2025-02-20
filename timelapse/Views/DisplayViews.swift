@@ -96,14 +96,14 @@ struct CountdownView: View {
             let percentage = (Double(value) / Double(365)) * 100
             return String(format: "%.0f%% left", percentage)
         } else {
-            return "\(value)"
+            return String(format: "%03d", value)
         }
     }
     
     var body: some View {
         GeometryReader { geometry in
             Text(displayText)
-                .font(.custom("Galgo-Bold", size: geometry.size.width * 0.5))
+                .font(.custom("Galgo-Bold", size: geometry.size.width * 3))
                 .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .white : .black)
                 .minimumScaleFactor(0.3)
                 .lineLimit(1)
