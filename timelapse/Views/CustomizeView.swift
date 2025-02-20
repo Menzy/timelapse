@@ -81,6 +81,11 @@ struct StylePreviewView: View {
     let isSelected: Bool
     @EnvironmentObject var globalSettings: GlobalSettings
     
+    var iconColor: Color {
+        let defaultColor = Color(hex: "FF7F00")
+        return globalSettings.effectiveBackgroundStyle == .light ? defaultColor : defaultColor
+    }
+    
     var body: some View {
         VStack {
             ZStack {
@@ -91,26 +96,26 @@ struct StylePreviewView: View {
                 switch style {
                 case .dotPixels:
                     Circle()
-                        .fill(globalSettings.effectiveBackgroundStyle == .light ? Color.black : Color.white)
+                        .fill(iconColor)
                         .frame(width: 40, height: 40)
                 case .triGrid:
                     Triangle()
-                        .fill(globalSettings.effectiveBackgroundStyle == .light ? Color.black : Color.white)
+                        .fill(iconColor)
                         .frame(width: 40, height: 40)
                 case .progressBar:
                     HStack(spacing: 0) {
                         Rectangle()
-                            .fill(globalSettings.effectiveBackgroundStyle == .light ? Color.black : Color.white)
+                            .fill(iconColor)
                             .frame(width: 25, height: 30)
                         Rectangle()
-                            .fill(globalSettings.effectiveBackgroundStyle == .light ? Color.black.opacity(0.3) : Color.white.opacity(0.3))
+                            .fill(iconColor.opacity(0.3))
                             .frame(width: 15, height: 30)
                     }
                     .clipShape(RoundedRectangle(cornerRadius: 6))
                 case .countdown:
                     Text("365")
                         .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? Color.black : Color.white)
+                        .foregroundColor(iconColor)
                 }
             }
             .frame(width: 60, height: 60)
