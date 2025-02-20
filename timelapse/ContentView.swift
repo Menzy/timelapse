@@ -15,7 +15,7 @@ struct ContentView: View {
     @State private var currentDate = Date()
     @State private var selectedTab = 0
     @State private var yearTrackerSettings: DisplaySettings = DisplaySettings(backgroundStyle: .dark)
-    
+  
     private func settings(for event: Event) -> DisplaySettings {
         if event.title == String(currentYear) {
             return yearTrackerSettings
@@ -112,28 +112,38 @@ struct ContentView: View {
                             let progress = event.progressDetails()
                             let eventSettings = settings(for: event)
                             
-                            TimeCard(
-                                title: event.title,
-                                event: event,
-                                settings: eventSettings,
-                                eventStore: eventStore,
-                                daysLeft: progress.daysLeft,
-                                totalDays: progress.totalDays
-                            )
-                            .tag(index)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .padding(.horizontal, 32)
-                            .environmentObject(globalSettings)
+                            GeometryReader { geo in
+                                let cardWidth = geo.size.width * 0.85
+                                
+                                TimeCard(
+                                    title: event.title,
+                                    event: event,
+                                    settings: eventSettings,
+                                    eventStore: eventStore,
+                                    daysLeft: progress.daysLeft,
+                                    totalDays: progress.totalDays
+                                )
+                                .tag(index)
+                                .frame(
+                                    width: cardWidth,
+                                    height: cardWidth * 1.2
+                                )
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .environmentObject(globalSettings)
+                            }
                         }
                     }
                     .tabViewStyle(.page(indexDisplayMode: .never))
                     
-                    PageControl(
-                        numberOfPages: displayedEvents.count,
-                        currentPage: $selectedTab
-                    )
-                    .environmentObject(globalSettings)
-                    .frame(height: 20)
+                    if displayedEvents.count > 1 {
+                        PageControl(
+                            numberOfPages: displayedEvents.count,
+                            currentPage: $selectedTab
+                        )
+                        .environmentObject(globalSettings)
+                        .frame(height: 20)
+                        .padding(.bottom)
+                    }
                     
                     Spacer()
                     NavigationBar()
