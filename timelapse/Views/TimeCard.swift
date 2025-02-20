@@ -35,6 +35,7 @@ fileprivate struct CardBackground: Shape {
 
 struct TimeCard: View {
     let title: String
+    let event: Event
     @ObservedObject var settings: DisplaySettings
     @ObservedObject var eventStore: EventStore
     let daysLeft: Int
@@ -66,10 +67,15 @@ struct TimeCard: View {
     func timeDisplayView() -> some View {
         switch settings.style {
         case .dotPixels:
-            DotPixelsView(daysLeft: daysLeft, totalDays: totalDays, settings: settings)
+            DotPixelsView(
+                daysLeft: daysLeft,
+                totalDays: totalDays,
+                isYearTracker: title == String(Calendar.current.component(.year, from: Date())),
+                startDate: event.creationDate,
+                settings: settings
+            )
         case .triGrid:
             TriGridView(daysLeft: daysLeft, totalDays: totalDays, settings: settings)
-                .environmentObject(globalSettings) // Provide global settings
         case .progressBar:
             ProgressBarView(daysLeft: daysLeft, totalDays: totalDays, settings: settings)
                 .environmentObject(globalSettings) // Provide global settings

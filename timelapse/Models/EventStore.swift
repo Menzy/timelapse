@@ -25,12 +25,10 @@ class EventStore: ObservableObject {
     
     func updateEvent(id: UUID, title: String, targetDate: Date) {
         if let index = events.firstIndex(where: { $0.id == id }) {
-            let updatedEvent = Event(title: title, targetDate: targetDate, creationDate: events[index].creationDate)
+            // Create updated event with the same ID and creation date
+            let updatedEvent = Event(id: id, title: title, targetDate: targetDate, creationDate: events[index].creationDate)
             events[index] = updatedEvent
-            // Preserve display settings for the updated event
-            if displaySettings[id] == nil {
-                displaySettings[id] = DisplaySettings()
-            }
+            // Display settings will be preserved since we're using the same ID
             saveEvents()
             saveDisplaySettings()
         }

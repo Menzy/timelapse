@@ -13,6 +13,13 @@ struct Event: Identifiable, Codable {
         self.creationDate = creationDate
     }
     
+    init(id: UUID, title: String, targetDate: Date, creationDate: Date) {
+        self.id = id
+        self.title = title
+        self.targetDate = targetDate
+        self.creationDate = creationDate
+    }
+    
     func progressDetails() -> (daysLeft: Int, totalDays: Int) {
         let calendar = Calendar.current
         let now = Date()

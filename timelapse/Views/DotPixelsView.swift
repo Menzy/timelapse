@@ -3,6 +3,8 @@ import SwiftUI
 struct DotPixelsView: View {
     let daysLeft: Int
     let totalDays: Int
+    let isYearTracker: Bool
+    let startDate: Date
     @ObservedObject var settings: DisplaySettings
     @EnvironmentObject var globalSettings: GlobalSettings
     @State private var selectedDate: Date? = nil
@@ -14,9 +16,15 @@ struct DotPixelsView: View {
     
     private func dateForIndex(_ index: Int) -> Date {
         let calendar = Calendar.current
-        let today = Date()
-        let startOfYear = calendar.date(from: DateComponents(year: calendar.component(.year, from: today)))!
-        return calendar.date(byAdding: .day, value: index, to: startOfYear)!
+        
+        if isYearTracker {
+            let today = Date()
+            let startOfYear = calendar.date(from: DateComponents(year: calendar.component(.year, from: today)))!
+            return calendar.date(byAdding: .day, value: index, to: startOfYear)!
+        } else {
+            // For other events, start from the event's creation date
+            return calendar.date(byAdding: .day, value: index, to: calendar.startOfDay(for: startDate))!
+        }
     }
     
     private func handleTap(index: Int, date: Date) {
@@ -31,37 +39,42 @@ struct DotPixelsView: View {
         }
     }
     
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE, MMM d, yyyy"
+        return formatter.string(from: date)
+    }
+    
     private func calculateGridParameters(for size: CGSize) -> (columns: Int, dotSize: CGFloat) {
-        let padding: CGFloat = 10 // Exact padding we want
-        let bottomSpace: CGFloat = 80 // Space for bottom content
+        let padding: CGFloat = 10
+        let bottomSpace: CGFloat = 80
         
         // Calculate exact available space
-        let availableWidth = size.width - (padding * 2) // 10px on each side
-        let availableHeight = size.height - bottomSpace - (padding * 2) // 10px top and bottom minus label space
+        let availableWidth = size.width - (padding * 2)  // 10px on left and right
+        let availableHeight = size.height - bottomSpace - padding  // 10px on top
         
-        // For year view (many dots)
         if totalDays > 100 {
-            let columns = 20 // Fixed columns for year view
+            let columns = 20
             let rows = ceil(Double(totalDays) / Double(columns))
             
-            // Calculate exact dot size to fit the space
-            let dotSize = min(
-                availableWidth / CGFloat(columns),
-                availableHeight / CGFloat(rows)
-            )
+            // Calculate dot size to exactly fill the available space
+            let maxWidthDotSize = availableWidth / CGFloat(columns)
+            let maxHeightDotSize = availableHeight / CGFloat(rows)
+            
+            // Use the smaller of the two sizes to ensure dots fit both horizontally and vertically
+            let dotSize = min(maxWidthDotSize, maxHeightDotSize) * 1.2 // Increase dot size by 20%
             
             return (columns, dotSize)
         }
         
-        // For fewer dots, optimize layout
+        // For fewer dots, optimize to fill the space
         var bestLayout = (columns: 1, dotSize: CGFloat(0))
         var maxDotSize: CGFloat = 0
         
-        // Try different numbers of columns
         for cols in 1...Int(ceil(sqrt(Double(totalDays)))) {
             let rows = Int(ceil(Double(totalDays) / Double(cols)))
             
-            // Calculate dot size that would fit exactly in available space
+            // Calculate dot size to exactly fill the available space
             let dotSize = min(
                 availableWidth / CGFloat(cols),
                 availableHeight / CGFloat(rows)
@@ -102,40 +115,52 @@ struct DotPixelsView: View {
         GeometryReader { geometry in
             let gridParams = calculateGridParameters(for: geometry.size)
             
-            ZStack(alignment: .top) {
-                LazyVGrid(
-                    columns: Array(repeating: .init(.fixed(gridParams.dotSize), spacing: 0), 
-                                 count: gridParams.columns),
-                    spacing: 0
-                ) {
-                    ForEach(0..<totalDays, id: \.self) { index in
-                        gridItem(index: index)
-                            .frame(width: gridParams.dotSize, height: gridParams.dotSize)
+            // Main card container with 10px padding
+            VStack(spacing: 0) {
+                // Invisible container with equal padding
+                VStack(spacing: 0) {
+                    // Dot grid at the top
+                    LazyVGrid(
+                        columns: Array(repeating: .init(.fixed(gridParams.dotSize), spacing: 0), 
+                                     count: gridParams.columns),
+                        spacing: 0
+                    ) {
+                        ForEach(0..<totalDays, id: \.self) { index in
+                            gridItem(index: index)
+                                .frame(width: gridParams.dotSize, height: gridParams.dotSize)
+                        }
                     }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .padding(.horizontal, 10)
-                .padding(.top, 10)
-                .padding(.bottom, 80)
-                
-                if let date = selectedDate, let index = tappedIndex {
-                    let dotPosition = CGPoint(
-                        x: CGFloat(index % gridParams.columns) * gridParams.dotSize + gridParams.dotSize/2 + 10,
-                        y: CGFloat(index / gridParams.columns) * gridParams.dotSize + gridParams.dotSize/2 + 10
-                    )
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     
-                    Text(date, style: .date)
-                        .font(.inter(12, weight: .medium))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 4)
-                        .background(Color(white: 0.1).opacity(0.9))
-                        .foregroundColor(.white)
-                        .cornerRadius(6)
-                        .shadow(color: .black.opacity(0.2), radius: 2)
-                        .position(x: dotPosition.x, y: max(dotPosition.y - 20, 20))
-                        .animation(.none, value: selectedDate)
+                    // Spacer between grid and text elements
+                    Spacer(minLength: 20)
+                    
+                    // Add some bottom padding for spacing
+                    Spacer(minLength: 10)
                 }
+                .padding(10)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            
+            // Overlay for date tooltip
+            if let date = selectedDate, let index = tappedIndex {
+                let dotPosition = CGPoint(
+                    x: CGFloat(index % gridParams.columns) * gridParams.dotSize + gridParams.dotSize/2 + 20,
+                    y: CGFloat(index / gridParams.columns) * gridParams.dotSize + gridParams.dotSize/2 + 20
+                )
+                
+                Text(formatDate(date))
+                    .font(.inter(12, weight: .medium))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 4)
+                    .background(Color(white: 0.1).opacity(0.9))
+                    .foregroundColor(.white)
+                    .cornerRadius(6)
+                    .shadow(color: .black.opacity(0.2), radius: 2)
+                    .position(x: dotPosition.x, y: max(dotPosition.y - 20, 20))
+                    .animation(.none, value: selectedDate)
             }
         }
     }
 }
+

@@ -57,11 +57,55 @@ struct TriGridView: View {
     }
     
     private func calculateGridParameters(for size: CGSize) -> (columns: Int, triangleSize: CGFloat, spacing: CGFloat) {
-        let columns = 20 // Match the image layout
-        let triangleSize: CGFloat = 12 // Slightly larger triangles
-        let spacing: CGFloat = 4 // Spacing between triangles
+        let padding: CGFloat = 10
+        let bottomSpace: CGFloat = 80
         
-        return (columns, triangleSize, spacing)
+        // Calculate exact available space
+        let availableWidth = size.width - (padding * 2)
+        let availableHeight = size.height - bottomSpace - padding
+        
+        if totalDays > 100 {
+            let columns = 20
+            let rows = ceil(Double(totalDays) / Double(columns))
+            
+            // Calculate triangle size to fill the available space
+            let maxWidthTriSize = availableWidth / CGFloat(columns)
+            let maxHeightTriSize = availableHeight / CGFloat(rows)
+            
+            // Use the smaller of the two sizes to ensure triangles fit both horizontally and vertically
+            let triangleSize = min(maxWidthTriSize, maxHeightTriSize) * 1.1 // 95% to account for minimal spacing
+            let spacing = triangleSize * 0.05 // 5% of triangle size for spacing
+            
+            return (columns, triangleSize, spacing)
+        }
+        
+        // For fewer triangles, optimize to fill the space
+        var bestLayout = (columns: 1, triangleSize: CGFloat(0), spacing: CGFloat(0))
+        var maxTriangleSize: CGFloat = 0
+        
+        for cols in 1...Int(ceil(sqrt(Double(totalDays)))) {
+            let rows = Int(ceil(Double(totalDays) / Double(cols)))
+            
+            // Calculate triangle size to fill the available space
+            let potentialTriSize = min(
+                availableWidth / CGFloat(cols),
+                availableHeight / CGFloat(rows)
+            )
+            
+            if potentialTriSize > maxTriangleSize {
+                maxTriangleSize = potentialTriSize
+                let spacing = potentialTriSize * 0.05 // 5% of triangle size for spacing
+                bestLayout = (cols, potentialTriSize * 0.95, spacing) // 95% of space for triangle
+            }
+        }
+        
+        return bestLayout
+    }
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE, MMM d, yyyy"
+        return formatter.string(from: date)
     }
     
     private func getDaysLeftColor() -> Color {
@@ -109,7 +153,7 @@ struct TriGridView: View {
                         y: CGFloat(index / gridParams.columns) * (gridParams.triangleSize + gridParams.spacing) + gridParams.triangleSize/2
                     )
                     
-                    Text(date, style: .date)
+                    Text(formatDate(date))
                         .font(.inter(12, weight: .medium))
                         .padding(.horizontal, 6)
                         .padding(.vertical, 4)

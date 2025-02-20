@@ -20,7 +20,12 @@ struct ContentView: View {
         if event.title == String(currentYear) {
             return yearTrackerSettings
         }
-        let settings = eventStore.displaySettings[event.id] ?? DisplaySettings(backgroundStyle: globalSettings.effectiveBackgroundStyle)
+        if eventStore.displaySettings[event.id] == nil {
+            // Create and persist new settings if they don't exist
+            let newSettings = DisplaySettings(backgroundStyle: globalSettings.effectiveBackgroundStyle)
+            eventStore.displaySettings[event.id] = newSettings
+        }
+        let settings = eventStore.displaySettings[event.id]!
         settings.updateColor(for: globalSettings.effectiveBackgroundStyle)
         return settings
     }
@@ -109,6 +114,7 @@ struct ContentView: View {
                             
                             TimeCard(
                                 title: event.title,
+                                event: event,
                                 settings: eventSettings,
                                 eventStore: eventStore,
                                 daysLeft: progress.daysLeft,
