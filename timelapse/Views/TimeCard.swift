@@ -43,6 +43,7 @@ struct TimeCard: View {
     @State private var showingDaysLeft = true
     @State private var showingEditSheet = false
     @EnvironmentObject var globalSettings: GlobalSettings // Use global settings
+    @State private var isShowingSheet = false // Add this to track sheet presentation
 
     var daysSpent: Int {
         totalDays - daysLeft
@@ -86,57 +87,60 @@ struct TimeCard: View {
     }
     
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            // Main content
+        GeometryReader { geo in
+            let paddingSize = geo.size.width * 0.05 // 5% of width as padding
+            
             VStack(spacing: 0) {
+                // Time display area
                 timeDisplayView()
-                    .frame(height: 300)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(24) // Changed from 16 to 24 to match title padding
-                    
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 
+                // Bottom text area
                 HStack {
                     Text(title)
                         .font(.inter(10, weight: .medium))
                         .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .white : .black)
+                    
                     Spacer()
+                    
+                    // Time display element
+                    HStack(spacing: geo.size.width * 0.01) { // 1% of width as spacing
+                        Text(settings.showPercentage ? String(format: "%.0f%%", percentageLeft) : "\(daysLeft)")
+                            .font(.inter(12, weight: .semibold))
+                        Text(settings.showPercentage ? "left" : "Days left")
+                            .font(.inter(12, weight: .regular))
+                    }
+                    .foregroundColor(.black)
+                    .padding(.horizontal, paddingSize * 0.6)
+                    .padding(.vertical, paddingSize * 0.3)
+                    .background(settings.displayColor)
+                    .cornerRadius(paddingSize * 0.4)
                 }
-                .padding(.horizontal, 24) // Changed from 16 to 24 to match grid padding
-                .padding(.bottom, 24)
             }
-            
-            // Time display in cutout
-            HStack(spacing: 4) {
-                Text(settings.showPercentage ? String(format: "%.0f%%", (Double(daysLeft) / Double(totalDays)) * 100) : "\(daysLeft)")
-                    .font(.inter(12, weight: .semibold))
-                Text(settings.showPercentage ? "left" : "Days left")
-                    .font(.inter(12, weight: .regular))
+            .padding(paddingSize)
+            .background(
+                CardBackground()
+                    .fill(globalSettings.effectiveBackgroundStyle == .light ? .black : .white)
+                    .shadow(color: Color.black.opacity(0.1), radius: paddingSize * 0.4, x: 0, y: paddingSize * 0.2)
+            )
+            .scaleEffect(showingEditSheet ? 0.95 : 1.0)
+            .animation(.spring(response: 0.6, dampingFraction: 0.65, blendDuration: 0.3), value: showingEditSheet)
+            .sheet(isPresented: $showingEditSheet) {
+                if let event = eventStore.events.first(where: { $0.title == title }) {
+                    EditEventView(event: event, eventStore: eventStore)
+                }
             }
-            .foregroundColor(.black)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(settings.displayColor)
-            .cornerRadius(8)
-            .padding(.trailing, 24)
-            .padding(.bottom, 24)
-        }
-        .background(
-            CardBackground()
-                .fill(globalSettings.effectiveBackgroundStyle == .light ? .black : .white)
-                .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
-        )
-        .scaleEffect(showingEditSheet ? 0.95 : 1.0)
-        .animation(.spring(response: 0.6, dampingFraction: 0.65, blendDuration: 0.3), value: showingEditSheet)
-        .sheet(isPresented: $showingEditSheet) {
-            if let event = eventStore.events.first(where: { $0.title == title }) {
-                EditEventView(event: event, eventStore: eventStore)
+            .onLongPressGesture {
+                if title != String(Calendar.current.component(.year, from: Date())) {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    showingEditSheet = true
+                }
             }
-        }
-        .onLongPressGesture {
-            if title != String(Calendar.current.component(.year, from: Date())) {
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                showingEditSheet = true
+            .onChange(of: showingEditSheet) { _, isShowing in
+                isShowingSheet = isShowing
             }
+            // Disable gestures when sheet is showing
+            .allowsHitTesting(!isShowingSheet)
         }
     }
 }
