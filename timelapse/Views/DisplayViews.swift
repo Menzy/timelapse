@@ -103,14 +103,18 @@ struct CountdownView: View {
     var body: some View {
         GeometryReader { geometry in
             Text(displayText)
-                .font(.custom("Galgo-Bold", size: geometry.size.width * 3))
+                .font(.custom("Galgo-Bold", size: geometry.size.width))
                 .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .white : .black)
-                .minimumScaleFactor(0.3)
+                .minimumScaleFactor(0.1)
                 .lineLimit(1)
                 .scaleEffect(settings.showPercentage ? 0.8 : 1.0)
                 .animation(.easeInOut(duration: 0.3), value: settings.showPercentage)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .padding(.horizontal, 8)
+                .lineSpacing(0) // Remove extra line spacing
+                .baselineOffset(-geometry.size.width * 0.1) // Adjust baseline to remove top space
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
     

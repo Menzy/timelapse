@@ -134,6 +134,11 @@ struct ContentView: View {
                         }
                     }
                     .tabViewStyle(.page(indexDisplayMode: .never))
+                    .onChange(of: selectedTab) { _, newValue in
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            selectedTab = newValue
+                        }
+                    }
                     
                     if displayedEvents.count > 1 {
                         PageControl(

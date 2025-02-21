@@ -13,6 +13,12 @@ struct PageControl: View {
                         (globalSettings.effectiveBackgroundStyle == .light ? Color.black : Color.white) :
                         (globalSettings.effectiveBackgroundStyle == .light ? Color.black.opacity(0.3) : Color.white.opacity(0.3)))
                     .frame(width: 8, height: 8)
+                    .animation(.easeInOut(duration: 0.2), value: currentPage)
+                    .onTapGesture {
+                        withAnimation {
+                            currentPage = page
+                        }
+                    }
             }
         }
     }
