@@ -66,15 +66,14 @@ struct ProgressBarView: View {
                 ForEach(0..<segmentCount, id: \.self) { index in
                     RoundedRectangle(cornerRadius: segmentCornerRadius)
                         .fill(segmentColor(index: index))
-                        .frame(width: segmentWidth, height: segmentHeight)
+                        .frame(width: nil, height: segmentHeight)
                 }
             }
-            .padding(4) // Add padding around segments
             .background(
-                RoundedRectangle(cornerRadius: segmentCornerRadius + 4)
+                RoundedRectangle(cornerRadius: segmentCornerRadius)
                     .stroke(settings.displayColor, lineWidth: 1)
             )
-            .padding(.horizontal)
+            .padding(.vertical, 4)
             Spacer()
         }
     }
@@ -109,10 +108,8 @@ struct CountdownView: View {
                 .lineLimit(1)
                 .scaleEffect(settings.showPercentage ? 0.8 : 1.0)
                 .animation(.easeInOut(duration: 0.3), value: settings.showPercentage)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                .padding(.horizontal, 8)
-                .lineSpacing(0) // Remove extra line spacing
-                .baselineOffset(-geometry.size.width * 0.1) // Adjust baseline to remove top space
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .baselineOffset(-geometry.size.width * 0.1)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
