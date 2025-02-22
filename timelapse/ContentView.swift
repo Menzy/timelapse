@@ -112,42 +112,31 @@ struct ContentView: View {
                             let progress = event.progressDetails()
                             let eventSettings = settings(for: event)
                             
-                            GeometryReader { geo in
-                                let cardWidth = geo.size.width * 0.85
-                                
-                                TimeCard(
-                                    title: event.title,
-                                    event: event,
-                                    settings: eventSettings,
-                                    eventStore: eventStore,
-                                    daysLeft: progress.daysLeft,
-                                    totalDays: progress.totalDays
-                                )
-                                .tag(index)
-                                .frame(
-                                    width: cardWidth,
-                                    height: cardWidth * 1.2
-                                )
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                .environmentObject(globalSettings)
-                            }
+                            TimeCard(
+                                title: event.title,
+                                event: event,
+                                settings: eventSettings,
+                                eventStore: eventStore,
+                                daysLeft: progress.daysLeft,
+                                totalDays: progress.totalDays
+                            )
+                            .frame(width: geometry.size.width * 0.85) // Set width to 85% of screen width
+                            .tag(index)
+                            .environmentObject(globalSettings)
+
                         }
                     }
-                    .tabViewStyle(.page(indexDisplayMode: .never))
-                    .onChange(of: selectedTab) { _, newValue in
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            selectedTab = newValue
+                    .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+                    .onChange(of: selectedTab) { oldValue, newValue in
+                        withAnimation {
+                            selectedTab = min(max(newValue, 0), displayedEvents.count - 1)
                         }
                     }
                     
                     if displayedEvents.count > 1 {
-                        PageControl(
-                            numberOfPages: displayedEvents.count,
-                            currentPage: $selectedTab
-                        )
+                        PageControl(numberOfPages: displayedEvents.count, currentPage: $selectedTab)
                         .environmentObject(globalSettings)
-                        .frame(height: 20)
-                        .padding(.bottom)
+                            .padding(.bottom, 20)
                     }
                     
                     Spacer()
