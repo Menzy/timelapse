@@ -46,9 +46,8 @@ struct DotPixelsView: View {
     }
     
     private func calculateGridParameters(for size: CGSize) -> (columns: Int, dotSize: CGFloat) {
-        let padding: CGFloat = 10
-        let availableWidth = size.width - (padding * 2)
-        let availableHeight = size.height - (padding * 2)
+        let availableWidth = size.width
+        let availableHeight = size.height
         
         // For large numbers (>100), use fixed 20 columns
         if totalDays > 100 {
@@ -136,7 +135,7 @@ struct DotPixelsView: View {
                 
                 Spacer() // Add spacer to push content to top
             }
-            .padding(10)
+            // Remove padding to allow dots to touch edges
             
             // Overlay for date tooltip
             if let date = selectedDate, let index = tappedIndex {
