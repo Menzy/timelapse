@@ -45,49 +45,59 @@ struct DotPixelsView: View {
         return formatter.string(from: date)
     }
     
-    private func calculateGridParameters(for size: CGSize) -> (columns: Int, dotSize: CGFloat) {
-        let availableWidth = size.width
-        let availableHeight = size.height
+    private func calculateGridParameters(for size: CGSize) -> (columns: Int, dotSize: CGFloat, spacing: CGFloat) {
+        let bottomSpace: CGFloat = 40
         
-        // For large numbers (>100), use fixed 20 columns
+        // Use full width and calculate available height
+        let availableWidth = size.width
+        let availableHeight = size.height - bottomSpace
+        
+        // Calculate optimal number of columns based on aspect ratio
+        let aspectRatio = availableWidth / availableHeight
+        
+        // For large numbers (>100), use dynamic column calculation
         if totalDays > 100 {
-            let columns = 20
+            // Base column count on aspect ratio and total items
+            let baseColumns = Int(ceil(sqrt(Double(totalDays) * aspectRatio)))
+            let columns = min(max(baseColumns, 10), 25) // Keep columns between 10 and 25
             let rows = ceil(Double(totalDays) / Double(columns))
             
-            // Calculate dot size based on available width first
-            let dotSize = availableWidth / CGFloat(columns)
+            // Calculate sizes to fit both width and height
+            let widthBasedSize = availableWidth / CGFloat(columns)
+            let heightBasedSize = availableHeight / CGFloat(rows)
             
-            // Check if dots fit in height
-            let requiredHeight = dotSize * CGFloat(rows)
-            if requiredHeight <= availableHeight {
-                return (columns, dotSize)
-            }
+            // Use the smaller size to ensure it fits both dimensions
+            let dotSize = min(widthBasedSize, heightBasedSize)
             
-            // If too tall, recalculate based on height
-            return (columns, availableHeight / CGFloat(rows))
+            return (columns, dotSize, 0)
         }
         
-        // For fewer dots, find optimal layout
-        var bestLayout = (columns: 1, dotSize: CGFloat(0))
+        // For fewer dots, optimize for both dimensions
+        var bestLayout = (columns: 1, dotSize: CGFloat(0), spacing: CGFloat(0))
         var minWastedSpace = CGFloat.infinity
         
-        // Try different column counts up to sqrt of totalDays
-        for cols in 1...Int(ceil(sqrt(Double(totalDays)))) {
+        // Calculate maximum columns based on aspect ratio
+        let maxColumns = Int(ceil(sqrt(Double(totalDays) * aspectRatio)))
+        
+        // Try different column counts
+        for cols in 1...maxColumns {
             let rows = Int(ceil(Double(totalDays) / Double(cols)))
             
-            // Calculate dot size based on width
-            let dotSizeByWidth = availableWidth / CGFloat(cols)
+            // Calculate sizes to fit both width and height
+            let widthBasedSize = availableWidth / CGFloat(cols)
+            let heightBasedSize = availableHeight / CGFloat(rows)
             
-            // Calculate required height with this dot size
-            let requiredHeight = dotSizeByWidth * CGFloat(rows)
+            let dotSize = min(widthBasedSize, heightBasedSize)
             
-            // Calculate wasted space (difference between required and available height)
-            let wastedSpace = abs(availableHeight - requiredHeight)
+            // Calculate total used space and wasted space
+            let usedWidth = CGFloat(cols) * dotSize
+            let usedHeight = CGFloat(rows) * dotSize
+            let wastedSpace = abs(availableWidth - usedWidth) + abs(availableHeight - usedHeight)
             
-            // If this layout wastes less space and fits within height constraints
-            if wastedSpace < minWastedSpace && requiredHeight <= availableHeight {
+            // If this layout wastes less space and maintains good proportions
+            if wastedSpace < minWastedSpace {
                 minWastedSpace = wastedSpace
-                bestLayout = (cols, dotSizeByWidth)
+                bestLayout = (cols, dotSize, 0)
             }
         }
         
@@ -131,9 +141,9 @@ struct DotPixelsView: View {
                             .frame(width: gridParams.dotSize, height: gridParams.dotSize)
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .topLeading) // Changed alignment
+                .frame(maxWidth: .infinity, alignment: .topLeading)
                 
-                Spacer() // Add spacer to push content to top
+                Spacer()
             }
             // Remove padding to allow dots to touch edges
             
