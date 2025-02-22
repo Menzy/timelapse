@@ -10,9 +10,9 @@ struct NavigationButton: View {
             Image(iconName)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 20, height: 20)
+                .frame(width: 16, height: 16)
                 .foregroundColor(.white.opacity(0.9))
-                .padding(12)
+                .padding(8)
                 .background(
                     Circle()
                         .fill(Color(hex: "121212").opacity(0.5))
@@ -44,7 +44,7 @@ struct NavigationBar: View {
     @StateObject private var navigationState = NavigationStateManager.shared
     
     var body: some View {
-        HStack(spacing: 20) {
+        HStack(spacing: 16) {
             NavigationButton(iconName: "edit") {
                 navigationState.showingCustomize = true
             }
@@ -57,7 +57,7 @@ struct NavigationBar: View {
                 navigationState.showingSettings = true
             }
         }
-        .padding( 8)
+        .padding(6)
         .background(
             Capsule()
                 .fill(Color.black.opacity(0.95))
@@ -71,6 +71,6 @@ struct NavigationBar: View {
                 )
         )
         .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
-        .padding(.bottom, 80)
+        .padding(.bottom, 60)
     }
 }
