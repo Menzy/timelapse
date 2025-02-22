@@ -57,45 +57,64 @@ struct TriGridView: View {
     }
     
     private func calculateGridParameters(for size: CGSize) -> (columns: Int, triangleSize: CGFloat, spacing: CGFloat) {
-        let padding: CGFloat = 10
-        let bottomSpace: CGFloat = 80
+        let bottomSpace: CGFloat = 40
         
-        // Calculate exact available space
-        let availableWidth = size.width - (padding * 2)
-        let availableHeight = size.height - bottomSpace - padding
+        // Use full width and calculate available height
+        let availableWidth = size.width
+        let availableHeight = size.height - bottomSpace
         
+        // Target spacing ratio (we'll adjust actual spacing to fill width completely)
+        let targetSpacingRatio: CGFloat = 0.15
+        
+        // For large numbers (>100), use fixed 20 columns
         if totalDays > 100 {
             let columns = 20
             let rows = ceil(Double(totalDays) / Double(columns))
             
-            // Calculate triangle size to fill the available space
-            let maxWidthTriSize = availableWidth / CGFloat(columns)
-            let maxHeightTriSize = availableHeight / CGFloat(rows)
+            // Calculate total width available per column (including spacing)
+            let totalWidthPerColumn = availableWidth / CGFloat(columns)
             
-            // Use the smaller of the two sizes to ensure triangles fit both horizontally and vertically
-            let triangleSize = min(maxWidthTriSize, maxHeightTriSize) * 1.1 // 95% to account for minimal spacing
-            let spacing = triangleSize * 0.05 // 5% of triangle size for spacing
+            // Calculate triangle size and spacing to fill width exactly
+            let triangleSize = totalWidthPerColumn / (1 + targetSpacingRatio)
+            let spacing = totalWidthPerColumn - triangleSize
             
-            return (columns, triangleSize, spacing)
+            // Check if it fits in height
+            let requiredHeight = triangleSize * CGFloat(rows) * 0.866 * (1 + targetSpacingRatio)
+            
+            if requiredHeight <= availableHeight {
+                return (columns, triangleSize, spacing)
+            }
+            
+            // If too tall, recalculate based on height
+            let heightConstrainedSize = (availableHeight / (CGFloat(rows) * 0.866 * (1 + targetSpacingRatio)))
+            return (columns, heightConstrainedSize, heightConstrainedSize * targetSpacingRatio)
         }
         
-        // For fewer triangles, optimize to fill the space
+        // For fewer triangles, find optimal layout
         var bestLayout = (columns: 1, triangleSize: CGFloat(0), spacing: CGFloat(0))
-        var maxTriangleSize: CGFloat = 0
+        var minWastedSpace = CGFloat.infinity
         
+        // Try different column counts up to sqrt of totalDays
         for cols in 1...Int(ceil(sqrt(Double(totalDays)))) {
             let rows = Int(ceil(Double(totalDays) / Double(cols)))
             
-            // Calculate triangle size to fill the available space
-            let potentialTriSize = min(
-                availableWidth / CGFloat(cols),
-                availableHeight / CGFloat(rows)
-            )
+            // Calculate total width available per column (including spacing)
+            let totalWidthPerColumn = availableWidth / CGFloat(cols)
             
-            if potentialTriSize > maxTriangleSize {
-                maxTriangleSize = potentialTriSize
-                let spacing = potentialTriSize * 0.05 // 5% of triangle size for spacing
-                bestLayout = (cols, potentialTriSize * 0.95, spacing) // 95% of space for triangle
+            // Calculate triangle size and spacing to fill width exactly
+            let triangleSize = totalWidthPerColumn / (1 + targetSpacingRatio)
+            let spacing = totalWidthPerColumn - triangleSize
+            
+            // Calculate required height
+            let requiredHeight = triangleSize * CGFloat(rows) * 0.866 * (1 + targetSpacingRatio)
+            
+            // Calculate wasted vertical space
+            let wastedSpace = abs(availableHeight - requiredHeight)
+            
+            // If this layout wastes less space and fits within height constraints
+            if wastedSpace < minWastedSpace && requiredHeight <= availableHeight {
+                minWastedSpace = wastedSpace
+                bestLayout = (cols, triangleSize, spacing)
             }
         }
         
@@ -135,17 +154,18 @@ struct TriGridView: View {
         GeometryReader { geometry in
             let gridParams = calculateGridParameters(for: geometry.size)
             
-            ZStack(alignment: .top) {
-                LazyVGrid(columns: Array(repeating: .init(.fixed(gridParams.triangleSize), spacing: gridParams.spacing), count: gridParams.columns), spacing: gridParams.spacing * 0.5) {
-                    ForEach(0..<totalDays, id: \.self) { index in
-                        gridItem(index: index)
-                            .frame(width: gridParams.triangleSize, height: gridParams.triangleSize)
+            ZStack(alignment: .topLeading) {
+                VStack(alignment: .leading, spacing: 0) {
+                    LazyVGrid(columns: Array(repeating: .init(.fixed(gridParams.triangleSize), spacing: gridParams.spacing), count: gridParams.columns), spacing: gridParams.spacing * 0.5) {
+                        ForEach(0..<totalDays, id: \.self) { index in
+                            gridItem(index: index)
+                                .frame(width: gridParams.triangleSize, height: gridParams.triangleSize)
+                        }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    Spacer(minLength: 0)
                 }
-                .frame(width: CGFloat(gridParams.columns) * (gridParams.triangleSize + gridParams.spacing))
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.horizontal, 4)
-                .padding(.vertical, 4)
                 
                 if let date = selectedDate, let index = tappedIndex {
                     let dotPosition = CGPoint(
