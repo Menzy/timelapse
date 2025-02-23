@@ -35,8 +35,8 @@ struct ProgressBarView: View {
     private let segmentCount = 25
     private let segmentWidth: CGFloat = 8
     private let segmentHeight: CGFloat = 45
-    private let segmentCornerRadius: CGFloat = 3
-    private let segmentSpacing: CGFloat = 2
+    private let segmentCornerRadius: CGFloat = 8
+    private let segmentSpacing: CGFloat = 2.5
     
     var daysSpent: Int {
         totalDays - daysLeft
@@ -69,6 +69,7 @@ struct ProgressBarView: View {
                         .frame(width: nil, height: segmentHeight)
                 }
             }
+            .padding(4)
             .background(
                 RoundedRectangle(cornerRadius: segmentCornerRadius)
                     .stroke(settings.displayColor, lineWidth: 1)
