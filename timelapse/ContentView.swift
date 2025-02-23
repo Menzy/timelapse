@@ -105,7 +105,7 @@ struct ContentView: View {
     private var timelineContent: some View {
         VStack(spacing: 0) {
             if globalSettings.showGridLayout {
-                TimelineGridView(eventStore: eventStore)
+                TimelineGridView(eventStore: eventStore, selectedTab: $selectedTab)
                     .environmentObject(globalSettings)
             } else {
                 GeometryReader { geometry in
@@ -121,7 +121,8 @@ struct ContentView: View {
                                 eventStore: eventStore,
                                 daysLeft: progress.daysLeft,
                                 totalDays: progress.totalDays,
-                                isGridView: false
+                                isGridView: false,
+                                selectedTab: $selectedTab
                             )
                             .frame(width: geometry.size.width * 0.85)
                             .tag(index)
