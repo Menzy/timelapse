@@ -156,8 +156,8 @@ struct DotPixelsView: View {
             if isTarget {
                 Circle()
                     .fill(globalSettings.effectiveBackgroundStyle == .light ? 
-                          Color.gray.opacity(0.6) : 
-                          Color.gray.opacity(0.4))
+                          Color.black.opacity(0.5) : 
+                          Color.white.opacity(0.5))
                     .scaleEffect(0.4)
                     .animation(.smooth, value: isTarget)
             }
