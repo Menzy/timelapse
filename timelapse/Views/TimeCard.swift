@@ -43,8 +43,10 @@ struct TimeCard: View {
     let isGridView: Bool
     @State private var showingDaysLeft = true
     @State private var showingEditSheet = false
-    @EnvironmentObject var globalSettings: GlobalSettings // Use global settings
-
+    @EnvironmentObject var globalSettings: GlobalSettings
+    @Binding var selectedTab: Int
+    @StateObject private var navigationState = NavigationStateManager.shared
+    
     var daysSpent: Int {
         totalDays - daysLeft
     }
@@ -77,7 +79,9 @@ struct TimeCard: View {
                 totalDays: totalDays,
                 isYearTracker: title == String(Calendar.current.component(.year, from: Date())),
                 startDate: event.creationDate,
-                settings: settings
+                settings: settings,
+                eventStore: eventStore,
+                selectedTab: $selectedTab
             )
         case .triGrid:
             TriGridView(daysLeft: daysLeft, totalDays: totalDays, settings: settings)
@@ -149,6 +153,11 @@ struct TimeCard: View {
                 }
             }
         )
+        .animation(.spring(response: 0.55, dampingFraction: 0.825)) { content in
+            content
+                .offset(y: navigationState.showingCustomize || navigationState.showingTrackEvent || navigationState.showingSettings ? -60 : 0)
+                .scaleEffect(navigationState.showingCustomize || navigationState.showingTrackEvent || navigationState.showingSettings ? 0.93 : 1)
+        }
         .sheet(isPresented: $showingEditSheet) {
             if let event = eventStore.events.first(where: { $0.title == title }) {
                 EditEventView(event: event, eventStore: eventStore)
