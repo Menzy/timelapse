@@ -13,13 +13,22 @@ class EventStore: ObservableObject {
     }
     
     func saveEvent(_ event: Event) {
-        if !events.contains(where: { $0.id == event.id }) {
-            events.append(event)
-            // Initialize display settings when saving a new event
-            let newSettings = DisplaySettings()
-            displaySettings[event.id] = newSettings
-            saveEvents()
-            saveDisplaySettings()
+        // Check if this is a year tracker event
+        let isYearTracker = event.title == String(Calendar.current.component(.year, from: Date()))
+        
+        // Count user-created events (excluding year tracker)
+        let userEventCount = events.filter { $0.title != String(Calendar.current.component(.year, from: Date())) }.count
+        
+        // Only allow saving if it's a year tracker or if we haven't reached the limit
+        if isYearTracker || userEventCount < 5 {
+            if !events.contains(where: { $0.id == event.id }) {
+                events.append(event)
+                // Initialize display settings when saving a new event
+                let newSettings = DisplaySettings()
+                displaySettings[event.id] = newSettings
+                saveEvents()
+                saveDisplaySettings()
+            }
         }
     }
     
