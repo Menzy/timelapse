@@ -40,6 +40,7 @@ struct TimeCard: View {
     @ObservedObject var eventStore: EventStore
     let daysLeft: Int
     let totalDays: Int
+    let isGridView: Bool
     @State private var showingDaysLeft = true
     @State private var showingEditSheet = false
     @EnvironmentObject var globalSettings: GlobalSettings // Use global settings
@@ -86,44 +87,52 @@ struct TimeCard: View {
     }
     
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            // Main content
-            VStack(spacing: 0) {
-                timeDisplayView()
-                    .frame(height: 300)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(24) // Changed from 16 to 24 to match title padding
-                    
-                
-                HStack {
-                    Text(title)
-                        .font(.inter(10, weight: .medium))
-                        .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .white : .black)
-                    Spacer()
-                }
-                .padding(.horizontal, 24) // Changed from 16 to 24 to match grid padding
-                .padding(.bottom, 24)
-            }
+        VStack(spacing: 0) {
+            timeDisplayView()
+                .frame(height: isGridView ? 150 : 300)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(isGridView ? 12 : 24)
             
-            // Time display in cutout
-            HStack(spacing: 4) {
-                Text(settings.showPercentage ? String(format: "%.0f%%", (Double(daysLeft) / Double(totalDays)) * 100) : "\(daysLeft)")
-                    .font(.inter(12, weight: .semibold))
-                Text(settings.showPercentage ? "left" : "Days left")
-                    .font(.inter(12, weight: .regular))
+            HStack {
+                Text(title)
+                    .font(.inter(isGridView ? 8 : 10, weight: .medium))
+                    .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .white : .black)
+                
+                Spacer()
+                
+                // Days left text moved here
+                HStack(spacing: 4) {
+                    Text(settings.showPercentage ? String(format: "%.0f%%", (Double(daysLeft) / Double(totalDays)) * 100) : "\(daysLeft)")
+                        .font(.inter(isGridView ? 10 : 12, weight: .semibold))
+                    Text(settings.showPercentage ? "left" : "Days left")
+                        .font(.inter(isGridView ? 10 : 12, weight: .regular))
+                }
+                .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .white : .black)
             }
-            .foregroundColor(.black)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(settings.displayColor)
-            .cornerRadius(8)
-            .padding(.trailing, 24)
-            .padding(.bottom, 24)
+            .padding(.horizontal, isGridView ? 12 : 24)
+            .padding(.bottom, isGridView ? 12 : 24)
         }
         .background(
-            CardBackground()
-                .fill(globalSettings.effectiveBackgroundStyle == .light ? .black : .white)
-                .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+            ZStack {
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(globalSettings.effectiveBackgroundStyle == .light ? .black : .white)
+                    .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+                
+                // Cutout shape with display color
+                if !isGridView {
+                    GeometryReader { geometry in
+                        let cutoutWidth = geometry.size.width * 0.35
+                        let cutoutHeight = geometry.size.height * 0.14
+                        let cutoutX = geometry.size.width - cutoutWidth - 16
+                        let cutoutY = geometry.size.height - cutoutHeight - 16
+                        
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(settings.displayColor)
+                            .frame(width: cutoutWidth, height: cutoutHeight)
+                            .position(x: cutoutX + cutoutWidth/2, y: cutoutY + cutoutHeight/2)
+                    }
+                }
+            }
         )
         .scaleEffect(showingEditSheet ? 0.95 : 1.0)
         .animation(.spring(response: 0.6, dampingFraction: 0.65, blendDuration: 0.3), value: showingEditSheet)
