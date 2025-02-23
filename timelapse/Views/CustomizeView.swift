@@ -130,8 +130,17 @@ struct StylePreviewView: View {
 struct CustomizeView: View {
     @Environment(\.dismiss) private var dismiss: DismissAction
     @ObservedObject var settings: DisplaySettings
+    @ObservedObject var eventStore: EventStore
     @State private var showingColorPicker = false
     @EnvironmentObject var globalSettings: GlobalSettings
+    
+    private func updatePercentageForAllCards(_ showPercentage: Bool) {
+        if globalSettings.showGridLayout {
+            for eventId in eventStore.displaySettings.keys {
+                eventStore.displaySettings[eventId]?.showPercentage = showPercentage
+            }
+        }
+    }
     
     var body: some View {
         NavigationView {
@@ -199,7 +208,13 @@ struct CustomizeView: View {
                 }
                 
                 Section("Counter") {
-                    Toggle("Toggle Percentage", isOn: $settings.showPercentage)
+                    Toggle("Toggle Percentage", isOn: Binding(
+                        get: { settings.showPercentage },
+                        set: { newValue in
+                            settings.showPercentage = newValue
+                            updatePercentageForAllCards(newValue)
+                        }
+                    ))
                 }
             }
             .navigationTitle("Customize")

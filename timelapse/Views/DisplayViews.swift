@@ -92,12 +92,8 @@ struct CountdownView: View {
     
     private var displayText: String {
         let value = showDaysLeft ? daysLeft : daysSpent
-        if settings.showPercentage {
-            let percentage = (Double(value) / Double(365)) * 100
-            return String(format: "%.0f%% left", percentage)
-        } else {
-            return String(format: "%03d", value)
-        }
+        // Always show the raw number for the main countdown, regardless of percentage setting
+        return String(format: "%03d", value)
     }
     
     var body: some View {
@@ -107,12 +103,10 @@ struct CountdownView: View {
                 .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .white : .black)
                 .minimumScaleFactor(0.1)
                 .lineLimit(1)
-                .scaleEffect(settings.showPercentage ? 0.8 : 1.0)
-                .animation(.easeInOut(duration: 0.3), value: settings.showPercentage)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .baselineOffset(-geometry.size.width * 0.1)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
-    
+
