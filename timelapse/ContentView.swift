@@ -66,47 +66,49 @@ struct ContentView: View {
         return [yearTracker].compactMap { $0 } + otherEvents
     }
     
-    var body: some View {
-        GeometryReader { geometry in
-            // Remove padding calculation
-            
-            ZStack {
-                Group {
-                    switch globalSettings.effectiveBackgroundStyle {
-                    case .light:
-                        Color.white
-                    case .dark:
-                        Color(hex: "111111") // Changed from Color.black
-                    case .device: 
-                        colorScheme == .dark ? Color(hex: "111111") : Color.white // Changed here too
-                    case .navy:
-                        Color(hex: "001524")
-                    case .fire:
-                        LinearGradient(
-                            stops: [
-                                .init(color: Color(hex: "EC5F01"), location: 0),
-                                .init(color: Color.black, location: 0.6),
-                                .init(color: .black, location: 1.0)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    case .dream:
-                        LinearGradient(
-                            stops: [
-                                .init(color: Color(hex: "A82700"), location: 0),
-                                .init(color: Color(hex: "002728"), location: 0.6),
-                                .init(color: Color(hex: "002728"), location: 1.0)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    }
-                }
-                .ignoresSafeArea()
-                
-                VStack {
-                    Spacer()
+    private var backgroundView: some View {
+        Group {
+            switch globalSettings.effectiveBackgroundStyle {
+            case .light:
+                Color.white
+            case .dark:
+                Color(hex: "111111")
+            case .device: 
+                colorScheme == .dark ? Color(hex: "111111") : Color.white
+            case .navy:
+                Color(hex: "001524")
+            case .fire:
+                LinearGradient(
+                    stops: [
+                        .init(color: Color(hex: "EC5F01"), location: 0),
+                        .init(color: Color.black, location: 0.6),
+                        .init(color: .black, location: 1.0)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            case .dream:
+                LinearGradient(
+                    stops: [
+                        .init(color: Color(hex: "A82700"), location: 0),
+                        .init(color: Color(hex: "002728"), location: 0.6),
+                        .init(color: Color(hex: "002728"), location: 1.0)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            }
+        }
+        .ignoresSafeArea()
+    }
+    
+    private var timelineContent: some View {
+        VStack(spacing: 0) {
+            if globalSettings.showGridLayout {
+                TimelineGridView(eventStore: eventStore)
+                    .environmentObject(globalSettings)
+            } else {
+                GeometryReader { geometry in
                     TabView(selection: $selectedTab) {
                         ForEach(Array(displayedEvents.enumerated()), id: \.element.id) { index, event in
                             let progress = event.progressDetails()
@@ -118,30 +120,38 @@ struct ContentView: View {
                                 settings: eventSettings,
                                 eventStore: eventStore,
                                 daysLeft: progress.daysLeft,
-                                totalDays: progress.totalDays
+                                totalDays: progress.totalDays,
+                                isGridView: false
                             )
-                            .frame(width: geometry.size.width * 0.85) // Set width to 85% of screen width
+                            .frame(width: geometry.size.width * 0.85)
                             .tag(index)
                             .environmentObject(globalSettings)
-
                         }
                     }
-                    .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-                    .onChange(of: selectedTab) { oldValue, newValue in
-                        withAnimation {
-                            selectedTab = min(max(newValue, 0), displayedEvents.count - 1)
-                        }
-                    }
-                    
-                    if displayedEvents.count > 1 {
-                        PageControl(numberOfPages: displayedEvents.count, currentPage: $selectedTab)
-                        .environmentObject(globalSettings)
-                            .padding(.bottom, 20)
-                    }
-                    
-                    Spacer()
-                    NavigationBar()
                 }
+                .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+                .onChange(of: selectedTab) { oldValue, newValue in
+                    withAnimation {
+                        selectedTab = min(max(newValue, 0), displayedEvents.count - 1)
+                    }
+                }
+                
+                if displayedEvents.count > 1 {
+                    PageControl(numberOfPages: displayedEvents.count, currentPage: $selectedTab)
+                        .environmentObject(globalSettings)
+                        .padding(.bottom, 20)
+                }
+            }
+            Spacer()
+            NavigationBar()
+        }
+    }
+    
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                backgroundView
+                timelineContent
             }
             .onChange(of: globalSettings.backgroundStyle) { oldStyle, newStyle in
                 updateAllColors(for: newStyle)
@@ -164,11 +174,8 @@ struct ContentView: View {
                 TrackEventView(eventStore: eventStore)
             }
             .sheet(isPresented: $navigationState.showingSettings) {
-                Text("Settings View") // Placeholder for now
-            }
-            .onAppear {
-                currentDate = Date()
-                scheduleNextUpdate()
+                SettingsView()
+                    .environmentObject(globalSettings)
             }
         }
     }
