@@ -58,12 +58,16 @@ struct TimeCard: View {
     }
     
     var daysText: String {
-        let count = showingDaysLeft ? daysLeft : daysSpent
-        let type = showingDaysLeft ? "left" : "in"
-        let dayText = count == 1 ? "day" : "days"
-        return "\(settings.showPercentage ? "" : "\(dayText) ")\(type)"
+        if settings.showPercentage {
+            return "left"
+        } else {
+            let count = showingDaysLeft ? daysLeft : daysSpent
+            let type = showingDaysLeft ? "left" : "in"
+            let dayText = count == 1 ? "day" : "days"
+            return "\(dayText) \(type)"
+        }
     }
-    
+
     @ViewBuilder
     func timeDisplayView() -> some View {
         switch settings.style {
@@ -83,6 +87,12 @@ struct TimeCard: View {
         case .countdown:
             CountdownView(daysLeft: daysLeft, showDaysLeft: showingDaysLeft, settings: settings)
                 .environmentObject(globalSettings) // Provide global settings
+                .transaction { transaction in
+                    // Disable animations for the countdown view
+                    if settings.style == .countdown {
+                        transaction.animation = nil
+                    }
+                }
         }
     }
     
@@ -100,13 +110,18 @@ struct TimeCard: View {
                 
                 Spacer()
                 
-                // Days left text moved here
+                // Wrap percentage/days display in animation block
                 HStack(spacing: 4) {
-                    Text(settings.showPercentage ? String(format: "%.0f%%", (Double(daysLeft) / Double(totalDays)) * 100) : "\(daysLeft)")
+                    Text(settings.showPercentage 
+                         ? String(format: "%.0f%%", percentageLeft) 
+                         : String(daysLeft))
                         .font(.inter(isGridView ? 10 : 12, weight: .semibold))
-                    Text(settings.showPercentage ? "left" : "Days left")
+                        .contentTransition(.numericText())
+                    
+                    Text(daysText)
                         .font(.inter(isGridView ? 10 : 12, weight: .regular))
                 }
+                .animation(.smooth, value: settings.showPercentage)
                 .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .white : .black)
             }
             .padding(.horizontal, isGridView ? 12 : 24)
@@ -134,8 +149,6 @@ struct TimeCard: View {
                 }
             }
         )
-        .scaleEffect(showingEditSheet ? 0.95 : 1.0)
-        .animation(.spring(response: 0.6, dampingFraction: 0.65, blendDuration: 0.3), value: showingEditSheet)
         .sheet(isPresented: $showingEditSheet) {
             if let event = eventStore.events.first(where: { $0.title == title }) {
                 EditEventView(event: event, eventStore: eventStore)
