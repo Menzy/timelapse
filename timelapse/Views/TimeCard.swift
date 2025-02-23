@@ -43,6 +43,7 @@ struct TimeCard: View {
     let isGridView: Bool
     @State private var showingDaysLeft = true
     @State private var showingEditSheet = false
+    @State private var isPressed = false
     @EnvironmentObject var globalSettings: GlobalSettings
     @Binding var selectedTab: Int
     @StateObject private var navigationState = NavigationStateManager.shared
@@ -156,18 +157,25 @@ struct TimeCard: View {
         .animation(.spring(response: 0.55, dampingFraction: 0.825)) { content in
             content
                 .offset(y: navigationState.showingCustomize || navigationState.showingTrackEvent || navigationState.showingSettings ? -60 : 0)
-                .scaleEffect(navigationState.showingCustomize || navigationState.showingTrackEvent || navigationState.showingSettings ? 0.93 : 1)
+                .scaleEffect(
+                    (navigationState.showingCustomize || navigationState.showingTrackEvent || navigationState.showingSettings) ? 0.93 :
+                    (isPressed ? 0.95 : 1)
+                )
         }
-        .sheet(isPresented: $showingEditSheet) {
-            if let event = eventStore.events.first(where: { $0.title == title }) {
-                EditEventView(event: event, eventStore: eventStore)
-            }
-        }
-        .onLongPressGesture {
+        .onLongPressGesture(minimumDuration: 0.3) {
             if title != String(Calendar.current.component(.year, from: Date())) {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 showingEditSheet = true
             }
+        } onPressingChanged: { isPressing in
+            if title != String(Calendar.current.component(.year, from: Date())) {
+                withAnimation(.spring(response: 0.35)) {
+                    isPressed = isPressing
+                }
+            }
+        }
+        .sheet(isPresented: $showingEditSheet) {
+            EditEventView(event: event, eventStore: eventStore)
         }
     }
 }
