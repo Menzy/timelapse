@@ -12,22 +12,8 @@ fileprivate struct CardBackground: Shape {
         let mainShape = UIBezierPath(roundedRect: CGRect(x: 0, y: 0, width: width, height: height),
                                     cornerRadius: cornerRadius)
         
-        // Cutout dimensions and position - smaller size
-        let cutoutWidth: CGFloat = width * 0.22
-        let cutoutHeight: CGFloat = height * 0.09
-        let cutoutX = width - cutoutWidth - 16
-        let cutoutY = height - cutoutHeight - 16
-        
-        // Create cutout shape with rounded corners
-        let cutout = UIBezierPath(roundedRect: CGRect(x: cutoutX,
-                                                     y: cutoutY,
-                                                     width: cutoutWidth,
-                                                     height: cutoutHeight),
-                                 cornerRadius: 6)
-        
         // Convert UIBezierPath to SwiftUI Path
         path.addPath(Path(mainShape.cgPath))
-        path.addPath(Path(cutout.cgPath))
         
         return path
     }
@@ -47,6 +33,15 @@ struct TimeCard: View {
     @EnvironmentObject var globalSettings: GlobalSettings
     @Binding var selectedTab: Int
     @StateObject private var navigationState = NavigationStateManager.shared
+    
+    // Add computed properties for dynamic scaling
+    private var scaledWidth: CGFloat {
+        UIScreen.main.bounds.width * 0.76
+    }
+    
+    private var scaledHeight: CGFloat {
+        UIScreen.main.bounds.height * 0.45
+    }
     
     var daysSpent: Int {
         totalDays - daysLeft
@@ -104,13 +99,13 @@ struct TimeCard: View {
     var body: some View {
         VStack(spacing: 0) {
             timeDisplayView()
-                .frame(height: isGridView ? 150 : 300)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(isGridView ? 12 : 24)
+                .frame(height: isGridView ? scaledHeight * 0.35 : scaledHeight * 0.8)
+                .frame(maxWidth: scaledWidth, alignment: .center)
+                .padding(isGridView ? 12 : 14)
             
             HStack {
                 Text(title)
-                    .font(.inter(isGridView ? 8 : 10, weight: .medium))
+                    .font(.custom("Inter", size: isGridView ? 8 : 10))
                     .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .white : .black)
                 
                 Spacer()
@@ -120,36 +115,38 @@ struct TimeCard: View {
                     Text(settings.showPercentage 
                          ? String(format: "%.0f%%", percentageLeft) 
                          : String(daysLeft))
-                        .font(.inter(isGridView ? 10 : 12, weight: .semibold))
+                        .font(.custom("Inter", size: isGridView ? 10 : 12))
                         .contentTransition(.numericText())
                     
                     Text(daysText)
-                        .font(.inter(isGridView ? 10 : 12, weight: .regular))
+                        .font(.custom("Inter", size: isGridView ? 10 : 12))
                 }
                 .animation(.smooth, value: settings.showPercentage)
                 .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .white : .black)
             }
-            .padding(.horizontal, isGridView ? 12 : 24)
-            .padding(.bottom, isGridView ? 12 : 24)
+            .padding(.horizontal, isGridView ? 12 : 14)
+            .padding(.bottom, 15)
         }
         .background(
-            ZStack {
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(globalSettings.effectiveBackgroundStyle == .light ? .black : .white)
-                    .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
-                
-                // Cutout shape with display color - with smaller dimensions
-                if !isGridView {
-                    GeometryReader { geometry in
-                        let cutoutWidth = geometry.size.width * 0.22
-                        let cutoutHeight = geometry.size.height * 0.09
-                        let cutoutX = geometry.size.width - cutoutWidth - 16
-                        let cutoutY = geometry.size.height - cutoutHeight - 16
+            Group {
+                if isGridView {
+                    CardBackground()
+                        .fill(globalSettings.effectiveBackgroundStyle == .light ? Color.black : Color.white)
+                        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+                } else {
+                    ZStack {
+                        Image(globalSettings.effectiveBackgroundStyle == .light ? "blackMain" : "whiteMain")
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
                         
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(settings.displayColor)
-                            .frame(width: cutoutWidth, height: cutoutHeight)
-                            .position(x: cutoutX + cutoutWidth/2, y: cutoutY + cutoutHeight/2)
+                        // Cutout image based on display color
+                        let cutoutImage = settings.displayColor == Color(hex: "FF7F00") ? "orangeCut" :
+                                        settings.displayColor == Color(hex: "7FBF54") ? "greenCut" : 
+                                        settings.displayColor == Color(hex: "018AFB") ? "blueCut" : "blueCut"
+                        Image(cutoutImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
                     }
                 }
             }
