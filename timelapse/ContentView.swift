@@ -124,7 +124,7 @@ struct ContentView: View {
                                 isGridView: false,
                                 selectedTab: $selectedTab
                             )
-                            .frame(width: geometry.size.width * 0.85)
+                            .frame(width: geometry.size.width * 0.76)
                             .tag(index)
                             .environmentObject(globalSettings)
                         }
