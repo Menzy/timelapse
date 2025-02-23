@@ -6,9 +6,12 @@ struct DotPixelsView: View {
     let isYearTracker: Bool
     let startDate: Date
     @ObservedObject var settings: DisplaySettings
+    @ObservedObject var eventStore: EventStore
     @EnvironmentObject var globalSettings: GlobalSettings
     @State private var selectedDate: Date? = nil
     @State private var tappedIndex: Int? = nil
+    // Add binding to control tab selection
+    @Binding var selectedTab: Int
     
     var daysCompleted: Int {
         totalDays - daysLeft
@@ -27,9 +30,35 @@ struct DotPixelsView: View {
         }
     }
     
+    private func isTargetDate(_ date: Date) -> Bool {
+        if (!isYearTracker) { return false }
+        let calendar = Calendar.current
+        return eventStore.events.contains { event in
+            guard event.title != String(calendar.component(.year, from: Date())) else { return false }
+            return calendar.isDate(date, inSameDayAs: event.targetDate)
+        }
+    }
+    
+    private func findEventIndex(for date: Date) -> Int? {
+        let calendar = Calendar.current
+        let yearString = String(calendar.component(.year, from: Date()))
+        return eventStore.events.firstIndex { event in
+            guard event.title != yearString,
+                  calendar.isDate(date, inSameDayAs: event.targetDate) else { return false }
+            return true
+        }
+    }
+    
     private func handleTap(index: Int, date: Date) {
         selectedDate = date
         tappedIndex = index
+        
+        // If this is a target date, navigate to its event
+        if isYearTracker, let eventIndex = findEventIndex(for: date) {
+            withAnimation {
+                selectedTab = eventIndex
+            }
+        }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
             if tappedIndex == index {
@@ -116,14 +145,26 @@ struct DotPixelsView: View {
         let isDaysLeft = index >= (totalDays - daysLeft)
         let date = dateForIndex(index)
         let isSelected = selectedDate == date
+        let isTarget = isTargetDate(date)
         
-        Circle()
-            .fill(isSelected ? settings.displayColor : (isDaysLeft ?
-                  getDaysLeftColor() :
-                  settings.displayColor))
-            .onTapGesture {
-                handleTap(index: index, date: date)
+        ZStack {
+            Circle()
+                .fill(isSelected ? settings.displayColor : (isDaysLeft ?
+                      getDaysLeftColor() :
+                      settings.displayColor))
+            
+            if isTarget {
+                Circle()
+                    .fill(globalSettings.effectiveBackgroundStyle == .light ? 
+                          Color.gray.opacity(0.6) : 
+                          Color.gray.opacity(0.4))
+                    .scaleEffect(0.4)
+                    .animation(.smooth, value: isTarget)
             }
+        }
+        .onTapGesture {
+            handleTap(index: index, date: date)
+        }
     }
     
     var body: some View {
