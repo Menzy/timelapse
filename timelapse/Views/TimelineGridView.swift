@@ -3,6 +3,7 @@ import SwiftUI
 struct TimelineGridView: View {
     @ObservedObject var eventStore: EventStore
     @EnvironmentObject var globalSettings: GlobalSettings
+    @Binding var selectedTab: Int
     
     private let columns = [
         GridItem(.flexible(), spacing: 16),
@@ -36,7 +37,6 @@ struct TimelineGridView: View {
         GeometryReader { geometry in
             let spacing: CGFloat = 16
             let horizontalPadding: CGFloat = 16
-            let availableWidth = geometry.size.width - (horizontalPadding * 2)
             
             ScrollView {
                 LazyVGrid(columns: columns, spacing: spacing) {
@@ -51,7 +51,8 @@ struct TimelineGridView: View {
                             eventStore: eventStore,
                             daysLeft: progress.daysLeft,
                             totalDays: progress.totalDays,
-                            isGridView: true
+                            isGridView: true,
+                            selectedTab: $selectedTab
                         )
                         .frame(maxWidth: .infinity)
                         .environmentObject(globalSettings)
