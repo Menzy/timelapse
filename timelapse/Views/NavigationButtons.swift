@@ -4,9 +4,14 @@ struct NavigationButton: View {
     let iconName: String
     let action: () -> Void
     @State private var isPressed = false
+    @Namespace private var animation
     
     var body: some View {
-        Button(action: action) {
+        Button(action: {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                action()
+            }
+        }) {
             Image(iconName)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
@@ -15,7 +20,7 @@ struct NavigationButton: View {
                 .padding(8)
                 .background(
                     Circle()
-                        .fill(Color(hex: "121212").opacity(0.5))
+                        .fill(Color(hex: "121212"))
                         .overlay(
                             Circle()
                                 .stroke(LinearGradient(
@@ -25,8 +30,7 @@ struct NavigationButton: View {
                                 ), lineWidth: 0.5)
                         )
                 )
-                .shadow(color: .black.opacity(0.3), radius: 3, x: 0, y: 2)
-                .scaleEffect(isPressed ? 0.95 : 1.0)
+                
         }
         .buttonStyle(NavigationButtonStyle())
     }
@@ -44,7 +48,7 @@ struct NavigationBar: View {
     @StateObject private var navigationState = NavigationStateManager.shared
     
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 12) {
             NavigationButton(iconName: "edit") {
                 navigationState.showingCustomize = true
             }
@@ -57,20 +61,30 @@ struct NavigationBar: View {
                 navigationState.showingSettings = true
             }
         }
-        .padding(6)
+        .padding(8)
         .background(
             Capsule()
-                .fill(Color.black.opacity(0.95))
+                .fill(
+                    LinearGradient(
+                        colors: [Color.black, Color(hex: "141414")],
+                        startPoint: UnitPoint(x: 0.25, y: 0.93),
+                        endPoint: UnitPoint(x: 0.75, y: 0.07)
+                    )
+                )
                 .overlay(
                     Capsule()
-                        .stroke(LinearGradient(
-                            colors: [.white.opacity(0.3), .clear],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ), lineWidth: 0.5)
+                        .stroke(
+                            RadialGradient(
+                                colors: [Color.black, Color(hex: "131313")],
+                                center: .center,
+                                startRadius: 0,
+                                endRadius: 8
+                            ),
+                            lineWidth: 1
+                        )
                 )
         )
-        .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
+        .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 5)
         .padding(.bottom, 60)
     }
 }
