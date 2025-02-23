@@ -18,7 +18,7 @@ struct CircleDisplayView: View {
             Circle()
                 .trim(from: 0, to: max(0.001, CGFloat(daysSpent) / CGFloat(totalDays)))
                 .stroke(settings.displayColor, lineWidth: 20)
-                .rotationEffect(.degrees(-90))
+                .rotationEffect(.degrees(-126))
                 .animation(.linear, value: daysSpent)
         }
         .padding(20)
@@ -101,12 +101,12 @@ struct CountdownView: View {
     var body: some View {
         GeometryReader { geometry in
             Text(displayText)
-                .font(.custom("Galgo-Bold", size: geometry.size.width))
+                .font(.custom("Galgo-Bold", size: geometry.size.width * 1.2))
                 .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .white : .black)
                 .minimumScaleFactor(0.1)
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .baselineOffset(-geometry.size.width * 0.1)
+                .baselineOffset(-geometry.size.width * 0.12)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
