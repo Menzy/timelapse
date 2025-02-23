@@ -166,7 +166,7 @@ struct ContentView: View {
             }
             .sheet(isPresented: $navigationState.showingCustomize) {
                 if let event = displayedEvents[safe: selectedTab] {
-                    CustomizeView(settings: settings(for: event))
+                    CustomizeView(settings: settings(for: event), eventStore: eventStore)
                         .environmentObject(globalSettings)
                 }
             }
