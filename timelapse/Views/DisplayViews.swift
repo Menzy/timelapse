@@ -34,7 +34,9 @@ struct ProgressBarView: View {
     
     private let segmentCount = 25
     private let segmentWidth: CGFloat = 8
-    private let segmentHeight: CGFloat = 45
+    private var segmentHeight: CGFloat {
+        globalSettings.showGridLayout ? 30 : 45
+    }
     private let segmentCornerRadius: CGFloat = 8
     private let segmentSpacing: CGFloat = 2.5
     

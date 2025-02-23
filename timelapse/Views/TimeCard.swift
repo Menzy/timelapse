@@ -12,18 +12,18 @@ fileprivate struct CardBackground: Shape {
         let mainShape = UIBezierPath(roundedRect: CGRect(x: 0, y: 0, width: width, height: height),
                                     cornerRadius: cornerRadius)
         
-        // Cutout dimensions and position
-        let cutoutWidth: CGFloat = width * 0.35
-        let cutoutHeight: CGFloat = height * 0.14 // Increased from 0.12 to 0.14
-        let cutoutX = width - cutoutWidth - 16 // 16 points from right edge
-        let cutoutY = height - cutoutHeight - 16 // 16 points from bottom
+        // Cutout dimensions and position - smaller size
+        let cutoutWidth: CGFloat = width * 0.22
+        let cutoutHeight: CGFloat = height * 0.09
+        let cutoutX = width - cutoutWidth - 16
+        let cutoutY = height - cutoutHeight - 16
         
         // Create cutout shape with rounded corners
         let cutout = UIBezierPath(roundedRect: CGRect(x: cutoutX,
                                                      y: cutoutY,
                                                      width: cutoutWidth,
                                                      height: cutoutHeight),
-                                 cornerRadius: 8)
+                                 cornerRadius: 6)
         
         // Convert UIBezierPath to SwiftUI Path
         path.addPath(Path(mainShape.cgPath))
@@ -133,15 +133,15 @@ struct TimeCard: View {
                     .fill(globalSettings.effectiveBackgroundStyle == .light ? .black : .white)
                     .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
                 
-                // Cutout shape with display color
+                // Cutout shape with display color - with smaller dimensions
                 if !isGridView {
                     GeometryReader { geometry in
-                        let cutoutWidth = geometry.size.width * 0.35
-                        let cutoutHeight = geometry.size.height * 0.14
+                        let cutoutWidth = geometry.size.width * 0.22
+                        let cutoutHeight = geometry.size.height * 0.09
                         let cutoutX = geometry.size.width - cutoutWidth - 16
                         let cutoutY = geometry.size.height - cutoutHeight - 16
                         
-                        RoundedRectangle(cornerRadius: 8)
+                        RoundedRectangle(cornerRadius: 6)
                             .fill(settings.displayColor)
                             .frame(width: cutoutWidth, height: cutoutHeight)
                             .position(x: cutoutX + cutoutWidth/2, y: cutoutY + cutoutHeight/2)
