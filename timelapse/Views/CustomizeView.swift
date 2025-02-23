@@ -136,51 +136,53 @@ struct CustomizeView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section("Display Style") {
-                    LazyVGrid(columns: Array(repeating: .init(.flexible()), count: 4), spacing: 20) {
-                        ForEach(TimeDisplayStyle.allCases, id: \.self) { style in
-                            StylePreviewView(style: style, isSelected: settings.style == style)
-                                .onTapGesture {
-                                    settings.style = style
-                                }
-                        }
-                    }
-                    .padding(.vertical, 10)
-                    
-                    LazyVGrid(columns: Array(repeating: .init(.flexible()), count: 3), spacing: 20) {
-                        let presets = DisplayColor.getPresets(for: globalSettings.backgroundStyle)
-                        ForEach(presets) { preset in
-                            VStack {
-                                ZStack {
-                                    Circle()
-                                        .stroke(settings.displayColor == preset.color ? Color.blue : Color.gray.opacity(0.3), lineWidth: 2)
-                                        .frame(width: 60, height: 60)
-                                    
-                                    Circle()
-                                        .fill(preset.color)
-                                        .frame(width: 60, height: 60)
-                                }
-                                .onTapGesture {
-                                    settings.displayColor = preset.color
-                                }
-                                
-                                Text(preset.name)
-                                    .font(.inter(12, weight: .medium))
-                                    .foregroundColor(.primary)
+                if !globalSettings.showGridLayout {
+                    Section("Display Style") {
+                        LazyVGrid(columns: Array(repeating: .init(.flexible()), count: 4), spacing: 20) {
+                            ForEach(TimeDisplayStyle.allCases, id: \.self) { style in
+                                StylePreviewView(style: style, isSelected: settings.style == style)
+                                    .onTapGesture {
+                                        settings.style = style
+                                    }
                             }
                         }
-                    }
-                    .padding(.vertical, 10)
-                    .onChange(of: settings.displayColor) { oldValue, newValue in
-                        let defaultColor = Color(hex: "FF7F00")
-                        settings.isUsingDefaultColor = (newValue == defaultColor)
-                        settings.objectWillChange.send()
-                    }
-                    .onChange(of: settings.style) { oldStyle, newStyle in
-                        if !settings.isUsingDefaultColor {
-                            settings.displayColor = settings.displayColor
+                        .padding(.vertical, 10)
+                        
+                        LazyVGrid(columns: Array(repeating: .init(.flexible()), count: 3), spacing: 20) {
+                            let presets = DisplayColor.getPresets(for: globalSettings.backgroundStyle)
+                            ForEach(presets) { preset in
+                                VStack {
+                                    ZStack {
+                                        Circle()
+                                            .stroke(settings.displayColor == preset.color ? Color.blue : Color.gray.opacity(0.3), lineWidth: 2)
+                                            .frame(width: 60, height: 60)
+                                        
+                                        Circle()
+                                            .fill(preset.color)
+                                            .frame(width: 60, height: 60)
+                                    }
+                                    .onTapGesture {
+                                        settings.displayColor = preset.color
+                                    }
+                                    
+                                    Text(preset.name)
+                                        .font(.inter(12, weight: .medium))
+                                        .foregroundColor(.primary)
+                                }
+                            }
                         }
-                        settings.objectWillChange.send()
+                        .padding(.vertical, 10)
+                        .onChange(of: settings.displayColor) { oldValue, newValue in
+                            let defaultColor = Color(hex: "FF7F00")
+                            settings.isUsingDefaultColor = (newValue == defaultColor)
+                            settings.objectWillChange.send()
+                        }
+                        .onChange(of: settings.style) { oldStyle, newStyle in
+                            if !settings.isUsingDefaultColor {
+                                settings.displayColor = settings.displayColor
+                            }
+                            settings.objectWillChange.send()
+                        }
                     }
                 }
                 
