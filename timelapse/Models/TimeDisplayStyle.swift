@@ -14,6 +14,23 @@ enum BackgroundStyle: String, CaseIterable, Codable {
     case fire
     case dream
     case device
+    
+    var backgroundColor: Color {
+        switch self {
+        case .light:
+            return .white
+        case .dark:
+            return Color(hex: "111111")
+        case .navy:
+            return Color(hex: "001524")
+        case .fire:
+            return .black
+        case .dream:
+            return Color(hex: "002728")
+        case .device:
+            return Color.primary
+        }
+    }
 }
 
 struct DisplayColor: Identifiable {
