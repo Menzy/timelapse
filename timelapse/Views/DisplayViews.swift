@@ -87,6 +87,7 @@ struct CountdownView: View {
     let showDaysLeft: Bool
     @ObservedObject var settings: DisplaySettings
     @EnvironmentObject var globalSettings: GlobalSettings
+    let isGridView: Bool
     
     var daysSpent: Int {
         365 - daysLeft
@@ -94,19 +95,20 @@ struct CountdownView: View {
     
     private var displayText: String {
         let value = showDaysLeft ? daysLeft : daysSpent
-        // Always show the raw number for the main countdown, regardless of percentage setting
         return String(format: "%03d", value)
     }
     
     var body: some View {
         GeometryReader { geometry in
             Text(displayText)
-                .font(.custom("Galgo-Bold", size: geometry.size.width * 1.2))
+                .font(.custom("Galgo-Bold", size: isGridView ? 2500 : 4000))
                 .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .white : .black)
-                .minimumScaleFactor(0.1)
+                .minimumScaleFactor(isGridView ? 0.06 : 0.1)
                 .lineLimit(1)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .baselineOffset(-geometry.size.width * 0.12)
+                .frame(width: geometry.size.width * (isGridView ? 1.1 : 1.2), 
+                       height: geometry.size.height * (isGridView ? 1.1 : 1.2))
+                .position(x: geometry.size.width/2, y: geometry.size.height/2)
+                .clipped()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
