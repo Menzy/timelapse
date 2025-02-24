@@ -136,48 +136,52 @@ struct ContentView: View {
                         selectedTab = min(max(newValue, 0), displayedEvents.count - 1)
                     }
                 }
-                
-                if displayedEvents.count > 1 {
-                    PageControl(numberOfPages: displayedEvents.count, currentPage: $selectedTab)
-                        .environmentObject(globalSettings)
-                        .padding(.bottom, 20)
-                }
             }
-            Spacer()
+        }
+    }
+    
+    private var navigationContent: some View {
+        VStack(spacing: 8) {
+            // Separate dot navigation
+            if !globalSettings.showGridLayout && displayedEvents.count > 1 {
+                PageControl(numberOfPages: displayedEvents.count, currentPage: $selectedTab)
+                    .padding(.bottom, 4)
+            }
+            
+            // Navigation bar
             NavigationBar()
         }
     }
     
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                backgroundView
-                timelineContent
-            }
-            .onChange(of: globalSettings.backgroundStyle) { oldStyle, newStyle in
-                updateAllColors(for: newStyle)
-            }
-            .onChange(of: colorScheme) { oldColorScheme, newColorScheme in
-                globalSettings.updateSystemAppearance(newColorScheme == .dark)
-            }
-            .onAppear {
-                currentDate = Date()
-                scheduleNextUpdate()
-                globalSettings.updateSystemAppearance(colorScheme == .dark)
-            }
-            .sheet(isPresented: $navigationState.showingCustomize) {
-                if let event = displayedEvents[safe: selectedTab] {
-                    CustomizeView(settings: settings(for: event), eventStore: eventStore)
-                        .environmentObject(globalSettings)
-                }
-            }
-            .sheet(isPresented: $navigationState.showingTrackEvent) {
-                TrackEventView(eventStore: eventStore)
-            }
-            .sheet(isPresented: $navigationState.showingSettings) {
-                SettingsView()
+        ZStack(alignment: .bottom) {
+            backgroundView
+            timelineContent
+            navigationContent
+        }
+        .onChange(of: globalSettings.backgroundStyle) { oldStyle, newStyle in
+            updateAllColors(for: newStyle)
+        }
+        .onChange(of: colorScheme) { oldColorScheme, newColorScheme in
+            globalSettings.updateSystemAppearance(newColorScheme == .dark)
+        }
+        .onAppear {
+            currentDate = Date()
+            scheduleNextUpdate()
+            globalSettings.updateSystemAppearance(colorScheme == .dark)
+        }
+        .sheet(isPresented: $navigationState.showingCustomize) {
+            if let event = displayedEvents[safe: selectedTab] {
+                CustomizeView(settings: settings(for: event), eventStore: eventStore)
                     .environmentObject(globalSettings)
             }
+        }
+        .sheet(isPresented: $navigationState.showingTrackEvent) {
+            TrackEventView(eventStore: eventStore)
+        }
+        .sheet(isPresented: $navigationState.showingSettings) {
+            SettingsView()
+                .environmentObject(globalSettings)
         }
     }
 }
