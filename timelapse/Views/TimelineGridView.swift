@@ -34,6 +34,7 @@ struct TimelineGridView: View {
         GeometryReader { geometry in
             let spacing: CGFloat = 16
             let horizontalPadding: CGFloat = 16
+            let bottomNavSpace: CGFloat = 100 // Account for navigation bar and safe area
             
             ScrollView {
                 LazyVGrid(columns: columns, spacing: spacing) {
@@ -58,11 +59,11 @@ struct TimelineGridView: View {
                 }
                 .padding(.horizontal, horizontalPadding)
                 .padding(.top, horizontalPadding)
-                .padding(.bottom, 100)
+                .padding(.bottom, bottomNavSpace)
             }
-            .safeAreaInset(edge: .bottom) {
-                Color.clear.frame(height: 80)
-            }
+            .scrollIndicators(.hidden)
+            .ignoresSafeArea(.all, edges: .bottom)
+            
         }
     }
 }

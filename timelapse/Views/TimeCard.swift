@@ -83,12 +83,16 @@ struct TimeCard: View {
             TriGridView(daysLeft: daysLeft, totalDays: totalDays, settings: settings)
         case .progressBar:
             ProgressBarView(daysLeft: daysLeft, totalDays: totalDays, settings: settings)
-                .environmentObject(globalSettings) // Provide global settings
+                .environmentObject(globalSettings)
         case .countdown:
-            CountdownView(daysLeft: daysLeft, showDaysLeft: showingDaysLeft, settings: settings)
-                .environmentObject(globalSettings) // Provide global settings
+            CountdownView(
+                daysLeft: daysLeft,
+                showDaysLeft: showingDaysLeft,
+                settings: settings,
+                isGridView: isGridView
+            )
+                .environmentObject(globalSettings)
                 .transaction { transaction in
-                    // Disable animations for the countdown view
                     if settings.style == .countdown {
                         transaction.animation = nil
                     }
@@ -101,7 +105,7 @@ struct TimeCard: View {
             timeDisplayView()
                 .frame(height: isGridView ? scaledHeight * 0.35 : scaledHeight * 0.8)
                 .frame(maxWidth: scaledWidth, alignment: .center)
-                .padding(isGridView ? 12 : 14)
+                .padding(settings.style == .countdown ? 4 : (isGridView ? 12 : 14)) // Reduce padding for countdown view
             
             HStack {
                 Text(title)
@@ -121,7 +125,6 @@ struct TimeCard: View {
                     Text(daysText)
                         .font(.custom("Inter", size: isGridView ? 10 : 12))
                 }
-                .animation(.smooth, value: settings.showPercentage)
                 .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .white : .black)
             }
             .padding(.horizontal, isGridView ? 12 : 14)
@@ -151,14 +154,15 @@ struct TimeCard: View {
                 }
             }
         )
-        .animation(.spring(response: 0.55, dampingFraction: 0.825)) { content in
-            content
-                .offset(y: navigationState.showingCustomize || navigationState.showingTrackEvent || navigationState.showingSettings ? -60 : 0)
-                .scaleEffect(
-                    (navigationState.showingCustomize || navigationState.showingTrackEvent || navigationState.showingSettings) ? 0.93 :
-                    (isPressed ? 0.95 : 1)
-                )
-        }
+        .scaleEffect(
+            (navigationState.showingCustomize || navigationState.showingTrackEvent || navigationState.showingSettings) ? 0.93 :
+            (isPressed ? 0.95 : 1)
+        )
+        .offset(y: navigationState.showingCustomize || navigationState.showingTrackEvent || navigationState.showingSettings ? -60 : 0)
+        .animation(.spring(response: 0.55, dampingFraction: 0.825), value: navigationState.showingCustomize)
+        .animation(.spring(response: 0.55, dampingFraction: 0.825), value: navigationState.showingTrackEvent)
+        .animation(.spring(response: 0.55, dampingFraction: 0.825), value: navigationState.showingSettings)
+        .animation(.spring(response: 0.35), value: isPressed)
         .onLongPressGesture(minimumDuration: 0.3) {
             if title != String(Calendar.current.component(.year, from: Date())) {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
@@ -166,9 +170,7 @@ struct TimeCard: View {
             }
         } onPressingChanged: { isPressing in
             if title != String(Calendar.current.component(.year, from: Date())) {
-                withAnimation(.spring(response: 0.35)) {
-                    isPressed = isPressing
-                }
+                isPressed = isPressing
             }
         }
         .sheet(isPresented: $showingEditSheet) {

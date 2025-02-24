@@ -5,6 +5,7 @@ struct TrackEventView: View {
     @State private var eventTitle = ""
     @State private var eventDate = Date()
     @ObservedObject var eventStore: EventStore
+    @State private var showingLimitAlert = false
     
     var body: some View {
         NavigationView {
@@ -37,9 +38,13 @@ struct TrackEventView: View {
                     
                     Section {
                         Button(action: {
-                            let newEvent = Event(title: eventTitle, targetDate: eventDate)
-                            eventStore.saveEvent(newEvent)
-                            dismiss()
+                            if eventStore.events.count >= 5 {
+                                showingLimitAlert = true
+                            } else {
+                                let newEvent = Event(title: eventTitle, targetDate: eventDate)
+                                eventStore.saveEvent(newEvent)
+                                dismiss()
+                            }
                         }) {
                             Text("Save")
                                 .fontWeight(.semibold)
@@ -52,6 +57,11 @@ struct TrackEventView: View {
                         .disabled(eventTitle.isEmpty)
                     }
                 }
+            }
+            .alert("Event Limit Reached", isPresented: $showingLimitAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("You can track up to 5 events at a time. Please remove an existing event to add a new one.")
             }
         }
         .presentationDetents([.fraction(0.45)])
