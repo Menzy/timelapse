@@ -3,6 +3,7 @@ import SwiftUI
 struct TimelineGridView: View {
     @ObservedObject var eventStore: EventStore
     @EnvironmentObject var globalSettings: GlobalSettings
+    let yearTrackerSettings: DisplaySettings
     @Binding var selectedTab: Int
     
     private let columns = [
@@ -20,11 +21,7 @@ struct TimelineGridView: View {
     private func settings(for event: Event) -> DisplaySettings {
         let currentYear = Calendar.current.component(.year, from: Date())
         if event.title == String(currentYear) {
-            if eventStore.displaySettings[event.id] == nil {
-                let newSettings = DisplaySettings(backgroundStyle: globalSettings.effectiveBackgroundStyle)
-                eventStore.displaySettings[event.id] = newSettings
-            }
-            return eventStore.displaySettings[event.id]!
+            return yearTrackerSettings
         }
         if eventStore.displaySettings[event.id] == nil {
             let newSettings = DisplaySettings(backgroundStyle: globalSettings.effectiveBackgroundStyle)
