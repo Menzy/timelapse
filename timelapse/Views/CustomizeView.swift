@@ -10,17 +10,17 @@ struct ThemeCircleView: View {
                 // Selection border
                 Circle()
                     .stroke(isSelected ? Color.blue : Color.gray.opacity(0.3), lineWidth: 2)
-                    .frame(width: 60, height: 60)
+                    .frame(maxWidth: 60, maxHeight: 60)
                 
                 if style == .device {
                     // Split circle for device theme
                     HStack(spacing: 0) {
                         Rectangle()
                             .fill(Color.white)
-                            .frame(width: 30, height: 60)
+                            .frame(maxWidth: 30, maxHeight: 60)
                         Rectangle()
                             .fill(Color(hex: "111111"))
-                            .frame(width: 30, height: 60)
+                            .frame(maxWidth: 30, maxHeight: 60)
                     }
                     .clipShape(Circle())
                     .overlay(
@@ -67,7 +67,7 @@ struct ThemeCircleView: View {
                         )
                 }
             }
-            .frame(width: 60, height: 60)
+            .frame(maxWidth: 60, maxHeight: 60)
             
             Text(style.rawValue.capitalized)
                 .font(.inter(12, weight: .medium))
@@ -82,43 +82,71 @@ struct StylePreviewView: View {
     @EnvironmentObject var globalSettings: GlobalSettings
     
     var iconColor: Color {
-        let defaultColor = Color(hex: "FF7F00")
-        return globalSettings.effectiveBackgroundStyle == .light ? defaultColor : defaultColor
+        return Color(hex: "343434")
+    }
+    
+    var gradientStroke: LinearGradient {
+        LinearGradient(
+            gradient: Gradient(colors: [Color.black, Color(hex: "989898")]),
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
     }
     
     var body: some View {
         VStack {
             ZStack {
-                RoundedRectangle(cornerRadius: 12)
+                // Selection border
+                Circle()
                     .stroke(isSelected ? Color.blue : Color.gray.opacity(0.3), lineWidth: 2)
-                    .frame(width: 60, height: 60)
+                    .frame(maxWidth: 60, maxHeight: 60)
+                
+                // Background fill
+                Circle()
+                    .fill(Color(hex: "1B1B1B").opacity(0.5))
+                    .frame(maxWidth: 60, maxHeight: 60)
+                
+                // Gradient stroke
+                Circle()
+                    .stroke(
+                        RadialGradient(
+                            gradient: Gradient(colors: [Color.black, Color(hex: "989898")]),
+                            center: .center,
+                            startRadius: 0,
+                            endRadius: 30
+                        ),
+                        lineWidth: 1
+                    )
+                    .frame(maxWidth: 60, maxHeight: 60)
                 
                 switch style {
                 case .dotPixels:
                     Circle()
                         .fill(iconColor)
-                        .frame(width: 40, height: 40)
+                        .frame(maxWidth: 34, maxHeight: 34)
                 case .triGrid:
                     Triangle()
                         .fill(iconColor)
-                        .frame(width: 40, height: 40)
+                        .frame(maxWidth: 34, maxHeight: 34)
                 case .progressBar:
                     HStack(spacing: 0) {
                         Rectangle()
                             .fill(iconColor)
-                            .frame(width: 25, height: 30)
+                            .frame(width: 17, height: 22)
                         Rectangle()
                             .fill(iconColor.opacity(0.3))
-                            .frame(width: 15, height: 30)
+                            .frame(width: 10, height: 22)
                     }
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                    .frame(maxWidth: 34, maxHeight: 34)
                 case .countdown:
                     Text("365")
-                        .font(.system(size: 24, weight: .bold))
+                        .font(.system(size: 17, weight: .bold))
                         .foregroundColor(iconColor)
+                        .frame(maxWidth: 34, maxHeight: 34)
                 }
             }
-            .frame(width: 60, height: 60)
+            .frame(maxWidth: 60, maxHeight: 60)
             
             Text(style.rawValue.capitalized)
                 .font(.inter(12, weight: .medium))
@@ -147,40 +175,44 @@ struct CustomizeView: View {
             Form {
                 if !globalSettings.showGridLayout {
                     Section("Display Style") {
-                        LazyVGrid(columns: Array(repeating: .init(.flexible()), count: 4), spacing: 20) {
-                            ForEach(TimeDisplayStyle.allCases, id: \.self) { style in
-                                StylePreviewView(style: style, isSelected: settings.style == style)
-                                    .onTapGesture {
-                                        settings.style = style
-                                    }
-                            }
-                        }
-                        .padding(.vertical, 10)
-                        
-                        LazyVGrid(columns: Array(repeating: .init(.flexible()), count: 3), spacing: 20) {
-                            let presets = DisplayColor.getPresets(for: globalSettings.backgroundStyle)
-                            ForEach(presets) { preset in
-                                VStack {
-                                    ZStack {
-                                        Circle()
-                                            .stroke(settings.displayColor == preset.color ? Color.blue : Color.gray.opacity(0.3), lineWidth: 2)
-                                            .frame(width: 60, height: 60)
-                                        
-                                        Circle()
-                                            .fill(preset.color)
-                                            .frame(width: 60, height: 60)
-                                    }
-                                    .onTapGesture {
-                                        settings.displayColor = preset.color
-                                    }
-                                    
-                                    Text(preset.name)
-                                        .font(.inter(12, weight: .medium))
-                                        .foregroundColor(.primary)
+                        VStack(spacing: 0) {
+                            LazyVGrid(columns: Array(repeating: .init(.flexible()), count: 4), spacing: 15) {
+                                ForEach(TimeDisplayStyle.allCases, id: \.self) { style in
+                                    StylePreviewView(style: style, isSelected: settings.style == style)
+                                        .onTapGesture {
+                                            settings.style = style
+                                        }
                                 }
                             }
+                            .padding(.vertical, 10)
+                            
+                            LazyVGrid(columns: Array(repeating: .init(.flexible()), count: 3), spacing: 15) {
+                                let presets = DisplayColor.getPresets(for: globalSettings.backgroundStyle)
+                                ForEach(presets) { preset in
+                                    VStack {
+                                        ZStack {
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .stroke(settings.displayColor == preset.color ? Color.blue : Color.gray.opacity(0.3), lineWidth: 2)
+                                                .frame(maxWidth: 92, maxHeight: 19)
+                                                .frame(height: 19)
+                                            
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .fill(preset.color)
+                                                .frame(maxWidth: 92, maxHeight: 19)
+                                                .frame(height: 19)
+                                        }
+                                        .onTapGesture {
+                                            settings.displayColor = preset.color
+                                        }
+                                        
+                                        Text(preset.name)
+                                            .font(.inter(12, weight: .medium))
+                                            .foregroundColor(.primary)
+                                    }
+                                }
+                            }
+                            .padding(.vertical, 10)
                         }
-                        .padding(.vertical, 10)
                         .onChange(of: settings.displayColor) { oldValue, newValue in
                             let defaultColor = Color(hex: "FF7F00")
                             settings.isUsingDefaultColor = (newValue == defaultColor)
@@ -196,7 +228,7 @@ struct CustomizeView: View {
                 }
                 
                 Section("Background Theme") {
-                    LazyVGrid(columns: Array(repeating: .init(.flexible()), count: 3), spacing: 20) {
+                    LazyVGrid(columns: Array(repeating: .init(.flexible()), count: 3), spacing: 15) {
                         ForEach(BackgroundStyle.allCases, id: \.self) { style in
                             ThemeCircleView(style: style, isSelected: globalSettings.backgroundStyle == style)
                                 .onTapGesture {
@@ -217,7 +249,6 @@ struct CustomizeView: View {
                     ))
                 }
             }
-            .navigationTitle("Customize")
             .navigationBarItems(trailing: Button("Done") { dismiss() })
         }
         .presentationDetents([.medium])
