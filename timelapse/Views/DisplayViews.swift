@@ -18,7 +18,7 @@ struct CircleDisplayView: View {
             Circle()
                 .trim(from: 0, to: max(0.001, CGFloat(daysSpent) / CGFloat(totalDays)))
                 .stroke(settings.displayColor, lineWidth: 20)
-                .rotationEffect(.degrees(-90))
+                .rotationEffect(.degrees(-126))
                 .animation(.linear, value: daysSpent)
         }
         .padding(20)
@@ -34,9 +34,11 @@ struct ProgressBarView: View {
     
     private let segmentCount = 25
     private let segmentWidth: CGFloat = 8
-    private let segmentHeight: CGFloat = 45
-    private let segmentCornerRadius: CGFloat = 3
-    private let segmentSpacing: CGFloat = 2
+    private var segmentHeight: CGFloat {
+        globalSettings.showGridLayout ? 30 : 45
+    }
+    private let segmentCornerRadius: CGFloat = 8
+    private let segmentSpacing: CGFloat = 2.5
     
     var daysSpent: Int {
         totalDays - daysLeft
@@ -69,6 +71,7 @@ struct ProgressBarView: View {
                         .frame(width: nil, height: segmentHeight)
                 }
             }
+            .padding(4)
             .background(
                 RoundedRectangle(cornerRadius: segmentCornerRadius)
                     .stroke(settings.displayColor, lineWidth: 1)
@@ -84,6 +87,7 @@ struct CountdownView: View {
     let showDaysLeft: Bool
     @ObservedObject var settings: DisplaySettings
     @EnvironmentObject var globalSettings: GlobalSettings
+    let isGridView: Bool
     
     var daysSpent: Int {
         365 - daysLeft
@@ -91,27 +95,22 @@ struct CountdownView: View {
     
     private var displayText: String {
         let value = showDaysLeft ? daysLeft : daysSpent
-        if settings.showPercentage {
-            let percentage = (Double(value) / Double(365)) * 100
-            return String(format: "%.0f%% left", percentage)
-        } else {
-            return String(format: "%03d", value)
-        }
+        return String(format: "%03d", value)
     }
     
     var body: some View {
         GeometryReader { geometry in
             Text(displayText)
-                .font(.custom("Galgo-Bold", size: geometry.size.width))
+                .font(.custom("Galgo-Bold", size: isGridView ? 2500 : 4000))
                 .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .white : .black)
-                .minimumScaleFactor(0.1)
+                .minimumScaleFactor(isGridView ? 0.06 : 0.1)
                 .lineLimit(1)
-                .scaleEffect(settings.showPercentage ? 0.8 : 1.0)
-                .animation(.easeInOut(duration: 0.3), value: settings.showPercentage)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .baselineOffset(-geometry.size.width * 0.1)
+                .frame(width: geometry.size.width * (isGridView ? 1.1 : 1.2), 
+                       height: geometry.size.height * (isGridView ? 1.1 : 1.2))
+                .position(x: geometry.size.width/2, y: geometry.size.height/2)
+                .clipped()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
-    
+

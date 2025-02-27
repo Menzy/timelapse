@@ -12,22 +12,8 @@ fileprivate struct CardBackground: Shape {
         let mainShape = UIBezierPath(roundedRect: CGRect(x: 0, y: 0, width: width, height: height),
                                     cornerRadius: cornerRadius)
         
-        // Cutout dimensions and position
-        let cutoutWidth: CGFloat = width * 0.35
-        let cutoutHeight: CGFloat = height * 0.14 // Increased from 0.12 to 0.14
-        let cutoutX = width - cutoutWidth - 16 // 16 points from right edge
-        let cutoutY = height - cutoutHeight - 16 // 16 points from bottom
-        
-        // Create cutout shape with rounded corners
-        let cutout = UIBezierPath(roundedRect: CGRect(x: cutoutX,
-                                                     y: cutoutY,
-                                                     width: cutoutWidth,
-                                                     height: cutoutHeight),
-                                 cornerRadius: 8)
-        
         // Convert UIBezierPath to SwiftUI Path
         path.addPath(Path(mainShape.cgPath))
-        path.addPath(Path(cutout.cgPath))
         
         return path
     }
@@ -40,10 +26,23 @@ struct TimeCard: View {
     @ObservedObject var eventStore: EventStore
     let daysLeft: Int
     let totalDays: Int
+    let isGridView: Bool
     @State private var showingDaysLeft = true
     @State private var showingEditSheet = false
-    @EnvironmentObject var globalSettings: GlobalSettings // Use global settings
-
+    @State private var isPressed = false
+    @EnvironmentObject var globalSettings: GlobalSettings
+    @Binding var selectedTab: Int
+    @StateObject private var navigationState = NavigationStateManager.shared
+    
+    // Add computed properties for dynamic scaling
+    private var scaledWidth: CGFloat {
+        UIScreen.main.bounds.width * 0.76
+    }
+    
+    private var scaledHeight: CGFloat {
+        UIScreen.main.bounds.height * 0.45
+    }
+    
     var daysSpent: Int {
         totalDays - daysLeft
     }
@@ -57,12 +56,16 @@ struct TimeCard: View {
     }
     
     var daysText: String {
-        let count = showingDaysLeft ? daysLeft : daysSpent
-        let type = showingDaysLeft ? "left" : "in"
-        let dayText = count == 1 ? "day" : "days"
-        return "\(settings.showPercentage ? "" : "\(dayText) ")\(type)"
+        if settings.showPercentage {
+            return "left"
+        } else {
+            let count = showingDaysLeft ? daysLeft : daysSpent
+            let type = showingDaysLeft ? "left" : "in"
+            let dayText = count == 1 ? "day" : "days"
+            return "\(dayText) \(type)"
+        }
     }
-    
+
     @ViewBuilder
     func timeDisplayView() -> some View {
         switch settings.style {
@@ -72,71 +75,106 @@ struct TimeCard: View {
                 totalDays: totalDays,
                 isYearTracker: title == String(Calendar.current.component(.year, from: Date())),
                 startDate: event.creationDate,
-                settings: settings
+                settings: settings,
+                eventStore: eventStore,
+                selectedTab: $selectedTab
             )
         case .triGrid:
             TriGridView(daysLeft: daysLeft, totalDays: totalDays, settings: settings)
         case .progressBar:
             ProgressBarView(daysLeft: daysLeft, totalDays: totalDays, settings: settings)
-                .environmentObject(globalSettings) // Provide global settings
+                .environmentObject(globalSettings)
         case .countdown:
-            CountdownView(daysLeft: daysLeft, showDaysLeft: showingDaysLeft, settings: settings)
-                .environmentObject(globalSettings) // Provide global settings
+            CountdownView(
+                daysLeft: daysLeft,
+                showDaysLeft: showingDaysLeft,
+                settings: settings,
+                isGridView: isGridView
+            )
+                .environmentObject(globalSettings)
+                .transaction { transaction in
+                    if settings.style == .countdown {
+                        transaction.animation = nil
+                    }
+                }
         }
     }
     
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            // Main content
-            VStack(spacing: 0) {
-                timeDisplayView()
-                    .frame(height: 300)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(24) // Changed from 16 to 24 to match title padding
-                    
-                
-                HStack {
-                    Text(title)
-                        .font(.inter(10, weight: .medium))
-                        .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .white : .black)
-                    Spacer()
-                }
-                .padding(.horizontal, 24) // Changed from 16 to 24 to match grid padding
-                .padding(.bottom, 24)
-            }
+        VStack(spacing: 0) {
+            timeDisplayView()
+                .frame(height: isGridView ? scaledHeight * 0.35 : scaledHeight * 0.8)
+                .frame(maxWidth: scaledWidth, alignment: .center)
+                .padding(settings.style == .countdown ? 4 : (isGridView ? 12 : 14)) // Reduce padding for countdown view
             
-            // Time display in cutout
-            HStack(spacing: 4) {
-                Text(settings.showPercentage ? String(format: "%.0f%%", (Double(daysLeft) / Double(totalDays)) * 100) : "\(daysLeft)")
-                    .font(.inter(12, weight: .semibold))
-                Text(settings.showPercentage ? "left" : "Days left")
-                    .font(.inter(12, weight: .regular))
+            HStack {
+                Text(title)
+                    .font(.custom("Inter", size: isGridView ? 8 : 10))
+                    .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .white : .black)
+                
+                Spacer()
+                
+                // Wrap percentage/days display in animation block
+                HStack(spacing: 4) {
+                    Text(settings.showPercentage 
+                         ? String(format: "%.0f%%", percentageLeft) 
+                         : String(daysLeft))
+                        .font(.custom("Inter", size: isGridView ? 10 : 12))
+                        .contentTransition(.numericText())
+                    
+                    Text(daysText)
+                        .font(.custom("Inter", size: isGridView ? 10 : 12))
+                }
+                .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .white : .black)
             }
-            .foregroundColor(.black)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(settings.displayColor)
-            .cornerRadius(8)
-            .padding(.trailing, 24)
-            .padding(.bottom, 24)
+            .padding(.horizontal, isGridView ? 12 : 14)
+            .padding(.bottom, 15)
         }
         .background(
-            CardBackground()
-                .fill(globalSettings.effectiveBackgroundStyle == .light ? .black : .white)
-                .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
-        )
-        .scaleEffect(showingEditSheet ? 0.95 : 1.0)
-        .animation(.spring(response: 0.6, dampingFraction: 0.65, blendDuration: 0.3), value: showingEditSheet)
-        .sheet(isPresented: $showingEditSheet) {
-            if let event = eventStore.events.first(where: { $0.title == title }) {
-                EditEventView(event: event, eventStore: eventStore)
+            Group {
+                if isGridView {
+                    CardBackground()
+                        .fill(globalSettings.effectiveBackgroundStyle == .light ? Color.black : Color.white)
+                        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+                } else {
+                    ZStack {
+                        Image(globalSettings.effectiveBackgroundStyle == .light ? "blackMain" : "whiteMain")
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+                        
+                        // Cutout image based on display color
+                        let cutoutImage = settings.displayColor == Color(hex: "FF7F00") ? "orangeCut" :
+                                        settings.displayColor == Color(hex: "7FBF54") ? "greenCut" : 
+                                        settings.displayColor == Color(hex: "018AFB") ? "blueCut" : "blueCut"
+                        Image(cutoutImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    }
+                }
             }
-        }
-        .onLongPressGesture {
+        )
+        .scaleEffect(
+            (navigationState.showingCustomize || navigationState.showingTrackEvent || navigationState.showingSettings) ? 0.93 :
+            (isPressed ? 0.95 : 1)
+        )
+        .offset(y: navigationState.showingCustomize || navigationState.showingTrackEvent || navigationState.showingSettings ? -60 : 0)
+        .animation(.spring(response: 0.55, dampingFraction: 0.825), value: navigationState.showingCustomize)
+        .animation(.spring(response: 0.55, dampingFraction: 0.825), value: navigationState.showingTrackEvent)
+        .animation(.spring(response: 0.55, dampingFraction: 0.825), value: navigationState.showingSettings)
+        .animation(.spring(response: 0.35), value: isPressed)
+        .onLongPressGesture(minimumDuration: 0.3) {
             if title != String(Calendar.current.component(.year, from: Date())) {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 showingEditSheet = true
             }
+        } onPressingChanged: { isPressing in
+            if title != String(Calendar.current.component(.year, from: Date())) {
+                isPressed = isPressing
+            }
+        }
+        .sheet(isPresented: $showingEditSheet) {
+            EditEventView(event: event, eventStore: eventStore)
         }
     }
 }

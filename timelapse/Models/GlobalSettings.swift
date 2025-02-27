@@ -9,7 +9,8 @@
 import SwiftUI
 
 class GlobalSettings: ObservableObject {
-    @Published var backgroundStyle: BackgroundStyle = .light // Changed default to light
+    @Published var backgroundStyle: BackgroundStyle = .light
+    @Published var showGridLayout: Bool = false
     @Published private var systemIsDark: Bool = false
     
     init() {
@@ -18,6 +19,9 @@ class GlobalSettings: ObservableObject {
            let style = BackgroundStyle(rawValue: savedStyle) {
             backgroundStyle = style
         }
+        
+        // Load grid layout preference
+        showGridLayout = UserDefaults.standard.bool(forKey: "showGridLayout")
     }
     
     var effectiveBackgroundStyle: BackgroundStyle {
@@ -45,5 +49,6 @@ class GlobalSettings: ObservableObject {
 extension GlobalSettings {
     func saveSettings() {
         UserDefaults.standard.set(backgroundStyle.rawValue, forKey: "backgroundStyle")
+        UserDefaults.standard.set(showGridLayout, forKey: "showGridLayout")
     }
 }
