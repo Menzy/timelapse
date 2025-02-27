@@ -6,8 +6,41 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		40DED2092D6E658100DB557C /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 40DED2082D6E658100DB557C /* WidgetKit.framework */; };
+		40DED20B2D6E658100DB557C /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 40DED20A2D6E658100DB557C /* SwiftUI.framework */; };
+		40DED21C2D6E658300DB557C /* miniTimerExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 40DED2062D6E658100DB557C /* miniTimerExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		40DED21A2D6E658300DB557C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 400256302D666B8800FCD299 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 40DED2052D6E658100DB557C;
+			remoteInfo = miniTimerExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		40DED21D2D6E658300DB557C /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				40DED21C2D6E658300DB557C /* miniTimerExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		400256382D666B8800FCD299 /* timelapse.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = timelapse.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		40DED2062D6E658100DB557C /* miniTimerExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = miniTimerExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		40DED2082D6E658100DB557C /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		40DED20A2D6E658100DB557C /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -17,6 +50,13 @@
 				Info.plist,
 			);
 			target = 400256372D666B8800FCD299 /* timelapse */;
+		};
+		40DED2212D6E658300DB557C /* Exceptions for "miniTimer" folder in "miniTimerExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 40DED2052D6E658100DB557C /* miniTimerExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -29,6 +69,14 @@
 			path = timelapse;
 			sourceTree = "<group>";
 		};
+		40DED20C2D6E658100DB557C /* miniTimer */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				40DED2212D6E658300DB557C /* Exceptions for "miniTimer" folder in "miniTimerExtension" target */,
+			);
+			path = miniTimer;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -39,6 +87,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		40DED2032D6E658100DB557C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				40DED20B2D6E658100DB557C /* SwiftUI.framework in Frameworks */,
+				40DED2092D6E658100DB557C /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -46,6 +103,8 @@
 			isa = PBXGroup;
 			children = (
 				4002563A2D666B8800FCD299 /* timelapse */,
+				40DED20C2D6E658100DB557C /* miniTimer */,
+				40DED2072D6E658100DB557C /* Frameworks */,
 				400256392D666B8800FCD299 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -54,8 +113,18 @@
 			isa = PBXGroup;
 			children = (
 				400256382D666B8800FCD299 /* timelapse.app */,
+				40DED2062D6E658100DB557C /* miniTimerExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		40DED2072D6E658100DB557C /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				40DED2082D6E658100DB557C /* WidgetKit.framework */,
+				40DED20A2D6E658100DB557C /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -68,10 +137,12 @@
 				400256342D666B8800FCD299 /* Sources */,
 				400256352D666B8800FCD299 /* Frameworks */,
 				400256362D666B8800FCD299 /* Resources */,
+				40DED21D2D6E658300DB557C /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				40DED21B2D6E658300DB557C /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				4002563A2D666B8800FCD299 /* timelapse */,
@@ -82,6 +153,28 @@
 			productName = timelapse;
 			productReference = 400256382D666B8800FCD299 /* timelapse.app */;
 			productType = "com.apple.product-type.application";
+		};
+		40DED2052D6E658100DB557C /* miniTimerExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 40DED2202D6E658300DB557C /* Build configuration list for PBXNativeTarget "miniTimerExtension" */;
+			buildPhases = (
+				40DED2022D6E658100DB557C /* Sources */,
+				40DED2032D6E658100DB557C /* Frameworks */,
+				40DED2042D6E658100DB557C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				40DED20C2D6E658100DB557C /* miniTimer */,
+			);
+			name = miniTimerExtension;
+			packageProductDependencies = (
+			);
+			productName = miniTimerExtension;
+			productReference = 40DED2062D6E658100DB557C /* miniTimerExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -94,6 +187,9 @@
 				LastUpgradeCheck = 1620;
 				TargetAttributes = {
 					400256372D666B8800FCD299 = {
+						CreatedOnToolsVersion = 16.2;
+					};
+					40DED2052D6E658100DB557C = {
 						CreatedOnToolsVersion = 16.2;
 					};
 				};
@@ -115,12 +211,20 @@
 			projectRoot = "";
 			targets = (
 				400256372D666B8800FCD299 /* timelapse */,
+				40DED2052D6E658100DB557C /* miniTimerExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		400256362D666B8800FCD299 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		40DED2042D6E658100DB557C /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -137,7 +241,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		40DED2022D6E658100DB557C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		40DED21B2D6E658300DB557C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 40DED2052D6E658100DB557C /* miniTimerExtension */;
+			targetProxy = 40DED21A2D6E658300DB557C /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		400256442D666B8A00FCD299 /* Debug */ = {
@@ -319,6 +438,60 @@
 			};
 			name = Release;
 		};
+		40DED21E2D6E658300DB557C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = QA3SD355GU;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = miniTimer/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = miniTimer;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.wanmenzy.timelapse.miniTimer;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		40DED21F2D6E658300DB557C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = QA3SD355GU;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = miniTimer/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = miniTimer;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.wanmenzy.timelapse.miniTimer;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -336,6 +509,15 @@
 			buildConfigurations = (
 				400256472D666B8A00FCD299 /* Debug */,
 				400256482D666B8A00FCD299 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		40DED2202D6E658300DB557C /* Build configuration list for PBXNativeTarget "miniTimerExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				40DED21E2D6E658300DB557C /* Debug */,
+				40DED21F2D6E658300DB557C /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
