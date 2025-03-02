@@ -99,16 +99,19 @@ struct CountdownView: View {
     }
     
     var body: some View {
-        GeometryReader { geometry in
-            Text(displayText)
-                .font(.custom("Galgo-Bold", size: isGridView ? 2500 : 4000))
-                .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .white : .black)
-                .minimumScaleFactor(isGridView ? 0.06 : 0.1)
-                .lineLimit(1)
-                .frame(width: geometry.size.width * (isGridView ? 1.1 : 1.2), 
-                       height: geometry.size.height * (isGridView ? 1.1 : 1.2))
-                .position(x: geometry.size.width/2, y: geometry.size.height/2)
-                .clipped()
+        VStack {
+            GeometryReader { geometry in
+                Text(displayText)
+                    .font(.custom("Galgo-Bold", size: isGridView ? 3000 : 4000))
+                    .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .white : .black)
+                    .minimumScaleFactor(isGridView ? 0.06 : 0.1)
+                    .lineLimit(1)
+                    .frame(width: geometry.size.width * (isGridView ? 1.1 : 1.2), 
+                           height: geometry.size.height * (isGridView ? 1.1 : 1.2))
+                    .position(x: geometry.size.width/2, y: geometry.size.height/2)
+                    .clipped()
+            }
+            Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

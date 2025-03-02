@@ -105,7 +105,7 @@ struct TimeCard: View {
             timeDisplayView()
                 .frame(height: isGridView ? scaledHeight * 0.35 : scaledHeight * 0.8)
                 .frame(maxWidth: scaledWidth, alignment: .center)
-                .padding(settings.style == .countdown ? 4 : (isGridView ? 12 : 14)) // Reduce padding for countdown view
+                .padding(isGridView ? 12 : 14) // Use consistent padding for all styles
             
             HStack {
                 Text(title)
