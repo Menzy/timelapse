@@ -72,7 +72,7 @@ struct SettingsView: View {
             .navigationTitle("Settings")
             .navigationBarItems(trailing: Button("Done") { dismiss() })
         }
-        .presentationDetents([.large])
+        .presentationDetents([.medium])
         .presentationDragIndicator(.visible)
     }
 }
