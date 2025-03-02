@@ -8,9 +8,7 @@ struct NavigationButton: View {
     
     var body: some View {
         Button(action: {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                action()
-            }
+            action()
         }) {
             Image(iconName)
                 .resizable()
@@ -39,8 +37,7 @@ struct NavigationButton: View {
 struct NavigationButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(configuration.isPressed ? 0.95 : 1)
-            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+            .opacity(configuration.isPressed ? 0.8 : 1)
     }
 }
 
