@@ -154,15 +154,7 @@ struct TimeCard: View {
                 }
             }
         )
-        .scaleEffect(
-            (navigationState.showingCustomize || navigationState.showingTrackEvent || navigationState.showingSettings) ? 0.93 :
-            (isPressed ? 0.95 : 1)
-        )
-        .offset(y: navigationState.showingCustomize || navigationState.showingTrackEvent || navigationState.showingSettings ? -60 : 0)
-        .animation(.spring(response: 0.55, dampingFraction: 0.825), value: navigationState.showingCustomize)
-        .animation(.spring(response: 0.55, dampingFraction: 0.825), value: navigationState.showingTrackEvent)
-        .animation(.spring(response: 0.55, dampingFraction: 0.825), value: navigationState.showingSettings)
-        .animation(.spring(response: 0.35), value: isPressed)
+
         .onLongPressGesture(minimumDuration: 0.3) {
             if title != String(Calendar.current.component(.year, from: Date())) {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
