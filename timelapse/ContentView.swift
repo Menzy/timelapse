@@ -125,6 +125,7 @@ struct ContentView: View {
                                 selectedTab: $selectedTab
                             )
                             .frame(width: geometry.size.width * 0.76)
+                            .offset(y: -40) // Move the card up by 40 points
                             .tag(index)
                             .environmentObject(globalSettings)
                         }
@@ -151,6 +152,7 @@ struct ContentView: View {
             // Navigation bar
             NavigationBar()
         }
+        .padding(.bottom, 40) // Added bottom padding to move navigation up
     }
     
     var body: some View {
