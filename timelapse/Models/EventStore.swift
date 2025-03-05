@@ -84,7 +84,7 @@ class EventStore: ObservableObject {
         }
     }
     
-    private func saveDisplaySettings() {
+    func saveDisplaySettings() {
         if let encoded = try? JSONEncoder().encode(displaySettings) {
             UserDefaults.standard.set(encoded, forKey: displaySettingsKey)
         }

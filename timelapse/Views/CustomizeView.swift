@@ -217,12 +217,14 @@ struct CustomizeView: View {
                             let defaultColor = Color(hex: "FF7F00")
                             settings.isUsingDefaultColor = (newValue == defaultColor)
                             settings.objectWillChange.send()
+                            eventStore.saveDisplaySettings()
                         }
                         .onChange(of: settings.style) { oldStyle, newStyle in
                             if !settings.isUsingDefaultColor {
                                 settings.displayColor = settings.displayColor
                             }
                             settings.objectWillChange.send()
+                            eventStore.saveDisplaySettings()
                         }
                     }
                 }
@@ -233,6 +235,8 @@ struct CustomizeView: View {
                             ThemeCircleView(style: style, isSelected: globalSettings.backgroundStyle == style)
                                 .onTapGesture {
                                     globalSettings.backgroundStyle = style
+                                    globalSettings.saveSettings()
+                                    eventStore.saveDisplaySettings()
                                 }
                         }
                     }
@@ -245,6 +249,7 @@ struct CustomizeView: View {
                         set: { newValue in
                             settings.showPercentage = newValue
                             updatePercentageForAllCards(newValue)
+                            eventStore.saveDisplaySettings()
                         }
                     ))
                 }

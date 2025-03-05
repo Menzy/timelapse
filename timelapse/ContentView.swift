@@ -24,6 +24,7 @@ struct ContentView: View {
             // Create and persist new settings if they don't exist
             let newSettings = DisplaySettings(backgroundStyle: globalSettings.effectiveBackgroundStyle)
             eventStore.displaySettings[event.id] = newSettings
+            eventStore.saveDisplaySettings() // Save when creating new settings
         }
         let settings = eventStore.displaySettings[event.id]!
         settings.updateColor(for: globalSettings.effectiveBackgroundStyle)
@@ -35,6 +36,7 @@ struct ContentView: View {
         for settings in eventStore.displaySettings.values {
             settings.updateColor(for: backgroundStyle)
         }
+        eventStore.saveDisplaySettings()
     }
     
     private func scheduleNextUpdate() {
