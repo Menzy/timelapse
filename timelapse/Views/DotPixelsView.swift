@@ -141,24 +141,23 @@ struct DotPixelsView: View {
     }
     
     @ViewBuilder
-    func gridItem(index: Int) -> some View {
+    func gridItem(index: Int, gridParams: (columns: Int, dotSize: CGFloat, spacing: CGFloat)) -> some View {
         let isDaysLeft = index >= (totalDays - daysLeft)
         let date = dateForIndex(index)
         let isSelected = selectedDate == date
         let isTarget = isTargetDate(date)
         
         ZStack {
+            // Main circle fill
             Circle()
                 .fill(isSelected ? settings.displayColor : (isDaysLeft ?
                       getDaysLeftColor() :
                       settings.displayColor))
             
+            // Add stroke for target dates instead of smaller dot
             if isTarget {
                 Circle()
-                    .fill(globalSettings.effectiveBackgroundStyle == .light ? 
-                          Color.black.opacity(0.5) : 
-                          Color.white.opacity(0.5))
-                    .scaleEffect(0.4)
+                    .stroke(settings.displayColor, lineWidth: gridParams.dotSize * 0.15)
                     .animation(.smooth, value: isTarget)
             }
         }
@@ -178,7 +177,7 @@ struct DotPixelsView: View {
                     spacing: 0
                 ) {
                     ForEach(0..<totalDays, id: \.self) { index in
-                        gridItem(index: index)
+                        gridItem(index: index, gridParams: gridParams)
                             .frame(width: gridParams.dotSize, height: gridParams.dotSize)
                     }
                 }

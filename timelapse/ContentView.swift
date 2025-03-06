@@ -181,7 +181,7 @@ struct ContentView: View {
             }
         }
         .sheet(isPresented: $navigationState.showingTrackEvent) {
-            TrackEventView(eventStore: eventStore)
+            TrackEventView(eventStore: eventStore, selectedTab: $selectedTab)
         }
         .sheet(isPresented: $navigationState.showingSettings) {
             SettingsView()

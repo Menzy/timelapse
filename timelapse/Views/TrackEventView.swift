@@ -6,6 +6,7 @@ struct TrackEventView: View {
     @State private var eventDate = Date()
     @ObservedObject var eventStore: EventStore
     @State private var showingLimitAlert = false
+    @Binding var selectedTab: Int
     
     var body: some View {
         NavigationView {
@@ -38,11 +39,28 @@ struct TrackEventView: View {
                     
                     Section {
                         Button(action: {
-                            if eventStore.events.count >= 5 {
+                            // Count user-created events (excluding year tracker)
+                            let calendar = Calendar.current
+                            let yearString = String(calendar.component(.year, from: Date()))
+                            let userEventCount = eventStore.events.filter { $0.title != yearString }.count
+                            
+                            if userEventCount >= 5 {
                                 showingLimitAlert = true
                             } else {
                                 let newEvent = Event(title: eventTitle, targetDate: eventDate)
                                 eventStore.saveEvent(newEvent)
+                                
+                                // Find the index of the new event in the displayed events array
+                                // Year tracker is always first, so other events start at index 1
+                                let yearTracker = eventStore.events.first { $0.title == yearString }
+                                let otherEvents = eventStore.events.filter { $0.title != yearString }
+                                let displayedEvents = [yearTracker].compactMap { $0 } + otherEvents
+                                
+                                if let newEventIndex = displayedEvents.firstIndex(where: { $0.id == newEvent.id }) {
+                                    // Update the selected tab to navigate to the new event
+                                    selectedTab = newEventIndex
+                                }
+                                
                                 dismiss()
                             }
                         }) {
@@ -61,7 +79,7 @@ struct TrackEventView: View {
             .alert("Event Limit Reached", isPresented: $showingLimitAlert) {
                 Button("OK", role: .cancel) { }
             } message: {
-                Text("You can track up to 5 events at a time. Please remove an existing event to add a new one.")
+                Text("You can track up to 5 events at a time (plus the year tracker). Please remove an existing event to add a new one.")
             }
         }
         .presentationDetents([.fraction(0.45)])

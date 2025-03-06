@@ -105,7 +105,7 @@ struct TriGridView: View {
     }
     
     private func calculateGridParameters(for size: CGSize) -> (columns: Int, triangleSize: CGFloat, spacing: CGFloat) {
-        let bottomSpace: CGFloat = 40
+        let bottomSpace: CGFloat = 60
         
         // Use full width and calculate available height
         let availableWidth = size.width
