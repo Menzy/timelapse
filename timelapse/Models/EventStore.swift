@@ -2,9 +2,10 @@ import Foundation
 
 class EventStore: ObservableObject {
     @Published var events: [Event] = []
-    private let eventsKey = "savedEvents"
     @Published var displaySettings: [UUID: DisplaySettings] = [:]
-    private let displaySettingsKey = "savedDisplaySettings"
+    
+    // Use shared data manager for persistence
+    private let sharedDataManager = SharedDataManager.shared
     
     init() {
         loadEvents()
@@ -52,42 +53,33 @@ class EventStore: ObservableObject {
     }
     
     private func loadEvents() {
-        if let data = UserDefaults.standard.data(forKey: eventsKey),
-           let decoded = try? JSONDecoder().decode([Event].self, from: data) {
-            events = decoded
+        if let loadedEvents = sharedDataManager.loadEvents() {
+            events = loadedEvents
         }
     }
     
-    private func saveEvents() {
-        if let encoded = try? JSONEncoder().encode(events) {
-            UserDefaults.standard.set(encoded, forKey: eventsKey)
-        }
+    func saveEvents() {
+        sharedDataManager.saveEvents(events)
+        updateYearTrackerInfo()
     }
     
     private func loadDisplaySettings() {
-        if let data = UserDefaults.standard.data(forKey: displaySettingsKey),
-           let decoded = try? JSONDecoder().decode([UUID: DisplaySettings].self, from: data) {
-            displaySettings = decoded
-            // Ensure all events have display settings
-            for event in events {
-                if displaySettings[event.id] == nil {
-                    displaySettings[event.id] = DisplaySettings()
-                }
-            }
-            saveDisplaySettings()
-        } else {
-            // Initialize display settings for all events if none exist
-            for event in events {
+        if let loadedSettings = sharedDataManager.loadDisplaySettings() {
+            displaySettings = loadedSettings
+        }
+        
+        // Ensure all events have display settings
+        for event in events {
+            if displaySettings[event.id] == nil {
                 displaySettings[event.id] = DisplaySettings()
             }
-            saveDisplaySettings()
         }
+        saveDisplaySettings()
     }
     
     func saveDisplaySettings() {
-        if let encoded = try? JSONEncoder().encode(displaySettings) {
-            UserDefaults.standard.set(encoded, forKey: displaySettingsKey)
-        }
+        sharedDataManager.saveDisplaySettings(displaySettings)
+        updateWidgetPreferences()
     }
     
     private func addDefaultYearTrackerIfNeeded() {
@@ -95,6 +87,37 @@ class EventStore: ObservableObject {
         if !events.contains(where: { $0.title == defaultEvent.title }) {
             events.insert(defaultEvent, at: 0)
             saveEvents()
+        }
+    }
+    
+    // Save year tracker information specifically for the widget
+    private func updateYearTrackerInfo() {
+        let calendar = Calendar.current
+        let currentYear = calendar.component(.year, from: Date())
+        let yearString = String(currentYear)
+        
+        // Find the year tracker event
+        if let yearTracker = events.first(where: { $0.title == yearString }) {
+            let progress = yearTracker.progressDetails()
+            sharedDataManager.saveYearTrackerInfo(daysLeft: progress.daysLeft, totalDays: progress.totalDays)
+        }
+    }
+    
+    // Update widget preferences when display settings change
+    private func updateWidgetPreferences() {
+        let calendar = Calendar.current
+        let currentYear = calendar.component(.year, from: Date())
+        let yearString = String(currentYear)
+        
+        // Find the year tracker event and its settings
+        if let yearTracker = events.first(where: { $0.title == yearString }),
+           let settings = displaySettings[yearTracker.id] {
+            sharedDataManager.saveWidgetPreferences(
+                style: settings.style,
+                showPercentage: settings.showPercentage,
+                backgroundStyle: settings.backgroundStyle,
+                displayColor: settings.displayColor
+            )
         }
     }
 }

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import WidgetKit
 
 struct ContentView: View {
     @StateObject private var navigationState = NavigationStateManager.shared
@@ -31,12 +32,18 @@ struct ContentView: View {
         return settings
     }
     
+    // Add widget refresh function
+    private func refreshWidgets() {
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+    
     private func updateAllColors(for backgroundStyle: BackgroundStyle) {
         yearTrackerSettings.updateColor(for: backgroundStyle)
         for settings in eventStore.displaySettings.values {
             settings.updateColor(for: backgroundStyle)
         }
         eventStore.saveDisplaySettings()
+        refreshWidgets() // Refresh widgets when colors change
     }
     
     private func scheduleNextUpdate() {
@@ -47,6 +54,7 @@ struct ContentView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + midnight.timeIntervalSince(Date())) {
             currentDate = Date()
             scheduleNextUpdate()
+            refreshWidgets() // Refresh widgets at midnight
         }
     }
     
@@ -168,24 +176,37 @@ struct ContentView: View {
         }
         .onChange(of: colorScheme) { oldColorScheme, newColorScheme in
             globalSettings.updateSystemAppearance(newColorScheme == .dark)
+            refreshWidgets() // Refresh widgets when system appearance changes
         }
         .onAppear {
             currentDate = Date()
             scheduleNextUpdate()
             globalSettings.updateSystemAppearance(colorScheme == .dark)
+            
+            // Initial widget refresh when app appears
+            refreshWidgets()
         }
         .sheet(isPresented: $navigationState.showingCustomize) {
             if let event = displayedEvents[safe: selectedTab] {
                 CustomizeView(settings: settings(for: event), eventStore: eventStore)
                     .environmentObject(globalSettings)
+                    .onDisappear {
+                        refreshWidgets() // Refresh widgets when customization changes
+                    }
             }
         }
         .sheet(isPresented: $navigationState.showingTrackEvent) {
             TrackEventView(eventStore: eventStore, selectedTab: $selectedTab)
+                .onDisappear {
+                    refreshWidgets() // Refresh widgets when events are added or modified
+                }
         }
         .sheet(isPresented: $navigationState.showingSettings) {
             SettingsView()
                 .environmentObject(globalSettings)
+                .onDisappear {
+                    refreshWidgets() // Refresh widgets when settings change
+                }
         }
     }
 }
