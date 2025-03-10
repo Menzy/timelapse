@@ -58,19 +58,54 @@ struct miniTimerEntryView : View {
     var body: some View {
         VStack(spacing: 0) {
             // Main content area with display style
-            ZStack {
-                switch entry.configuration.displayStyle {
-                case .dotPixels:
-                    DotPixelsWidgetView(daysLeft: entry.daysLeft, totalDays: entry.totalDays, family: family, backgroundTheme: entry.configuration.backgroundTheme)
-                case .triGrid:
-                    TriGridWidgetView(daysLeft: entry.daysLeft, totalDays: entry.totalDays, family: family, backgroundTheme: entry.configuration.backgroundTheme)
-                case .progressBar:
-                    ProgressBarWidgetView(daysLeft: entry.daysLeft, totalDays: entry.totalDays, family: family, backgroundTheme: entry.configuration.backgroundTheme)
-                case .countdown:
-                    CountdownWidgetView(daysLeft: entry.daysLeft, family: family)
+            if family == .systemMedium {
+                HStack(spacing: 16) {
+                    // Primary display
+                    ZStack {
+                        switch entry.configuration.displayStyle {
+                        case .dotPixels:
+                            DotPixelsWidgetView(daysLeft: entry.daysLeft, totalDays: entry.totalDays, family: family, backgroundTheme: entry.configuration.backgroundTheme)
+                        case .triGrid:
+                            TriGridWidgetView(daysLeft: entry.daysLeft, totalDays: entry.totalDays, family: family, backgroundTheme: entry.configuration.backgroundTheme)
+                        case .progressBar:
+                            ProgressBarWidgetView(daysLeft: entry.daysLeft, totalDays: entry.totalDays, family: family, backgroundTheme: entry.configuration.backgroundTheme)
+                        case .countdown:
+                            CountdownWidgetView(daysLeft: entry.daysLeft, family: family)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    
+                    // Secondary display
+                    ZStack {
+                        switch entry.configuration.secondaryDisplayStyle {
+                        case .dotPixels:
+                            DotPixelsWidgetView(daysLeft: entry.daysLeft, totalDays: entry.totalDays, family: family, backgroundTheme: entry.configuration.backgroundTheme)
+                        case .triGrid:
+                            TriGridWidgetView(daysLeft: entry.daysLeft, totalDays: entry.totalDays, family: family, backgroundTheme: entry.configuration.backgroundTheme)
+                        case .progressBar:
+                            ProgressBarWidgetView(daysLeft: entry.daysLeft, totalDays: entry.totalDays, family: family, backgroundTheme: entry.configuration.backgroundTheme)
+                        case .countdown:
+                            CountdownWidgetView(daysLeft: entry.daysLeft, family: family)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
+            } else {
+                // Single display for small and large widgets
+                ZStack {
+                    switch entry.configuration.displayStyle {
+                    case .dotPixels:
+                        DotPixelsWidgetView(daysLeft: entry.daysLeft, totalDays: entry.totalDays, family: family, backgroundTheme: entry.configuration.backgroundTheme)
+                    case .triGrid:
+                        TriGridWidgetView(daysLeft: entry.daysLeft, totalDays: entry.totalDays, family: family, backgroundTheme: entry.configuration.backgroundTheme)
+                    case .progressBar:
+                        ProgressBarWidgetView(daysLeft: entry.daysLeft, totalDays: entry.totalDays, family: family, backgroundTheme: entry.configuration.backgroundTheme)
+                    case .countdown:
+                        CountdownWidgetView(daysLeft: entry.daysLeft, family: family)
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
             
             // Bottom info bar - similar to main app
             if family != .systemSmall || entry.configuration.displayStyle != .countdown {
