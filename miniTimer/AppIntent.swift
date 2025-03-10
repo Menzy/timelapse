@@ -31,9 +31,9 @@ enum DisplayStyleChoice: String, AppEnum {
     
     static var typeDisplayRepresentation: TypeDisplayRepresentation = "Display Style"
     static var caseDisplayRepresentations: [DisplayStyleChoice: DisplayRepresentation] = [
-        .dotPixels: "Dot Grid",
-        .triGrid: "Triangle Grid",
-        .progressBar: "Progress Bar",
+        .dotPixels: "DotPixels",
+        .triGrid: "TriGrid",
+        .progressBar: "ProgressBar",
         .countdown: "Countdown"
     ]
 }
