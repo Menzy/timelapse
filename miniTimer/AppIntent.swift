@@ -13,8 +13,11 @@ struct ConfigurationAppIntent: WidgetConfigurationIntent {
     static var title: LocalizedStringResource { "Configuration" }
     static var description: IntentDescription { "Configure your year tracker widget appearance." }
 
-    @Parameter(title: "Display Style", default: .dotPixels)
+    @Parameter(title: "Primary Display Style", default: .dotPixels)
     var displayStyle: DisplayStyleChoice
+    
+    @Parameter(title: "Secondary Display Style (Rectangular)", default: .progressBar)
+    var secondaryDisplayStyle: DisplayStyleChoice
     
     @Parameter(title: "Display Color", default: .orange)
     var displayColor: ColorChoice
