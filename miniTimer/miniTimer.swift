@@ -65,7 +65,7 @@ struct miniTimerEntryView : View {
                 case .triGrid:
                     TriGridWidgetView(daysLeft: entry.daysLeft, totalDays: entry.totalDays, family: family, backgroundTheme: entry.configuration.backgroundTheme)
                 case .progressBar:
-                    ProgressBarWidgetView(daysLeft: entry.daysLeft, totalDays: entry.totalDays, family: family)
+                    ProgressBarWidgetView(daysLeft: entry.daysLeft, totalDays: entry.totalDays, family: family, backgroundTheme: entry.configuration.backgroundTheme)
                 case .countdown:
                     CountdownWidgetView(daysLeft: entry.daysLeft, family: family)
                 }
