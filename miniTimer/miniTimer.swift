@@ -90,8 +90,6 @@ struct miniTimerEntryView : View {
                     }
                     .foregroundColor(textColor)
                 }
-                .padding(.top, 20) // Add spacing between main content and info bar
-                .padding(.vertical, family == .systemSmall ? 4 : 8)
             }
         }
         .accentColor(entry.configuration.displayColor.color)
