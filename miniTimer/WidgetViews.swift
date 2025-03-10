@@ -9,27 +9,19 @@ struct DotPixelsWidgetView: View {
     let backgroundTheme: BackgroundChoice
     
     private func calculateGridParameters(for size: CGSize) -> (columns: Int, dotSize: CGFloat) {
-        // For small widgets, use fewer columns to better utilize vertical space
-        if family == .systemSmall {
-            // Use fewer columns for small widget to make dots more visible
-            let columns = 12
-            let rows = Int(ceil(Double(totalDays) / Double(columns)))
-            
-            // Calculate dot size to fill the entire width
-            let dotSize = size.width / CGFloat(columns)
-            return (columns, dotSize)
-        }
+        let availableWidth = size.width
+        let availableHeight = size.height - (family == .systemSmall ? 10 : 20)
+        let aspectRatio = availableWidth / availableHeight
         
-        // For larger widgets, calculate optimal number of columns based on aspect ratio
-        let aspectRatio = size.width / size.height
+        // Calculate optimal number of columns based on aspect ratio and total items
         let baseColumns = Int(ceil(sqrt(Double(totalDays) * aspectRatio)))
-        let columns = min(max(baseColumns, 10), 30) // Keep columns between 10 and 30
-        
-        // Calculate rows needed
+        let columns = min(max(baseColumns, 4), 25) // Keep columns between 4 and 25
         let rows = Int(ceil(Double(totalDays) / Double(columns)))
         
-        // Calculate dot size to fill the entire width
-        let dotSize = size.width / CGFloat(columns)
+        // Calculate dot size to maximize space usage
+        let dotSizeByWidth = availableWidth / CGFloat(columns)
+        let dotSizeByHeight = availableHeight / CGFloat(rows)
+        let dotSize = min(dotSizeByWidth, dotSizeByHeight)
         
         return (columns, dotSize)
     }
@@ -41,7 +33,7 @@ struct DotPixelsWidgetView: View {
             let gridParams = calculateGridParameters(for: geometry.size)
             
             LazyVGrid(
-                columns: Array(repeating: .init(.fixed(gridParams.dotSize), spacing: 0), count: gridParams.columns),
+                columns: Array(repeating: GridItem(.fixed(gridParams.dotSize), spacing: 0), count: gridParams.columns),
                 spacing: 0
             ) {
                 ForEach(0..<totalDays, id: \.self) { index in
@@ -50,7 +42,8 @@ struct DotPixelsWidgetView: View {
                         .frame(width: gridParams.dotSize, height: gridParams.dotSize)
                 }
             }
-            .frame(width: geometry.size.width, alignment: .leading)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .padding(0)
         }
     }
 }
@@ -74,27 +67,45 @@ struct TriGridWidgetView: View {
     let backgroundTheme: BackgroundChoice
     
     private func calculateGridParameters(for size: CGSize) -> (columns: Int, triangleSize: CGFloat) {
-        // For small widgets, use fewer columns to better utilize vertical space
+        let availableWidth = size.width
+        let availableHeight = size.height - (family == .systemSmall ? 10 : 20) // Add 10pt spacing for small widget
+        let aspectRatio = availableWidth / availableHeight
+        
         if family == .systemSmall {
-            // Use fewer columns for small widget to make triangles more visible
-            let columns = 10
-            let rows = Int(ceil(Double(totalDays) / Double(columns)))
+            // Calculate optimal grid based on aspect ratio and total items
+            let itemAspectRatio = sqrt(Double(totalDays) * aspectRatio)
+            var bestColumns = Int(round(itemAspectRatio))
+            var bestRows = Int(ceil(Double(totalDays) / Double(bestColumns)))
             
-            // Calculate triangle size to fill the entire width
-            let triangleSize = size.width / CGFloat(columns)
-            return (columns, triangleSize)
+            // Adjust columns to minimize empty space
+            while Double(bestColumns * bestRows) / Double(totalDays) > 1.3 && bestColumns > 1 {
+                bestColumns -= 1
+                bestRows = Int(ceil(Double(totalDays) / Double(bestColumns)))
+            }
+            
+            // Calculate triangle size considering height ratio for equilateral triangles
+            let heightRatio: CGFloat = 0.866 // Height ratio for equilateral triangles
+            let spacing: CGFloat = 2.0 // Small spacing for small widget
+            let widthBasedSize = (availableWidth - (CGFloat(bestColumns - 1) * spacing)) / CGFloat(bestColumns)
+            let heightBasedSize = (availableHeight - (CGFloat(bestRows - 1) * spacing)) / (CGFloat(bestRows) * heightRatio)
+            let triangleSize = min(widthBasedSize, heightBasedSize) * 0.95 // Add small margin
+            
+            return (bestColumns, triangleSize)
         }
         
         // For larger widgets, calculate optimal number of columns based on aspect ratio
-        let aspectRatio = size.width / size.height
         let baseColumns = Int(ceil(sqrt(Double(totalDays) * aspectRatio)))
         let columns = min(max(baseColumns, 8), 25) // Keep columns between 8 and 25
         
         // Calculate rows needed
         let rows = Int(ceil(Double(totalDays) / Double(columns)))
         
-        // Calculate triangle size to fill the entire width
-        let triangleSize = size.width / CGFloat(columns)
+        // Calculate triangle size considering height ratio for equilateral triangles
+        let heightRatio: CGFloat = 0.866 // Height ratio for equilateral triangles
+        let spacing: CGFloat = 4.0 // Larger spacing for larger widgets
+        let widthBasedSize = (size.width - (CGFloat(columns - 1) * spacing)) / CGFloat(columns)
+        let heightBasedSize = (size.height - (CGFloat(rows - 1) * spacing)) / (CGFloat(rows) * heightRatio)
+        let triangleSize = min(widthBasedSize, heightBasedSize)
         
         return (columns, triangleSize)
     }
@@ -106,8 +117,8 @@ struct TriGridWidgetView: View {
             let gridParams = calculateGridParameters(for: geometry.size)
             
             LazyVGrid(
-                columns: Array(repeating: .init(.fixed(gridParams.triangleSize), spacing: 0), count: gridParams.columns),
-                spacing: 0
+                columns: Array(repeating: .init(.fixed(gridParams.triangleSize), spacing: family == .systemSmall ? 2.0 : 4.0), count: gridParams.columns),
+                spacing: family == .systemSmall ? 2.0 : 4.0
             ) {
                 ForEach(0..<totalDays, id: \.self) { index in
                     Triangle()
