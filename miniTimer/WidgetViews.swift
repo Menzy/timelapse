@@ -135,28 +135,38 @@ struct ProgressBarWidgetView: View {
     let daysLeft: Int
     let totalDays: Int
     let family: WidgetFamily
+    let backgroundTheme: BackgroundChoice
     
     private let segmentCount = 25
     private let segmentCornerRadius: CGFloat = 8
     private let segmentSpacing: CGFloat = 2.5
     
+    private var segmentHeight: CGFloat {
+        family == .systemSmall ? 30 : 45
+    }
+    
     var body: some View {
         let progress = Double(totalDays - daysLeft) / Double(totalDays)
         
         GeometryReader { geometry in
-            let segmentHeight = min(geometry.size.height * 0.5, 50)
-            
             VStack {
                 Spacer()
                 HStack(spacing: segmentSpacing) {
                     ForEach(0..<segmentCount, id: \.self) { index in
                         let isActive = Double(index) / Double(segmentCount) < progress
                         RoundedRectangle(cornerRadius: segmentCornerRadius)
-                            .fill(isActive ? Color.accentColor : Color.accentColor.opacity(0.2))
+                            .fill(isActive ? 
+                                  (backgroundTheme == .dark ? Color.white : Color.black) :
+                                  (backgroundTheme == .dark ? Color.white.opacity(0.3) : Color.black.opacity(0.3)))
                             .frame(height: segmentHeight)
                     }
                 }
                 .padding(4)
+                .background(
+                    RoundedRectangle(cornerRadius: segmentCornerRadius)
+                        .stroke(Color.accentColor, lineWidth: 1)
+                )
+                .padding(.vertical, 4)
                 Spacer()
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
