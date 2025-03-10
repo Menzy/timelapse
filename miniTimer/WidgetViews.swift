@@ -5,6 +5,8 @@ struct DotPixelsWidgetView: View {
     let daysLeft: Int
     let totalDays: Int
     let family: WidgetFamily
+    @Environment(\.colorScheme) private var colorScheme
+    let backgroundTheme: BackgroundChoice
     
     private func calculateGridParameters(for size: CGSize) -> (columns: Int, dotSize: CGFloat) {
         // For small widgets, use fewer columns to better utilize vertical space
@@ -44,7 +46,7 @@ struct DotPixelsWidgetView: View {
             ) {
                 ForEach(0..<totalDays, id: \.self) { index in
                     Circle()
-                        .fill(index < daysSpent ? Color.accentColor : Color.accentColor.opacity(0.2))
+                        .fill(index < daysSpent ? Color.accentColor : (backgroundTheme == .dark ? Color.white : Color.black))
                         .frame(width: gridParams.dotSize, height: gridParams.dotSize)
                 }
             }
@@ -68,6 +70,8 @@ struct TriGridWidgetView: View {
     let daysLeft: Int
     let totalDays: Int
     let family: WidgetFamily
+    @Environment(\.colorScheme) private var colorScheme
+    let backgroundTheme: BackgroundChoice
     
     private func calculateGridParameters(for size: CGSize) -> (columns: Int, triangleSize: CGFloat) {
         // For small widgets, use fewer columns to better utilize vertical space
@@ -107,7 +111,7 @@ struct TriGridWidgetView: View {
             ) {
                 ForEach(0..<totalDays, id: \.self) { index in
                     Triangle()
-                        .fill(index < daysSpent ? Color.accentColor : Color.accentColor.opacity(0.2))
+                        .fill(index < daysSpent ? Color.accentColor : (backgroundTheme == .dark ? Color.white : Color.black))
                         .frame(width: gridParams.triangleSize, height: gridParams.triangleSize)
                 }
             }

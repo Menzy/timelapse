@@ -52,7 +52,7 @@ struct miniTimerEntryView : View {
     }
     
     private var containerPadding: CGFloat {
-        family == .systemSmall ? 5 : 10
+        1 // Much smaller padding for a more compact widget design
     }
     
     var body: some View {
@@ -61,9 +61,9 @@ struct miniTimerEntryView : View {
             ZStack {
                 switch entry.configuration.displayStyle {
                 case .dotPixels:
-                    DotPixelsWidgetView(daysLeft: entry.daysLeft, totalDays: entry.totalDays, family: family)
+                    DotPixelsWidgetView(daysLeft: entry.daysLeft, totalDays: entry.totalDays, family: family, backgroundTheme: entry.configuration.backgroundTheme)
                 case .triGrid:
-                    TriGridWidgetView(daysLeft: entry.daysLeft, totalDays: entry.totalDays, family: family)
+                    TriGridWidgetView(daysLeft: entry.daysLeft, totalDays: entry.totalDays, family: family, backgroundTheme: entry.configuration.backgroundTheme)
                 case .progressBar:
                     ProgressBarWidgetView(daysLeft: entry.daysLeft, totalDays: entry.totalDays, family: family)
                 case .countdown:
@@ -90,7 +90,7 @@ struct miniTimerEntryView : View {
                     }
                     .foregroundColor(textColor)
                 }
-                .padding(.horizontal, family == .systemSmall ? 8 : 14)
+                .padding(.top, 20) // Add spacing between main content and info bar
                 .padding(.vertical, family == .systemSmall ? 4 : 8)
             }
         }
@@ -105,7 +105,7 @@ struct miniTimer: Widget {
     var body: some WidgetConfiguration {
         AppIntentConfiguration(kind: kind, intent: ConfigurationAppIntent.self, provider: Provider()) { entry in
             miniTimerEntryView(entry: entry)
-                .containerBackground(.clear, for: .widget)
+                .containerBackground(entry.configuration.backgroundTheme == .light ? .white : .black, for: .widget)
         }
         .configurationDisplayName("Year Tracker")
         .description("Track the days of the year with various display styles.")
