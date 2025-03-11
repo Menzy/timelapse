@@ -9,10 +9,64 @@ import WidgetKit
 import AppIntents
 import SwiftUI
 
+// Dynamic event provider for widget configuration
+struct EventEntity: AppEntity, TypeDisplayRepresentable {
+    var id: UUID
+    var title: String
+    
+    static var defaultQuery = EventQuery()
+    static var typeDisplayRepresentation: TypeDisplayRepresentation = "Event"
+    
+    var displayRepresentation: DisplayRepresentation {
+        DisplayRepresentation(title: "\(title)")
+    }
+}
+
+struct EventQuery: EntityQuery {
+    func entities(for identifiers: [UUID]) async throws -> [EventEntity] {
+        return identifiers.compactMap { id in
+            if let events = loadEvents(), let event = events.first(where: { $0.id == id }) {
+                return EventEntity(id: event.id, title: event.title)
+            }
+            return nil
+        }
+    }
+    
+    func suggestedEntities() async throws -> [EventEntity] {
+        var entities: [EventEntity] = []
+        
+        if let events = loadEvents() {
+            for event in events {
+                entities.append(EventEntity(id: event.id, title: event.title))
+            }
+        }
+        
+        // If no events found, add a default one
+        if entities.isEmpty {
+            let calendar = Calendar.current
+            let year = calendar.component(.year, from: Date())
+            entities.append(EventEntity(id: UUID(), title: "\(year)"))
+        }
+        
+        return entities
+    }
+    
+    func loadEvents() -> [Event]? {
+        if let data = UserDefaults.shared?.data(forKey: "allEvents"),
+           let events = try? JSONDecoder().decode([Event].self, from: data) {
+            return events
+        }
+        return nil
+    }
+}
+
 struct ConfigurationAppIntent: WidgetConfigurationIntent {
     static var title: LocalizedStringResource { "Configuration" }
-    static var description: IntentDescription { "Configure your year tracker widget appearance." }
-
+    static var description: IntentDescription { "Configure your event tracker widget appearance." }
+    
+    @Parameter(title: "Event", default: nil)
+    var selectedEvent: EventEntity?
+    
     @Parameter(title: "Primary Display Style", default: .dotPixels)
     var displayStyle: DisplayStyleChoice
     
