@@ -6,6 +6,11 @@ class EventStore: ObservableObject {
     @Published var displaySettings: [UUID: DisplaySettings] = [:]
     private let displaySettingsKey = "savedDisplaySettings"
     
+    // The key for the year tracker event that will be shared with the widget
+    static let yearTrackerKey = "yearTrackerEvent"
+    // The key for all events that will be shared with the widget
+    static let allEventsKey = "allEvents"
+    
     init() {
         loadEvents()
         loadDisplaySettings()
@@ -28,6 +33,14 @@ class EventStore: ObservableObject {
                 displaySettings[event.id] = newSettings
                 saveEvents()
                 saveDisplaySettings()
+                
+                // If this is a year tracker, save it separately for widget access
+                if isYearTracker {
+                    saveYearTrackerForWidget(event)
+                }
+                
+                // Save all events for widget access
+                saveAllEventsForWidget()
             }
         }
     }
@@ -40,6 +53,14 @@ class EventStore: ObservableObject {
             // Display settings will be preserved since we're using the same ID
             saveEvents()
             saveDisplaySettings()
+            
+            // If this is the year tracker, update the widget data
+            if title == String(Calendar.current.component(.year, from: Date())) {
+                saveYearTrackerForWidget(updatedEvent)
+            }
+            
+            // Update all events for widget access
+            saveAllEventsForWidget()
         }
     }
     
@@ -49,10 +70,21 @@ class EventStore: ObservableObject {
         displaySettings.removeValue(forKey: event.id)
         saveEvents()
         saveDisplaySettings()
+        
+        // If this was the year tracker, we need to create a new one
+        if event.title == String(Calendar.current.component(.year, from: Date())) {
+            let newYearTracker = Event.defaultYearTracker()
+            events.insert(newYearTracker, at: 0)
+            saveEvents()
+            saveYearTrackerForWidget(newYearTracker)
+        }
+        
+        // Update all events for widget access
+        saveAllEventsForWidget()
     }
     
     private func loadEvents() {
-        if let data = UserDefaults.standard.data(forKey: eventsKey),
+        if let data = UserDefaults.shared?.data(forKey: eventsKey),
            let decoded = try? JSONDecoder().decode([Event].self, from: data) {
             events = decoded
         }
@@ -60,12 +92,12 @@ class EventStore: ObservableObject {
     
     private func saveEvents() {
         if let encoded = try? JSONEncoder().encode(events) {
-            UserDefaults.standard.set(encoded, forKey: eventsKey)
+            UserDefaults.shared?.set(encoded, forKey: eventsKey)
         }
     }
     
     private func loadDisplaySettings() {
-        if let data = UserDefaults.standard.data(forKey: displaySettingsKey),
+        if let data = UserDefaults.shared?.data(forKey: displaySettingsKey),
            let decoded = try? JSONDecoder().decode([UUID: DisplaySettings].self, from: data) {
             displaySettings = decoded
             // Ensure all events have display settings
@@ -86,7 +118,7 @@ class EventStore: ObservableObject {
     
     func saveDisplaySettings() {
         if let encoded = try? JSONEncoder().encode(displaySettings) {
-            UserDefaults.standard.set(encoded, forKey: displaySettingsKey)
+            UserDefaults.shared?.set(encoded, forKey: displaySettingsKey)
         }
     }
     
@@ -95,6 +127,26 @@ class EventStore: ObservableObject {
         if !events.contains(where: { $0.title == defaultEvent.title }) {
             events.insert(defaultEvent, at: 0)
             saveEvents()
+            saveYearTrackerForWidget(defaultEvent)
+            saveAllEventsForWidget()
+        } else if let yearTracker = events.first(where: { $0.title == defaultEvent.title }) {
+            // If year tracker exists, ensure it's also saved for the widget
+            saveYearTrackerForWidget(yearTracker)
+            saveAllEventsForWidget()
+        }
+    }
+    
+    // Save the year tracker event specifically for the widget
+    private func saveYearTrackerForWidget(_ event: Event) {
+        if let encoded = try? JSONEncoder().encode(event) {
+            UserDefaults.shared?.set(encoded, forKey: EventStore.yearTrackerKey)
+        }
+    }
+    
+    // Save all events for the widget to access
+    private func saveAllEventsForWidget() {
+        if let encoded = try? JSONEncoder().encode(events) {
+            UserDefaults.shared?.set(encoded, forKey: EventStore.allEventsKey)
         }
     }
 }
