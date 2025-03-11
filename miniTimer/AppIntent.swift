@@ -64,17 +64,27 @@ struct ConfigurationAppIntent: WidgetConfigurationIntent {
     static var title: LocalizedStringResource { "Configuration" }
     static var description: IntentDescription { "Configure your event tracker widget appearance." }
     
-    @Parameter(title: "Event", default: nil)
+    // First event selection - used for all widget sizes
+    @Parameter(title: "Primary Event", default: nil)
     var selectedEvent: EventEntity?
     
-    @Parameter(title: "Primary Display Style", default: .dotPixels)
+    // Second event selection - only used for rectangular/medium widgets
+    @Parameter(title: "Secondary Event (Medium Widget Only)", default: nil)
+    var secondaryEvent: EventEntity?
+    
+    @Parameter(title: "Display Style", default: .dotPixels)
     var displayStyle: DisplayStyleChoice
     
-    @Parameter(title: "Secondary Display Style (Rectangular)", default: .progressBar)
+    // Make it very clear this is only for medium widgets
+    @Parameter(title: "Second Display Style (Medium Widget Only)", default: .progressBar)
     var secondaryDisplayStyle: DisplayStyleChoice
     
-    @Parameter(title: "Display Color", default: .orange)
+    @Parameter(title: "Primary Display Color", default: .orange)
     var displayColor: ColorChoice
+    
+    // Add a secondary display color option
+    @Parameter(title: "Secondary Display Color (Medium Widget Only)", default: .blue)
+    var secondaryDisplayColor: ColorChoice
     
     @Parameter(title: "Background Theme", default: .dark)
     var backgroundTheme: BackgroundChoice
