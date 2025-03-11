@@ -142,7 +142,14 @@ struct ProgressBarWidgetView: View {
     private let segmentSpacing: CGFloat = 2.5
     
     private var segmentHeight: CGFloat {
-        family == .systemSmall ? 30 : 45
+        switch family {
+        case .systemMedium:
+            return 25 // Reduced height for rectangular widget
+        case .systemSmall:
+            return 30
+        default:
+            return 45
+        }
     }
     
     var body: some View {
