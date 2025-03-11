@@ -146,11 +146,12 @@ struct RoundedTriangle: View {
     let fillColor: Color
     
     var body: some View {
-        Triangle()
-            .fill(fillColor)
-            .clipShape(
-                RoundedRectangle(cornerRadius: 3)
-            )
+        Image("TriangleW")
+            .renderingMode(.template)
+            .resizable()
+            .aspectRatio(1.0, contentMode: .fit)
+            .foregroundColor(fillColor)
+            .clipShape(RoundedRectangle(cornerRadius: 3))
     }
 }
 
@@ -163,46 +164,58 @@ struct TriGridWidgetView: View {
     
     private func calculateGridParameters(for size: CGSize) -> (columns: Int, triangleSize: CGFloat) {
         let availableWidth = size.width
-        let availableHeight = size.height - (family == .systemSmall ? 10 : 20) // Add 10pt spacing for small widget
+        let bottomTextSpace: CGFloat = family == .systemSmall ? 25 : 30  // Space for info text
+        let topPadding: CGFloat = family == .systemSmall ? 10 : 20
+        let availableHeight = size.height - bottomTextSpace - topPadding
         let aspectRatio = availableWidth / availableHeight
         
-        if family == .systemSmall {
-            // Calculate optimal grid based on aspect ratio and total items
-            let itemAspectRatio = sqrt(Double(totalDays) * aspectRatio)
-            var bestColumns = Int(round(itemAspectRatio))
-            var bestRows = Int(ceil(Double(totalDays) / Double(bestColumns)))
+        // For large numbers (>100), use dynamic column calculation
+        if totalDays > 100 {
+            let baseColumns = Int(ceil(sqrt(Double(totalDays) * aspectRatio)))
+            let columns = min(max(baseColumns, 8), 25) // Keep columns between 8 and 25
+            let rows = Int(ceil(Double(totalDays) / Double(columns)))
             
-            // Adjust columns to minimize empty space
-            while Double(bestColumns * bestRows) / Double(totalDays) > 1.3 && bestColumns > 1 {
-                bestColumns -= 1
-                bestRows = Int(ceil(Double(totalDays) / Double(bestColumns)))
-            }
-            
-            // Calculate triangle size considering height ratio for equilateral triangles
+            // Calculate triangle size considering height ratio and spacing
+            let spacing: CGFloat = family == .systemSmall ? 2.0 : 4.0
             let heightRatio: CGFloat = 0.866 // Height ratio for equilateral triangles
-            let spacing: CGFloat = 2.0 // Small spacing for small widget
-            let widthBasedSize = (availableWidth - (CGFloat(bestColumns - 1) * spacing)) / CGFloat(bestColumns)
-            let heightBasedSize = (availableHeight - (CGFloat(bestRows - 1) * spacing)) / (CGFloat(bestRows) * heightRatio)
-            let triangleSize = min(widthBasedSize, heightBasedSize) * 0.95 // Add small margin
             
-            return (bestColumns, triangleSize)
+            let widthBasedSize = (availableWidth - (CGFloat(columns - 1) * spacing)) / CGFloat(columns)
+            let heightBasedSize = (availableHeight - (CGFloat(rows - 1) * spacing)) / (CGFloat(rows) * heightRatio)
+            let triangleSize = min(widthBasedSize, heightBasedSize)
+            
+            return (columns, triangleSize)
         }
         
-        // For larger widgets, calculate optimal number of columns based on aspect ratio
-        let baseColumns = Int(ceil(sqrt(Double(totalDays) * aspectRatio)))
-        let columns = min(max(baseColumns, 8), 25) // Keep columns between 8 and 25
+        // For fewer triangles, optimize for both dimensions
+        var bestLayout = (columns: 1, triangleSize: CGFloat(0))
+        var minWastedSpace = CGFloat.infinity
         
-        // Calculate rows needed
-        let rows = Int(ceil(Double(totalDays) / Double(columns)))
+        // Calculate maximum columns based on aspect ratio
+        let maxColumns = Int(ceil(sqrt(Double(totalDays) * aspectRatio)))
         
-        // Calculate triangle size considering height ratio for equilateral triangles
-        let heightRatio: CGFloat = 0.866 // Height ratio for equilateral triangles
-        let spacing: CGFloat = 4.0 // Larger spacing for larger widgets
-        let widthBasedSize = (size.width - (CGFloat(columns - 1) * spacing)) / CGFloat(columns)
-        let heightBasedSize = (size.height - (CGFloat(rows - 1) * spacing)) / (CGFloat(rows) * heightRatio)
-        let triangleSize = min(widthBasedSize, heightBasedSize)
+        // Try different column counts
+        for cols in 1...maxColumns {
+            let rows = Int(ceil(Double(totalDays) / Double(cols)))
+            let spacing: CGFloat = family == .systemSmall ? 2.0 : 4.0
+            let heightRatio: CGFloat = 0.866
+            
+            // Calculate sizes considering spacing
+            let widthBasedSize = (availableWidth - (CGFloat(cols - 1) * spacing)) / CGFloat(cols)
+            let heightBasedSize = (availableHeight - (CGFloat(rows - 1) * spacing)) / (CGFloat(rows) * heightRatio)
+            let triangleSize = min(widthBasedSize, heightBasedSize)
+            
+            // Calculate total used space and wasted space
+            let usedWidth = (CGFloat(cols) * triangleSize) + (CGFloat(cols - 1) * spacing)
+            let usedHeight = (CGFloat(rows) * triangleSize * heightRatio) + (CGFloat(rows - 1) * spacing)
+            let wastedSpace = abs(availableWidth - usedWidth) + abs(availableHeight - usedHeight)
+            
+            if wastedSpace < minWastedSpace {
+                minWastedSpace = wastedSpace
+                bestLayout = (cols, triangleSize)
+            }
+        }
         
-        return (columns, triangleSize)
+        return bestLayout
     }
     
     var body: some View {
@@ -278,12 +291,13 @@ struct ProgressBarWidgetView: View {
 struct CountdownWidgetView: View {
     let daysLeft: Int
     let family: WidgetFamily
+    let backgroundTheme: BackgroundChoice
     
     var body: some View {
         GeometryReader { geometry in
             Text(String(format: "%03d", daysLeft))
-                .font(.system(size: 500, weight: .bold, design: .rounded))
-                .foregroundColor(.accentColor)
+                .font(.custom("Galgo-Bold", size: 500))
+                .foregroundColor(backgroundTheme == .dark ? .white : .black)
                 .minimumScaleFactor(0.01)
                 .lineLimit(1)
                 .frame(width: geometry.size.width * 1.1, height: geometry.size.height * 1.1)

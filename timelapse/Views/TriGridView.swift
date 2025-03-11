@@ -1,74 +1,15 @@
 import SwiftUI
 
-struct Triangle: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        let width = rect.width
-        let height = width * 0.866 // Height for equilateral triangle
-        let cornerRadius: CGFloat = width * 0.25 // Now cornerRadius is 15% of width
-        
-        // Calculate points
-        let top = CGPoint(x: width/2, y: 0)
-        let bottomRight = CGPoint(x: width, y: height)
-        let bottomLeft = CGPoint(x: 0, y: height)
-        
-        // Calculate vectors for corner rounding
-        let topToRight = CGPoint(x: bottomRight.x - top.x, y: bottomRight.y - top.y)
-        let rightToLeft = CGPoint(x: bottomLeft.x - bottomRight.x, y: bottomLeft.y - bottomRight.y)
-        let leftToTop = CGPoint(x: top.x - bottomLeft.x, y: top.y - bottomLeft.y)
-        
-        // Normalize vectors
-        let topToRightLength = sqrt(topToRight.x * topToRight.x + topToRight.y * topToRight.y)
-        let rightToLeftLength = sqrt(rightToLeft.x * rightToLeft.x + rightToLeft.y * rightToLeft.y)
-        let leftToTopLength = sqrt(leftToTop.x * leftToTop.x + leftToTop.y * leftToTop.y)
-        
-        // Calculate corner points
-        let topCornerStart = CGPoint(
-            x: top.x + (topToRight.x / topToRightLength) * cornerRadius,
-            y: top.y + (topToRight.y / topToRightLength) * cornerRadius
-        )
-        let topCornerEnd = CGPoint(
-            x: top.x - (leftToTop.x / leftToTopLength) * cornerRadius,
-            y: top.y - (leftToTop.y / leftToTopLength) * cornerRadius
-        )
-        
-        let rightCornerStart = CGPoint(
-            x: bottomRight.x - (topToRight.x / topToRightLength) * cornerRadius,
-            y: bottomRight.y - (topToRight.y / topToRightLength) * cornerRadius
-        )
-        let rightCornerEnd = CGPoint(
-            x: bottomRight.x + (rightToLeft.x / rightToLeftLength) * cornerRadius,
-            y: bottomRight.y + (rightToLeft.y / rightToLeftLength) * cornerRadius
-        )
-        
-        let leftCornerStart = CGPoint(
-            x: bottomLeft.x - (rightToLeft.x / rightToLeftLength) * cornerRadius,
-            y: bottomLeft.y - (rightToLeft.y / rightToLeftLength) * cornerRadius
-        )
-        let leftCornerEnd = CGPoint(
-            x: bottomLeft.x + (leftToTop.x / leftToTopLength) * cornerRadius,
-            y: bottomLeft.y + (leftToTop.y / leftToTopLength) * cornerRadius
-        )
-        
-        // Draw the path
-        path.move(to: topCornerStart)
-        path.addLine(to: rightCornerStart)
-        path.addQuadCurve(to: rightCornerEnd, control: bottomRight)
-        path.addLine(to: leftCornerStart)
-        path.addQuadCurve(to: leftCornerEnd, control: bottomLeft)
-        path.addLine(to: topCornerEnd)
-        path.addQuadCurve(to: topCornerStart, control: top)
-        
-        return path
-    }
-}
-
 struct RoundedTriangle: View {
+    var fillColor: Color
+    
     var body: some View {
-        Triangle()
-            .clipShape(
-                RoundedRectangle(cornerRadius: 3)
-            )
+        Image("Triangle")
+            .renderingMode(.template)
+            .resizable()
+            .aspectRatio(1.0, contentMode: .fit)
+            .foregroundColor(fillColor)
+            .clipShape(RoundedRectangle(cornerRadius: 3))
     }
 }
 
@@ -106,10 +47,12 @@ struct TriGridView: View {
     
     private func calculateGridParameters(for size: CGSize) -> (columns: Int, triangleSize: CGFloat, spacing: CGFloat) {
         let bottomSpace: CGFloat = 60
+        let topSpace: CGFloat = 20 // Add top padding
+        let spacing: CGFloat = 4 // Add spacing between triangles
         
-        // Use full width and calculate available height
+        // Use full width and calculate available height accounting for both top and bottom padding
         let availableWidth = size.width
-        let availableHeight = size.height - bottomSpace
+        let availableHeight = size.height - bottomSpace - topSpace
         
         // Calculate optimal number of columns based on aspect ratio
         let aspectRatio = availableWidth / availableHeight
@@ -119,16 +62,13 @@ struct TriGridView: View {
             // Base column count on aspect ratio and total items
             let baseColumns = Int(ceil(sqrt(Double(totalDays) * aspectRatio)))
             let columns = min(max(baseColumns, 10), 25) // Keep columns between 10 and 25
-            let rows = ceil(Double(totalDays) / Double(columns))
+            let _ = ceil(Double(totalDays) / Double(columns))
             
-            // Calculate sizes to fit both width and height
-            let widthBasedSize = availableWidth / CGFloat(columns)
-            let heightBasedSize = availableHeight / (CGFloat(rows) * 0.866)
+            // Calculate triangle size accounting for spacing
+            let totalSpacing = spacing * CGFloat(columns - 1)
+            let triangleSize = (availableWidth - totalSpacing) / CGFloat(columns)
             
-            // Use the smaller size to ensure it fits both dimensions
-            let triangleSize = min(widthBasedSize, heightBasedSize)
-            
-            return (columns, triangleSize, 0)
+            return (columns, triangleSize, spacing)
         }
         
         // For fewer triangles, optimize for both dimensions
@@ -142,21 +82,19 @@ struct TriGridView: View {
         for cols in 1...maxColumns {
             let rows = Int(ceil(Double(totalDays) / Double(cols)))
             
-            // Calculate sizes to fit both width and height
-            let widthBasedSize = availableWidth / CGFloat(cols)
-            let heightBasedSize = availableHeight / (CGFloat(rows) * 0.866)
-            
-            let triangleSize = min(widthBasedSize, heightBasedSize)
+            // Calculate triangle size accounting for spacing
+            let totalSpacing = spacing * CGFloat(cols - 1)
+            let triangleSize = (availableWidth - totalSpacing) / CGFloat(cols)
             
             // Calculate total used space and wasted space
-            let usedWidth = CGFloat(cols) * triangleSize
-            let usedHeight = CGFloat(rows) * triangleSize * 0.866
-            let wastedSpace = abs(availableWidth - usedWidth) + abs(availableHeight - usedHeight)
+            let totalVerticalSpacing = spacing * CGFloat(rows - 1)
+            let usedHeight = (CGFloat(rows) * triangleSize * 0.866) + totalVerticalSpacing
+            let wastedSpace = abs(availableHeight - usedHeight)
             
-            // If this layout wastes less space and maintains good proportions
+            // If this layout wastes less vertical space
             if wastedSpace < minWastedSpace {
                 minWastedSpace = wastedSpace
-                bestLayout = (cols, triangleSize, 0)
+                bestLayout = (cols, triangleSize, spacing)
             }
         }
         
@@ -182,11 +120,10 @@ struct TriGridView: View {
         let date = dateForIndex(index)
         let isSelected = selectedDate == date
         
-        RoundedTriangle()
-            .foregroundColor(isSelected ? settings.displayColor : (isDaysLeft ?
+        RoundedTriangle(fillColor: isSelected ? settings.displayColor : (isDaysLeft ?
                 getDaysLeftColor() :
                 settings.displayColor))
-            .aspectRatio(1.15, contentMode: .fit)
+            .aspectRatio(1.0, contentMode: .fill)
             .onTapGesture {
                 handleTap(index: index, date: date)
             }
@@ -198,7 +135,7 @@ struct TriGridView: View {
             
             ZStack(alignment: .topLeading) {
                 VStack(alignment: .leading, spacing: 0) {
-                    LazyVGrid(columns: Array(repeating: .init(.fixed(gridParams.triangleSize), spacing: 0), count: gridParams.columns), spacing: 0) {
+                    LazyVGrid(columns: Array(repeating: .init(.fixed(gridParams.triangleSize), spacing: gridParams.spacing), count: gridParams.columns), spacing: gridParams.spacing) {
                         ForEach(0..<totalDays, id: \.self) { index in
                             gridItem(index: index)
                                 .frame(width: gridParams.triangleSize, height: gridParams.triangleSize)

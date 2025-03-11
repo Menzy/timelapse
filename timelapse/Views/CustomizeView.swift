@@ -1,5 +1,68 @@
 import SwiftUI
 
+struct Triangle: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let width = rect.width
+        let height = width * 0.866 // Height for equilateral triangle
+        let cornerRadius: CGFloat = width * 0.25 // 25% of width for corner radius
+        
+        // Calculate points
+        let top = CGPoint(x: width/2, y: 0)
+        let bottomRight = CGPoint(x: width, y: height)
+        let bottomLeft = CGPoint(x: 0, y: height)
+        
+        // Calculate vectors for corner rounding
+        let topToRight = CGPoint(x: bottomRight.x - top.x, y: bottomRight.y - top.y)
+        let rightToLeft = CGPoint(x: bottomLeft.x - bottomRight.x, y: bottomLeft.y - bottomRight.y)
+        let leftToTop = CGPoint(x: top.x - bottomLeft.x, y: top.y - bottomLeft.y)
+        
+        // Normalize vectors
+        let topToRightLength = sqrt(topToRight.x * topToRight.x + topToRight.y * topToRight.y)
+        let rightToLeftLength = sqrt(rightToLeft.x * rightToLeft.x + rightToLeft.y * rightToLeft.y)
+        let leftToTopLength = sqrt(leftToTop.x * leftToTop.x + leftToTop.y * leftToTop.y)
+        
+        // Calculate corner points
+        let topCornerStart = CGPoint(
+            x: top.x + (topToRight.x / topToRightLength) * cornerRadius,
+            y: top.y + (topToRight.y / topToRightLength) * cornerRadius
+        )
+        let topCornerEnd = CGPoint(
+            x: top.x - (leftToTop.x / leftToTopLength) * cornerRadius,
+            y: top.y - (leftToTop.y / leftToTopLength) * cornerRadius
+        )
+        
+        let rightCornerStart = CGPoint(
+            x: bottomRight.x - (topToRight.x / topToRightLength) * cornerRadius,
+            y: bottomRight.y - (topToRight.y / topToRightLength) * cornerRadius
+        )
+        let rightCornerEnd = CGPoint(
+            x: bottomRight.x + (rightToLeft.x / rightToLeftLength) * cornerRadius,
+            y: bottomRight.y + (rightToLeft.y / rightToLeftLength) * cornerRadius
+        )
+        
+        let leftCornerStart = CGPoint(
+            x: bottomLeft.x - (rightToLeft.x / rightToLeftLength) * cornerRadius,
+            y: bottomLeft.y - (rightToLeft.y / rightToLeftLength) * cornerRadius
+        )
+        let leftCornerEnd = CGPoint(
+            x: bottomLeft.x + (leftToTop.x / leftToTopLength) * cornerRadius,
+            y: bottomLeft.y + (leftToTop.y / leftToTopLength) * cornerRadius
+        )
+        
+        // Draw the path
+        path.move(to: topCornerStart)
+        path.addLine(to: rightCornerStart)
+        path.addQuadCurve(to: rightCornerEnd, control: bottomRight)
+        path.addLine(to: leftCornerStart)
+        path.addQuadCurve(to: leftCornerEnd, control: bottomLeft)
+        path.addLine(to: topCornerEnd)
+        path.addQuadCurve(to: topCornerStart, control: top)
+        
+        return path
+    }
+}
+
 struct ThemeCircleView: View {
     let style: BackgroundStyle
     let isSelected: Bool
