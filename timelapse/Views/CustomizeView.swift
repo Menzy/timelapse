@@ -66,13 +66,14 @@ struct Triangle: Shape {
 struct ThemeCircleView: View {
     let style: BackgroundStyle
     let isSelected: Bool
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
         VStack {
             ZStack {
                 // Selection border
                 Circle()
-                    .stroke(isSelected ? Color.blue : Color.gray.opacity(0.3), lineWidth: 2)
+                    .stroke(isSelected ? (colorScheme == .dark ? Color.white : Color.black) : Color.gray.opacity(0.3), lineWidth: 2)
                     .frame(maxWidth: 60, maxHeight: 60)
                 
                 if style == .device {
@@ -143,9 +144,10 @@ struct StylePreviewView: View {
     let style: TimeDisplayStyle
     let isSelected: Bool
     @EnvironmentObject var globalSettings: GlobalSettings
+    @Environment(\.colorScheme) private var colorScheme
     
     var iconColor: Color {
-        return Color(hex: "343434")
+        return isSelected ? (colorScheme == .dark ? .white : .black) : Color(hex: "343434")
     }
     
     var gradientStroke: LinearGradient {
@@ -161,7 +163,7 @@ struct StylePreviewView: View {
             ZStack {
                 // Selection border
                 Circle()
-                    .stroke(isSelected ? Color.blue : Color.gray.opacity(0.3), lineWidth: 2)
+                    .stroke(isSelected ? (colorScheme == .dark ? Color.white : Color.black) : Color.gray.opacity(0.3), lineWidth: 2)
                     .frame(maxWidth: 60, maxHeight: 60)
                 
                 // Background fill
@@ -204,6 +206,7 @@ struct StylePreviewView: View {
                     .frame(maxWidth: 34, maxHeight: 34)
                 case .countdown:
                     Text("365")
+                        .font(.custom("Galgo-Bold", size: 40))
                         .font(.system(size: 17, weight: .bold))
                         .foregroundColor(iconColor)
                         .frame(maxWidth: 34, maxHeight: 34)

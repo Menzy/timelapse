@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // Custom card background shape with cutout
 fileprivate struct CardBackground: Shape {
@@ -16,6 +17,27 @@ fileprivate struct CardBackground: Shape {
         path.addPath(Path(mainShape.cgPath))
         
         return path
+    }
+}
+
+// Haptic feedback manager to handle different types of feedback
+fileprivate class HapticFeedback {
+    static func impact(style: UIImpactFeedbackGenerator.FeedbackStyle) {
+        let generator = UIImpactFeedbackGenerator(style: style)
+        generator.prepare()
+        generator.impactOccurred()
+    }
+    
+    static func success() {
+        let generator = UINotificationFeedbackGenerator()
+        generator.prepare()
+        generator.notificationOccurred(.success)
+    }
+    
+    static func selection() {
+        let generator = UISelectionFeedbackGenerator()
+        generator.prepare()
+        generator.selectionChanged()
     }
 }
 
@@ -159,14 +181,22 @@ struct TimeCard: View {
                 }
             }
         )
-
-        .onLongPressGesture(minimumDuration: 0.3) {
+        // Add visual feedback when pressed
+        .scaleEffect(isPressed ? 0.96 : 1.0)
+        .animation(.spring(response: 0.3), value: isPressed)
+        .onLongPressGesture(minimumDuration: 0.5) {
             if title != String(Calendar.current.component(.year, from: Date())) {
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                // Strong haptic feedback when long press completes
+                HapticFeedback.impact(style: .heavy)
+                HapticFeedback.success()
                 showingEditSheet = true
             }
         } onPressingChanged: { isPressing in
             if title != String(Calendar.current.component(.year, from: Date())) {
+                if isPressing {
+                    // Light haptic feedback when touch begins
+                    HapticFeedback.impact(style: .light)
+                }
                 isPressed = isPressing
             }
         }
