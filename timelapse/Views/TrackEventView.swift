@@ -78,11 +78,9 @@ struct TrackEventView: View {
                         }) {
                             Text("Save")
                                 .fontWeight(.semibold)
-                                .foregroundColor(.white)
+                                .foregroundColor(eventTitle.isEmpty ? Color.gray : Color.black)
                                 .frame(maxWidth: .infinity)
                                 .padding()
-                                .background(eventTitle.isEmpty ? Color.gray : Color(hex: "333333"))
-                                .cornerRadius(10)
                         }
                         .disabled(eventTitle.isEmpty)
                     }
