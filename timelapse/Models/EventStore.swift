@@ -1,4 +1,5 @@
 import Foundation
+import WidgetKit
 
 class EventStore: ObservableObject {
     @Published var events: [Event] = []
@@ -41,6 +42,9 @@ class EventStore: ObservableObject {
                 
                 // Save all events for widget access
                 saveAllEventsForWidget()
+                
+                // Reload widget timeline
+                WidgetCenter.shared.reloadAllTimelines()
             }
         }
     }
@@ -61,6 +65,9 @@ class EventStore: ObservableObject {
             
             // Update all events for widget access
             saveAllEventsForWidget()
+            
+            // Reload widget timeline
+            WidgetCenter.shared.reloadAllTimelines()
         }
     }
     
@@ -81,6 +88,9 @@ class EventStore: ObservableObject {
         
         // Update all events for widget access
         saveAllEventsForWidget()
+        
+        // Reload widget timeline
+        WidgetCenter.shared.reloadAllTimelines()
     }
     
     private func loadEvents() {

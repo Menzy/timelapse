@@ -69,21 +69,21 @@ struct ConfigurationAppIntent: WidgetConfigurationIntent {
     var selectedEvent: EventEntity?
     
     // Second event selection - only used for rectangular/medium widgets
-    @Parameter(title: "Secondary Event (Medium Widget Only)", default: nil)
+    @Parameter(title: "Second Event (Double Display)", default: nil)
     var secondaryEvent: EventEntity?
     
     @Parameter(title: "Display Style", default: .dotPixels)
     var displayStyle: DisplayStyleChoice
     
     // Make it very clear this is only for medium widgets
-    @Parameter(title: "Second Display Style (Medium Widget Only)", default: .progressBar)
+    @Parameter(title: "Second Display Style (Double Display)", default: .progressBar)
     var secondaryDisplayStyle: DisplayStyleChoice
     
     @Parameter(title: "Primary Display Color", default: .orange)
     var displayColor: ColorChoice
     
     // Add a secondary display color option
-    @Parameter(title: "Secondary Display Color (Medium Widget Only)", default: .blue)
+    @Parameter(title: "Secondary Display Color (Double Display)", default: .blue)
     var secondaryDisplayColor: ColorChoice
     
     @Parameter(title: "Background Theme", default: .dark)

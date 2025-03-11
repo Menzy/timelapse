@@ -13,17 +13,48 @@ struct DotPixelsWidgetView: View {
         let availableHeight = size.height - (family == .systemSmall ? 10 : 20)
         let aspectRatio = availableWidth / availableHeight
         
-        // Calculate optimal number of columns based on aspect ratio and total items
-        let baseColumns = Int(ceil(sqrt(Double(totalDays) * aspectRatio)))
-        let columns = min(max(baseColumns, 4), 25) // Keep columns between 4 and 25
-        let rows = Int(ceil(Double(totalDays) / Double(columns)))
+        // For large numbers (>100), use dynamic column calculation
+        if totalDays > 100 {
+            let baseColumns = Int(ceil(sqrt(Double(totalDays) * aspectRatio)))
+            let columns = min(max(baseColumns, 4), 25) // Keep columns between 4 and 25
+            let rows = Int(ceil(Double(totalDays) / Double(columns)))
+            
+            let dotSizeByWidth = availableWidth / CGFloat(columns)
+            let dotSizeByHeight = availableHeight / CGFloat(rows)
+            let dotSize = min(dotSizeByWidth, dotSizeByHeight)
+            
+            return (columns, dotSize)
+        }
         
-        // Calculate dot size to maximize space usage
-        let dotSizeByWidth = availableWidth / CGFloat(columns)
-        let dotSizeByHeight = availableHeight / CGFloat(rows)
-        let dotSize = min(dotSizeByWidth, dotSizeByHeight)
+        // For fewer dots, optimize for both dimensions
+        var bestLayout = (columns: 1, dotSize: CGFloat(0))
+        var minWastedSpace = CGFloat.infinity
         
-        return (columns, dotSize)
+        // Calculate maximum columns based on aspect ratio
+        let maxColumns = Int(ceil(sqrt(Double(totalDays) * aspectRatio)))
+        
+        // Try different column counts
+        for cols in 1...maxColumns {
+            let rows = Int(ceil(Double(totalDays) / Double(cols)))
+            
+            // Calculate sizes to fit both width and height
+            let dotSizeByWidth = availableWidth / CGFloat(cols)
+            let dotSizeByHeight = availableHeight / CGFloat(rows)
+            let dotSize = min(dotSizeByWidth, dotSizeByHeight)
+            
+            // Calculate total used space and wasted space
+            let usedWidth = CGFloat(cols) * dotSize
+            let usedHeight = CGFloat(rows) * dotSize
+            let wastedSpace = abs(availableWidth - usedWidth) + abs(availableHeight - usedHeight)
+            
+            // If this layout wastes less space
+            if wastedSpace < minWastedSpace {
+                minWastedSpace = wastedSpace
+                bestLayout = (cols, dotSize)
+            }
+        }
+        
+        return bestLayout
     }
     
     var body: some View {
