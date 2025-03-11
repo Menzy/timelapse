@@ -12,5 +12,18 @@
 		<string>mailto</string>
 		<string>https</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.wanmenzy.timelapse</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>timelapse</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

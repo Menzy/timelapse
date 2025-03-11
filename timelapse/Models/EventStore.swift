@@ -1,6 +1,5 @@
 import Foundation
 import WidgetKit
-
 class EventStore: ObservableObject {
     @Published var events: [Event] = []
     private let eventsKey = "savedEvents"
@@ -16,6 +15,14 @@ class EventStore: ObservableObject {
         loadEvents()
         loadDisplaySettings()
         addDefaultYearTrackerIfNeeded()
+    }
+    
+    public func getEvents() -> [Event] {
+        return events
+    }
+        
+    func findEventIndex(withId id: UUID) -> Int? {
+        return events.firstIndex(where: { $0.id == id })
     }
     
     func saveEvent(_ event: Event) {

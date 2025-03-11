@@ -13,7 +13,6 @@ struct ContentView: View {
     @StateObject private var globalSettings = GlobalSettings()
     @Environment(\.colorScheme) private var colorScheme
     @State private var currentDate = Date()
-    @State private var selectedTab = 0
     @State private var yearTrackerSettings: DisplaySettings = DisplaySettings(backgroundStyle: .dark)
   
     private func settings(for event: Event) -> DisplaySettings {
@@ -107,11 +106,11 @@ struct ContentView: View {
     private var timelineContent: some View {
         VStack(spacing: 0) {
             if globalSettings.showGridLayout {
-                TimelineGridView(eventStore: eventStore, yearTrackerSettings: yearTrackerSettings, selectedTab: $selectedTab)
+                TimelineGridView(eventStore: eventStore, yearTrackerSettings: yearTrackerSettings, selectedTab: $navigationState.selectedTab)
                     .environmentObject(globalSettings)
             } else {
                 GeometryReader { geometry in
-                    TabView(selection: $selectedTab) {
+                    TabView(selection: $navigationState.selectedTab) {
                         ForEach(Array(displayedEvents.enumerated()), id: \.element.id) { index, event in
                             let progress = event.progressDetails()
                             let eventSettings = settings(for: event)
@@ -124,7 +123,7 @@ struct ContentView: View {
                                 daysLeft: progress.daysLeft,
                                 totalDays: progress.totalDays,
                                 isGridView: false,
-                                selectedTab: $selectedTab
+                                selectedTab: $navigationState.selectedTab
                             )
                             .frame(width: geometry.size.width * 0.76)
                             .offset(y: -40) // Move the card up by 40 points
@@ -134,9 +133,9 @@ struct ContentView: View {
                     }
                 }
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-                .onChange(of: selectedTab) { oldValue, newValue in
+                .onChange(of: navigationState.selectedTab) { oldValue, newValue in
                     withAnimation {
-                        selectedTab = min(max(newValue, 0), displayedEvents.count - 1)
+                        navigationState.selectedTab = min(max(newValue, 0), displayedEvents.count - 1)
                     }
                 }
             }
@@ -149,18 +148,18 @@ struct ContentView: View {
             if !globalSettings.showGridLayout {
                 HStack(spacing: 6) {
                     ForEach(0..<displayedEvents.count, id: \.self) { index in
-                        let distance = abs(selectedTab - index)
+                        let distance = abs(navigationState.selectedTab - index)
                         let size: CGFloat = distance == 0 ? 6 : max(4, 6 - CGFloat(distance))
                         let opacity: Double = distance == 0 ? 1 : max(0.3, 1 - Double(distance) * 0.2)
                         
                         Circle()
-                            .fill(selectedTab == index ? 
+                            .fill(navigationState.selectedTab == index ? 
                                  (globalSettings.effectiveBackgroundStyle == .light ? Color.black : Color.white) :
                                  (globalSettings.effectiveBackgroundStyle == .light ? Color.black.opacity(opacity) : Color.white.opacity(opacity)))
                             .frame(width: size, height: size)
                     }
                 }
-                .animation(.easeInOut, value: selectedTab)
+                .animation(.easeInOut, value: navigationState.selectedTab)
                 .padding(.bottom, 8)
             }
             
@@ -188,13 +187,13 @@ struct ContentView: View {
             globalSettings.updateSystemAppearance(colorScheme == .dark)
         }
         .sheet(isPresented: $navigationState.showingCustomize) {
-            if let event = displayedEvents[safe: selectedTab] {
+            if let event = displayedEvents[safe: navigationState.selectedTab] {
                 CustomizeView(settings: settings(for: event), eventStore: eventStore)
                     .environmentObject(globalSettings)
             }
         }
         .sheet(isPresented: $navigationState.showingTrackEvent) {
-            TrackEventView(eventStore: eventStore, selectedTab: $selectedTab)
+            TrackEventView(eventStore: eventStore, selectedTab: $navigationState.selectedTab)
         }
         .sheet(isPresented: $navigationState.showingSettings) {
             SettingsView()

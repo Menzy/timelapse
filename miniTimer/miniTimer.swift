@@ -14,6 +14,7 @@ class EventDataProvider {
         let daysLeft: Int
         let totalDays: Int
         let title: String
+        let eventId: UUID? // Added to store the event ID for deep linking
     }
     
     static func getEventData(eventId: UUID?) -> EventData {
@@ -28,7 +29,8 @@ class EventDataProvider {
                 return EventData(
                     daysLeft: details.daysLeft,
                     totalDays: details.totalDays,
-                    title: selectedEvent.title
+                    title: selectedEvent.title,
+                    eventId: eventId
                 )
             }
         }
@@ -41,7 +43,8 @@ class EventDataProvider {
             return EventData(
                 daysLeft: details.daysLeft,
                 totalDays: details.totalDays,
-                title: event.title
+                title: event.title,
+                eventId: event.id
             )
         }
         
@@ -52,7 +55,7 @@ class EventDataProvider {
         let endOfYear = calendar.date(from: DateComponents(year: year + 1, month: 1, day: 1))!
         let daysLeft = calendar.dateComponents([.day], from: today, to: endOfYear).day ?? 365
         
-        return EventData(daysLeft: daysLeft, totalDays: 365, title: "\(year)")
+        return EventData(daysLeft: daysLeft, totalDays: 365, title: "\(year)", eventId: nil)
     }
 }
 
@@ -60,7 +63,7 @@ struct Provider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> SimpleEntry {
         let primaryData = EventDataProvider.getEventData(eventId: nil)
         let secondaryData = EventDataProvider.getEventData(eventId: nil)
-        
+
         return SimpleEntry(
             date: Date(),
             primaryEventData: primaryData,
@@ -68,11 +71,11 @@ struct Provider: AppIntentTimelineProvider {
             configuration: ConfigurationAppIntent()
         )
     }
-    
+
     func snapshot(for configuration: ConfigurationAppIntent, in context: Context) async -> SimpleEntry {
         let primaryData = EventDataProvider.getEventData(eventId: configuration.selectedEvent?.id)
         let secondaryData = EventDataProvider.getEventData(eventId: configuration.secondaryEvent?.id)
-        
+
         return SimpleEntry(
             date: Date(),
             primaryEventData: primaryData,
@@ -80,18 +83,18 @@ struct Provider: AppIntentTimelineProvider {
             configuration: configuration
         )
     }
-    
+
     func timeline(for configuration: ConfigurationAppIntent, in context: Context) async -> Timeline<SimpleEntry> {
         let primaryData = EventDataProvider.getEventData(eventId: configuration.selectedEvent?.id)
         let secondaryData = EventDataProvider.getEventData(eventId: configuration.secondaryEvent?.id)
-        
+
         let entry = SimpleEntry(
             date: Date(),
             primaryEventData: primaryData,
             secondaryEventData: secondaryData,
             configuration: configuration
         )
-        
+
         // Update at midnight
         let calendar = Calendar.current
         let today = Date()
@@ -111,15 +114,21 @@ struct miniTimerEntryView : View {
     var entry: Provider.Entry
     @Environment(\.widgetFamily) var family
     @Environment(\.colorScheme) var colorScheme
-    
+
     private var textColor: Color {
         entry.configuration.backgroundTheme == .dark ? .white : .black
     }
-    
+
     private var containerPadding: CGFloat {
         1 // Much smaller padding for a more compact widget design
     }
-    
+
+    // Create URL for deep linking to the specific event
+    private func createDeepLink(for eventId: UUID?) -> URL? {
+        guard let eventId = eventId else { return nil }
+        return URL(string: "timelapse://event/\(eventId.uuidString)")
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             // Main content area with display style
@@ -159,30 +168,29 @@ struct miniTimerEntryView : View {
                             }
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        
+                        .widgetURL(createDeepLink(for: entry.primaryEventData.eventId))
+
                         // Primary info bar
                         HStack {
                             Text(entry.primaryEventData.title)
                                 .font(.system(size: 8))
                                 .foregroundColor(textColor)
                                 .lineLimit(1)
-                            
+
                             Spacer()
-                            
+
                             HStack(spacing: 4) {
                                 Text("\(entry.primaryEventData.daysLeft)")
                                     .font(.system(size: 8))
-                                
+
                                 Text(entry.primaryEventData.daysLeft == 1 ? "day left" : "days left")
                                     .font(.system(size: 8))
                             }
                             .foregroundColor(textColor)
                         }
-                        // .padding(.horizontal, 8)
-                        // .padding(.vertical, 4)
                     }
                     .accentColor(entry.configuration.displayColor.color)
-                    
+
                     // Secondary display - Right side
                     VStack(spacing: 0) {
                         ZStack {
@@ -217,26 +225,27 @@ struct miniTimerEntryView : View {
                             }
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        
+                        .widgetURL(createDeepLink(for: entry.secondaryEventData.eventId))
+
                         // Secondary info bar
                         HStack {
                             Text(entry.secondaryEventData.title)
                                 .font(.system(size: 8))
                                 .foregroundColor(textColor)
                                 .lineLimit(1)
-                            
+
                             Spacer()
-                            
+
                             HStack(spacing: 4) {
                                 Text("\(entry.secondaryEventData.daysLeft)")
                                     .font(.system(size: 8))
-                                
+
                                 Text(entry.secondaryEventData.daysLeft == 1 ? "day left" : "days left")
                                     .font(.system(size: 8))
                             }
                             .foregroundColor(textColor)
                         }
-                        
+
                     }
                     .accentColor(entry.configuration.secondaryDisplayColor.color)
                 }
@@ -275,8 +284,9 @@ struct miniTimerEntryView : View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .accentColor(entry.configuration.displayColor.color)
+                .widgetURL(createDeepLink(for: entry.primaryEventData.eventId))
             }
-            
+
             // Bottom info bar - similar to main app (only for non-medium widgets since medium widgets now have in-place labels)
             if family != .systemMedium && (family != .systemSmall || entry.configuration.displayStyle != .countdown) {
                 HStack {
@@ -284,13 +294,13 @@ struct miniTimerEntryView : View {
                         .font(.system(size: family == .systemSmall ? 8 : 10))
                         .foregroundColor(textColor)
                         .lineLimit(1)
-                    
+
                     Spacer()
-                    
+
                     HStack(spacing: family == .systemSmall ? 2 : 4) {
                         Text("\(entry.primaryEventData.daysLeft)")
                             .font(.system(size: family == .systemSmall ? 8 : 10))
-                        
+
                         Text(entry.primaryEventData.daysLeft == 1 ? "day left" : "days left")
                             .font(.system(size: family == .systemSmall ? 8 : 10))
                     }
@@ -330,8 +340,8 @@ extension ConfigurationAppIntent {
 #Preview(as: .systemSmall) {
     miniTimer()
 } timeline: {
-    let primaryData = EventDataProvider.EventData(daysLeft: 300, totalDays: 365, title: "2025")
-    let secondaryData = EventDataProvider.EventData(daysLeft: 150, totalDays: 180, title: "Project X")
+    let primaryData = EventDataProvider.EventData(daysLeft: 300, totalDays: 365, title: "2025", eventId: UUID())
+    let secondaryData = EventDataProvider.EventData(daysLeft: 150, totalDays: 180, title: "Project X", eventId: UUID())
     
     SimpleEntry(date: .now, primaryEventData: primaryData, secondaryEventData: secondaryData, configuration: .preview)
 }
@@ -339,8 +349,8 @@ extension ConfigurationAppIntent {
 #Preview(as: .systemMedium) {
     miniTimer()
 } timeline: {
-    let primaryData = EventDataProvider.EventData(daysLeft: 300, totalDays: 365, title: "2025")
-    let secondaryData = EventDataProvider.EventData(daysLeft: 150, totalDays: 180, title: "Project X")
-    
+    let primaryData = EventDataProvider.EventData(daysLeft: 300, totalDays: 365, title: "2025", eventId: UUID())
+    let secondaryData = EventDataProvider.EventData(daysLeft: 150, totalDays: 180, title: "Project X", eventId: UUID())
+
     SimpleEntry(date: .now, primaryEventData: primaryData, secondaryEventData: secondaryData, configuration: .preview)
 }
