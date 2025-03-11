@@ -8,26 +8,78 @@
 import WidgetKit
 import SwiftUI
 
-struct Provider: AppIntentTimelineProvider {
-    func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date(), daysLeft: 365, configuration: ConfigurationAppIntent())
-    }
-
-    func snapshot(for configuration: ConfigurationAppIntent, in context: Context) async -> SimpleEntry {
-        SimpleEntry(date: Date(), daysLeft: 365, configuration: configuration)
-    }
-    
-    func timeline(for configuration: ConfigurationAppIntent, in context: Context) async -> Timeline<SimpleEntry> {
-        // Calculate days left in the year
+// Renamed class to better reflect its purpose - fetching event data for the widget
+class EventDataProvider {
+    static func getEventData(eventId: UUID?) -> (daysLeft: Int, totalDays: Int, title: String) {
+        // First try to find the specific selected event
+        if let eventId = eventId {
+            if let data = UserDefaults.shared?.data(forKey: "allEvents"),
+               let events = try? JSONDecoder().decode([Event].self, from: data),
+               let selectedEvent = events.first(where: { $0.id == eventId }) {
+                
+                // Use the progressDetails method to calculate days left and total days
+                let details = selectedEvent.progressDetails()
+                return (details.daysLeft, details.totalDays, selectedEvent.title)
+            }
+        }
+        
+        // If no event ID specified or event not found, fall back to year tracker
+        if let data = UserDefaults.shared?.data(forKey: "yearTrackerEvent"),
+           let event = try? JSONDecoder().decode(Event.self, from: data) {
+            // Use the progressDetails method to calculate days left and total days
+            let details = event.progressDetails()
+            return (details.daysLeft, details.totalDays, event.title)
+        }
+        
+        // Ultimate fallback to calculating days left in the current year
         let calendar = Calendar.current
         let today = Date()
         let year = calendar.component(.year, from: today)
         let endOfYear = calendar.date(from: DateComponents(year: year + 1, month: 1, day: 1))!
-        let daysLeft = calendar.dateComponents([.day], from: today, to: endOfYear).day!
+        let daysLeft = calendar.dateComponents([.day], from: today, to: endOfYear).day ?? 365
         
-        let entry = SimpleEntry(date: today, daysLeft: daysLeft, configuration: configuration)
+        return (daysLeft, 365, "\(year)")
+    }
+}
+
+struct Provider: AppIntentTimelineProvider {
+    func placeholder(in context: Context) -> SimpleEntry {
+        let eventData = EventDataProvider.getEventData(eventId: nil)
+        return SimpleEntry(
+            date: Date(), 
+            daysLeft: eventData.daysLeft, 
+            totalDays: eventData.totalDays,
+            title: eventData.title, 
+            configuration: ConfigurationAppIntent()
+        )
+    }
+
+    func snapshot(for configuration: ConfigurationAppIntent, in context: Context) async -> SimpleEntry {
+        let eventData = EventDataProvider.getEventData(eventId: configuration.selectedEvent?.id)
+        return SimpleEntry(
+            date: Date(), 
+            daysLeft: eventData.daysLeft, 
+            totalDays: eventData.totalDays,
+            title: eventData.title, 
+            configuration: configuration
+        )
+    }
+    
+    func timeline(for configuration: ConfigurationAppIntent, in context: Context) async -> Timeline<SimpleEntry> {
+        // Get data from the shared container for the selected event
+        let eventData = EventDataProvider.getEventData(eventId: configuration.selectedEvent?.id)
+        
+        let entry = SimpleEntry(
+            date: Date(), 
+            daysLeft: eventData.daysLeft, 
+            totalDays: eventData.totalDays,
+            title: eventData.title, 
+            configuration: configuration
+        )
         
         // Update at midnight
+        let calendar = Calendar.current
+        let today = Date()
         let midnight = calendar.startOfDay(for: calendar.date(byAdding: .day, value: 1, to: today)!)
         return Timeline(entries: [entry], policy: .after(midnight))
     }
@@ -36,10 +88,11 @@ struct Provider: AppIntentTimelineProvider {
 struct SimpleEntry: TimelineEntry {
     let date: Date
     let daysLeft: Int
+    let totalDays: Int
+    let title: String
     let configuration: ConfigurationAppIntent
     
-    var daysSpent: Int { 365 - daysLeft }
-    var totalDays: Int { 365 }
+    var daysSpent: Int { totalDays - daysLeft }
 }
 
 struct miniTimerEntryView : View {
@@ -110,9 +163,10 @@ struct miniTimerEntryView : View {
             // Bottom info bar - similar to main app
             if family != .systemSmall || entry.configuration.displayStyle != .countdown {
                 HStack {
-                    Text(String(Calendar.current.component(.year, from: Date())))
+                    Text(entry.title)
                         .font(.system(size: family == .systemSmall ? 8 : 10, weight: .medium))
                         .foregroundColor(textColor)
+                        .lineLimit(1)
                     
                     Spacer()
                     
@@ -140,8 +194,8 @@ struct miniTimer: Widget {
             miniTimerEntryView(entry: entry)
                 .containerBackground(entry.configuration.backgroundTheme == .light ? .white : .black, for: .widget)
         }
-        .configurationDisplayName("Year Tracker")
-        .description("Track the days of the year with various display styles.")
+        .configurationDisplayName("Event Tracker")
+        .description("Track the days of your events with various display styles.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
@@ -159,5 +213,5 @@ extension ConfigurationAppIntent {
 #Preview(as: .systemSmall) {
     miniTimer()
 } timeline: {
-    SimpleEntry(date: .now, daysLeft: 300, configuration: .preview)
+    SimpleEntry(date: .now, daysLeft: 300, totalDays: 365, title: "2025", configuration: .preview)
 }
