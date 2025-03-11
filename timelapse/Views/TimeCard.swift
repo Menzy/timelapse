@@ -118,7 +118,7 @@ struct TimeCard: View {
                 HStack(spacing: 4) {
                     Text(settings.showPercentage 
                          ? String(format: "%.0f%%", percentageLeft) 
-                         : String(daysLeft))
+                         : String(showingDaysLeft ? daysLeft : daysSpent))
                         .font(.custom("Inter", size: isGridView ? 10 : 12))
                         .contentTransition(.numericText())
                     
@@ -126,6 +126,11 @@ struct TimeCard: View {
                         .font(.custom("Inter", size: isGridView ? 10 : 12))
                 }
                 .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .white : .black)
+                .onTapGesture {
+                    withAnimation(.spring()) {
+                        showingDaysLeft.toggle()
+                    }
+                }
             }
             .padding(.horizontal, isGridView ? 12 : 14)
             .padding(.bottom, 15)
