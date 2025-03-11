@@ -76,14 +76,14 @@ struct ConfigurationAppIntent: WidgetConfigurationIntent {
     var displayStyle: DisplayStyleChoice
     
     // Make it very clear this is only for medium widgets
-    @Parameter(title: "Second Display Style (Double Display)", default: .progressBar)
+    @Parameter(title: "Display Style (Double Display)", default: .progressBar)
     var secondaryDisplayStyle: DisplayStyleChoice
     
-    @Parameter(title: "Primary Display Color", default: .orange)
+    @Parameter(title: "Display Color", default: .orange)
     var displayColor: ColorChoice
     
     // Add a secondary display color option
-    @Parameter(title: "Secondary Display Color (Double Display)", default: .blue)
+    @Parameter(title: "Display Color (Double Display)", default: .blue)
     var secondaryDisplayColor: ColorChoice
     
     @Parameter(title: "Background Theme", default: .dark)
