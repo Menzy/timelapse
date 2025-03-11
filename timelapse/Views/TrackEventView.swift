@@ -32,10 +32,6 @@ struct TrackEventView: View {
                 Form {
                     Section {
                         TextField("Add your event name", text: $eventTitle)
-                        DatePicker("End Date", 
-                                 selection: $eventDate,
-                                 in: Date()...,
-                                 displayedComponents: [.date])
                         
                         Toggle("Use Custom Start Date", isOn: $useCustomStartDate)
                         
@@ -45,6 +41,11 @@ struct TrackEventView: View {
                                      in: ...eventDate,
                                      displayedComponents: [.date])
                         }
+                        
+                        DatePicker("End Date", 
+                                 selection: $eventDate,
+                                 in: Date()...,
+                                 displayedComponents: [.date])
                     }
                     
                     Section {
