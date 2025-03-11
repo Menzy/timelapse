@@ -153,7 +153,8 @@ struct miniTimerEntryView : View {
                             case .countdown:
                                 CountdownWidgetView(
                                     daysLeft: entry.primaryEventData.daysLeft,
-                                    family: family
+                                    family: family,
+                                    backgroundTheme: entry.configuration.backgroundTheme
                                 )
                             }
                         }
@@ -172,7 +173,7 @@ struct miniTimerEntryView : View {
                                 Text("\(entry.primaryEventData.daysLeft)")
                                     .font(.system(size: 8))
                                 
-                                Text("days left")
+                                Text(entry.primaryEventData.daysLeft == 1 ? "day left" : "days left")
                                     .font(.system(size: 8))
                             }
                             .foregroundColor(textColor)
@@ -210,7 +211,8 @@ struct miniTimerEntryView : View {
                             case .countdown:
                                 CountdownWidgetView(
                                     daysLeft: entry.secondaryEventData.daysLeft,
-                                    family: family
+                                    family: family,
+                                    backgroundTheme: entry.configuration.backgroundTheme
                                 )
                             }
                         }
@@ -229,7 +231,7 @@ struct miniTimerEntryView : View {
                                 Text("\(entry.secondaryEventData.daysLeft)")
                                     .font(.system(size: 8))
                                 
-                                Text("days left")
+                                Text(entry.secondaryEventData.daysLeft == 1 ? "day left" : "days left")
                                     .font(.system(size: 8))
                             }
                             .foregroundColor(textColor)
@@ -266,7 +268,8 @@ struct miniTimerEntryView : View {
                     case .countdown:
                         CountdownWidgetView(
                             daysLeft: entry.primaryEventData.daysLeft,
-                            family: family
+                            family: family,
+                            backgroundTheme: entry.configuration.backgroundTheme
                         )
                     }
                 }
@@ -286,9 +289,9 @@ struct miniTimerEntryView : View {
                     
                     HStack(spacing: family == .systemSmall ? 2 : 4) {
                         Text("\(entry.primaryEventData.daysLeft)")
-                            .font(.system(size: family == .systemSmall ? 8 : 12))
+                            .font(.system(size: family == .systemSmall ? 8 : 10))
                         
-                        Text("days left")
+                        Text(entry.primaryEventData.daysLeft == 1 ? "day left" : "days left")
                             .font(.system(size: family == .systemSmall ? 8 : 10))
                     }
                     .foregroundColor(textColor)
