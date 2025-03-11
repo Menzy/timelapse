@@ -278,7 +278,7 @@ struct miniTimerEntryView : View {
             if family != .systemMedium && (family != .systemSmall || entry.configuration.displayStyle != .countdown) {
                 HStack {
                     Text(entry.primaryEventData.title)
-                        .font(.system(size: family == .systemSmall ? 8 : 10, weight: .medium))
+                        .font(.system(size: family == .systemSmall ? 8 : 10))
                         .foregroundColor(textColor)
                         .lineLimit(1)
                     
@@ -286,7 +286,7 @@ struct miniTimerEntryView : View {
                     
                     HStack(spacing: family == .systemSmall ? 2 : 4) {
                         Text("\(entry.primaryEventData.daysLeft)")
-                            .font(.system(size: family == .systemSmall ? 10 : 12, weight: .semibold))
+                            .font(.system(size: family == .systemSmall ? 8 : 12))
                         
                         Text("days left")
                             .font(.system(size: family == .systemSmall ? 8 : 10))
@@ -307,7 +307,7 @@ struct miniTimer: Widget {
                 .containerBackground(entry.configuration.backgroundTheme == .light ? .white : .black, for: .widget)
         }
         .configurationDisplayName("Event Tracker")
-        .description("Track the days of your events with various display styles.")
+        .description("Customize your Experience")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }

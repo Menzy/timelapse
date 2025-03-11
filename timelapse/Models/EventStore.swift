@@ -49,10 +49,10 @@ class EventStore: ObservableObject {
         }
     }
     
-    func updateEvent(id: UUID, title: String, targetDate: Date) {
+    func updateEvent(id: UUID, title: String, targetDate: Date, creationDate: Date) {
         if let index = events.firstIndex(where: { $0.id == id }) {
-            // Create updated event with the same ID and creation date
-            let updatedEvent = Event(id: id, title: title, targetDate: targetDate, creationDate: events[index].creationDate)
+            // Create updated event with the same ID and new creation date
+            let updatedEvent = Event(id: id, title: title, targetDate: targetDate, creationDate: creationDate)
             events[index] = updatedEvent
             // Display settings will be preserved since we're using the same ID
             saveEvents()

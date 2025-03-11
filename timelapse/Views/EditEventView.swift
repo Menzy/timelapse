@@ -7,6 +7,7 @@ struct EditEventView: View {
     let event: Event
     @State private var eventTitle: String
     @State private var eventDate: Date
+    @State private var startDate: Date
     @State private var showingDeleteAlert = false
     
     init(event: Event, eventStore: EventStore) {
@@ -14,6 +15,7 @@ struct EditEventView: View {
         self.eventStore = eventStore
         _eventTitle = State(initialValue: event.title)
         _eventDate = State(initialValue: event.targetDate)
+        _startDate = State(initialValue: event.creationDate)
     }
     
     var body: some View {
@@ -21,9 +23,13 @@ struct EditEventView: View {
             Form {
                 Section {
                     TextField("Event Title", text: $eventTitle)
-                    DatePicker("Event Date", 
+                    DatePicker("End Date", 
                              selection: $eventDate,
                              in: Date()...,
+                             displayedComponents: [.date])
+                    DatePicker("Start Date",
+                             selection: $startDate,
+                             in: ...eventDate,
                              displayedComponents: [.date])
                 }
                 
@@ -40,7 +46,7 @@ struct EditEventView: View {
             .navigationBarItems(
                 leading: Button("Cancel") { dismiss() },
                 trailing: Button("Save") {
-                    eventStore.updateEvent(id: event.id, title: eventTitle, targetDate: eventDate)
+                    eventStore.updateEvent(id: event.id, title: eventTitle, targetDate: eventDate, creationDate: startDate)
                     dismiss()
                 }
                 .disabled(eventTitle.isEmpty)

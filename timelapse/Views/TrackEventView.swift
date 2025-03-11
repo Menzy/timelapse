@@ -4,6 +4,8 @@ struct TrackEventView: View {
     @Environment(\.dismiss) var dismiss
     @State private var eventTitle = ""
     @State private var eventDate = Date()
+    @State private var startDate = Date()
+    @State private var useCustomStartDate = false
     @ObservedObject var eventStore: EventStore
     @State private var showingLimitAlert = false
     @Binding var selectedTab: Int
@@ -30,11 +32,19 @@ struct TrackEventView: View {
                 Form {
                     Section {
                         TextField("Add your event name", text: $eventTitle)
-                        DatePicker("Event Date", 
+                        DatePicker("End Date", 
                                  selection: $eventDate,
                                  in: Date()...,
                                  displayedComponents: [.date])
-                            .accentColor(Color(hex: "333333"))
+                        
+                        Toggle("Use Custom Start Date", isOn: $useCustomStartDate)
+                        
+                        if useCustomStartDate {
+                            DatePicker("Start Date",
+                                     selection: $startDate,
+                                     in: ...eventDate,
+                                     displayedComponents: [.date])
+                        }
                     }
                     
                     Section {
@@ -47,17 +57,19 @@ struct TrackEventView: View {
                             if userEventCount >= 5 {
                                 showingLimitAlert = true
                             } else {
-                                let newEvent = Event(title: eventTitle, targetDate: eventDate)
+                                let newEvent = Event(
+                                    title: eventTitle,
+                                    targetDate: eventDate,
+                                    creationDate: useCustomStartDate ? startDate : Date()
+                                )
                                 eventStore.saveEvent(newEvent)
                                 
                                 // Find the index of the new event in the displayed events array
-                                // Year tracker is always first, so other events start at index 1
                                 let yearTracker = eventStore.events.first { $0.title == yearString }
                                 let otherEvents = eventStore.events.filter { $0.title != yearString }
                                 let displayedEvents = [yearTracker].compactMap { $0 } + otherEvents
                                 
                                 if let newEventIndex = displayedEvents.firstIndex(where: { $0.id == newEvent.id }) {
-                                    // Update the selected tab to navigate to the new event
                                     selectedTab = newEventIndex
                                 }
                                 
@@ -82,7 +94,7 @@ struct TrackEventView: View {
                 Text("You can track up to 5 events at a time (plus the year tracker). Please remove an existing event to add a new one.")
             }
         }
-        .presentationDetents([.fraction(0.45)])
+        .presentationDetents([.fraction(0.55)])
         .presentationDragIndicator(.visible)
     }
 }
