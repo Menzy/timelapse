@@ -25,5 +25,10 @@
 			</array>
 		</dict>
 	</array>
+	<key>StoreKit</key>
+	<dict>
+		<key>Configuration</key>
+		<string>Products</string>
+	</dict>
 </dict>
 </plist>

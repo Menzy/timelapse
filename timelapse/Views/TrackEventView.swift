@@ -8,7 +8,9 @@ struct TrackEventView: View {
     @State private var useCustomStartDate = false
     @ObservedObject var eventStore: EventStore
     @State private var showingLimitAlert = false
+    @State private var showSubscriptionView = false
     @Binding var selectedTab: Int
+    @StateObject private var paymentManager = PaymentManager.shared
     
     var body: some View {
         NavigationView {
@@ -50,12 +52,7 @@ struct TrackEventView: View {
                     
                     Section {
                         Button(action: {
-                            // Count user-created events (excluding year tracker)
-                            let calendar = Calendar.current
-                            let yearString = String(calendar.component(.year, from: Date()))
-                            let userEventCount = eventStore.events.filter { $0.title != yearString }.count
-                            
-                            if userEventCount >= 5 {
+                            if !eventStore.canAddMoreEvents() {
                                 showingLimitAlert = true
                             } else {
                                 let newEvent = Event(
@@ -66,6 +63,8 @@ struct TrackEventView: View {
                                 eventStore.saveEvent(newEvent)
                                 
                                 // Find the index of the new event in the displayed events array
+                                let calendar = Calendar.current
+                                let yearString = String(calendar.component(.year, from: Date()))
                                 let yearTracker = eventStore.events.first { $0.title == yearString }
                                 let otherEvents = eventStore.events.filter { $0.title != yearString }
                                 let displayedEvents = [yearTracker].compactMap { $0 } + otherEvents
@@ -88,12 +87,23 @@ struct TrackEventView: View {
                 }
             }
             .alert("Event Limit Reached", isPresented: $showingLimitAlert) {
-                Button("OK", role: .cancel) { }
+                Button("Subscribe", role: .none) {
+                    showSubscriptionView = true
+                }
+                Button("Cancel", role: .cancel) { }
             } message: {
-                Text("You can track up to 5 events at a time (plus the year tracker). Please remove an existing event to add a new one.")
+                Text("You've reached the free limit of 1 custom event. Subscribe to Premium to create unlimited events.")
+            }
+            .sheet(isPresented: $showSubscriptionView) {
+                SubscriptionView()
             }
         }
-        .presentationDetents([.fraction(0.55)])
+        .presentationDetents([.fraction(0.6)])
         .presentationDragIndicator(.visible)
+        .onAppear {
+            Task {
+                await paymentManager.updateSubscriptionStatus()
+            }
+        }
     }
 }

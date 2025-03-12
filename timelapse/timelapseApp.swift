@@ -6,12 +6,14 @@
 //
 
 import SwiftUI
+import StoreKit
 
 @main
 struct timelapseApp: App {
     @StateObject private var eventStore = EventStore()
     @StateObject private var globalSettings = GlobalSettings()
     @StateObject private var navigationState = NavigationStateManager.shared
+    @StateObject private var paymentManager = PaymentManager.shared
     
     init() {
         // Set the global accent color
@@ -22,8 +24,15 @@ struct timelapseApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(globalSettings)
+                .environmentObject(eventStore)
+                .environmentObject(paymentManager)
                 .onOpenURL { url in
                     handleDeepLink(url)
+                }
+                .task {
+                    // Initialize payment manager
+                    await paymentManager.loadProducts()
+                    await paymentManager.updateSubscriptionStatus()
                 }
         }
     }

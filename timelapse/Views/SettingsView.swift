@@ -4,6 +4,8 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var globalSettings: GlobalSettings
     @Environment(\.openURL) private var openURL
+    @StateObject private var paymentManager = PaymentManager.shared
+    @State private var showSubscriptionView = false
     
     var body: some View {
         NavigationView {
@@ -15,16 +17,38 @@ struct SettingsView: View {
                         }
                 }
                 
-                Section {
-                    Button(action: {
-                        // Open subscription view
-                    }) {
+                Section(header: Text("Subscription")) {
+                    if paymentManager.isSubscribed {
                         HStack {
-                            Text("Subscribe to Pro")
+                            Text("Premium Subscription")
                                 .foregroundColor(.primary)
                             Spacer()
-                            Image(systemName: "star.fill")
-                                .foregroundColor(.yellow)
+                            Text("Active")
+                                .foregroundColor(.green)
+                                .font(.system(size: 14, weight: .semibold))
+                        }
+                    } else {
+                        Button(action: {
+                            showSubscriptionView = true
+                        }) {
+                            HStack {
+                                Text("Subscribe to Premium")
+                                    .foregroundColor(.primary)
+                                Spacer()
+                                Image(systemName: "star.fill")
+                                    .foregroundColor(.yellow)
+                            }
+                        }
+                    }
+                    
+                    if paymentManager.isSubscribed {
+                        Button(action: {
+                            Task {
+                                try? await paymentManager.restorePurchases()
+                            }
+                        }) {
+                            Text("Restore Purchases")
+                                .foregroundColor(.primary)
                         }
                     }
                 }
@@ -70,7 +94,18 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
-            .navigationBarItems(trailing: Button("Done") { dismiss() })
+            .navigationBarItems(trailing: Button("Done") {
+                dismiss()
+            })
+            .sheet(isPresented: $showSubscriptionView) {
+                SubscriptionView()
+                    .environmentObject(globalSettings)
+            }
+            .onAppear {
+                Task {
+                    await paymentManager.updateSubscriptionStatus()
+                }
+            }
         }
         .presentationDetents([.medium])
         .presentationDragIndicator(.visible)

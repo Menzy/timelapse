@@ -1,5 +1,6 @@
 import Foundation
 import WidgetKit
+
 class EventStore: ObservableObject {
     @Published var events: [Event] = []
     private let eventsKey = "savedEvents"
@@ -32,8 +33,11 @@ class EventStore: ObservableObject {
         // Count user-created events (excluding year tracker)
         let userEventCount = events.filter { $0.title != String(Calendar.current.component(.year, from: Date())) }.count
         
+        // Get the event limit based on subscription status
+        let eventLimit = PaymentManager.getEventLimit()
+        
         // Only allow saving if it's a year tracker or if we haven't reached the limit
-        if isYearTracker || userEventCount < 5 {
+        if isYearTracker || userEventCount < eventLimit {
             if !events.contains(where: { $0.id == event.id }) {
                 events.append(event)
                 // Initialize display settings when saving a new event
@@ -54,6 +58,33 @@ class EventStore: ObservableObject {
                 WidgetCenter.shared.reloadAllTimelines()
             }
         }
+    }
+    
+    // Check if user can add more events
+    func canAddMoreEvents() -> Bool {
+        // Count user-created events (excluding year tracker)
+        let userEventCount = events.filter { $0.title != String(Calendar.current.component(.year, from: Date())) }.count
+        
+        // Get the event limit based on subscription status
+        let eventLimit = PaymentManager.getEventLimit()
+        
+        return userEventCount < eventLimit
+    }
+    
+    // Get remaining event slots
+    func remainingEventSlots() -> Int {
+        // Count user-created events (excluding year tracker)
+        let userEventCount = events.filter { $0.title != String(Calendar.current.component(.year, from: Date())) }.count
+        
+        // Get the event limit based on subscription status
+        let eventLimit = PaymentManager.getEventLimit()
+        
+        return max(0, eventLimit - userEventCount)
+    }
+    
+    // Check if user needs to subscribe to add more events
+    func needsSubscriptionForMoreEvents() -> Bool {
+        return !canAddMoreEvents() && !PaymentManager.isUserSubscribed()
     }
     
     func updateEvent(id: UUID, title: String, targetDate: Date, creationDate: Date) {
