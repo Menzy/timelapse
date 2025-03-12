@@ -23,14 +23,15 @@ struct EditEventView: View {
             Form {
                 Section {
                     TextField("Event Title", text: $eventTitle)
-                    DatePicker("End Date", 
-                             selection: $eventDate,
-                             in: Date()...,
-                             displayedComponents: [.date])
                     DatePicker("Start Date",
                              selection: $startDate,
                              in: ...eventDate,
                              displayedComponents: [.date])
+                    DatePicker("End Date", 
+                             selection: $eventDate,
+                             in: Date()...,
+                             displayedComponents: [.date])
+                    
                 }
                 
                 Section {
