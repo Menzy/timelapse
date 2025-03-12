@@ -26,7 +26,10 @@ struct EventQuery: EntityQuery {
     func entities(for identifiers: [UUID]) async throws -> [EventEntity] {
         return identifiers.compactMap { id in
             if let events = loadEvents(), let event = events.first(where: { $0.id == id }) {
-                return EventEntity(id: event.id, title: event.title)
+                // Check if this is a year tracker or if user is subscribed
+                if isYearTracker(event) || isUserSubscribed() {
+                    return EventEntity(id: event.id, title: event.title)
+                }
             }
             return nil
         }
@@ -36,8 +39,13 @@ struct EventQuery: EntityQuery {
         var entities: [EventEntity] = []
         
         if let events = loadEvents() {
+            let isSubscribed = isUserSubscribed()
+            
             for event in events {
-                entities.append(EventEntity(id: event.id, title: event.title))
+                // Only include year tracker for free users
+                if isSubscribed || isYearTracker(event) {
+                    entities.append(EventEntity(id: event.id, title: event.title))
+                }
             }
         }
         
@@ -57,6 +65,18 @@ struct EventQuery: EntityQuery {
             return events
         }
         return nil
+    }
+    
+    // Helper function to check if an event is the year tracker
+    private func isYearTracker(_ event: Event) -> Bool {
+        let calendar = Calendar.current
+        let currentYear = calendar.component(.year, from: Date())
+        return event.title == "\(currentYear)"
+    }
+    
+    // Helper function to check subscription status
+    private func isUserSubscribed() -> Bool {
+        return UserDefaults.standard.bool(forKey: "isSubscribed")
     }
 }
 

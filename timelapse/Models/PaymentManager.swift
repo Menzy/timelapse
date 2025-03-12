@@ -58,6 +58,9 @@ class PaymentManager: ObservableObject {
         
         // Save subscription status to UserDefaults for access across the app
         UserDefaults.standard.set(isSubscribed, forKey: "isSubscribed")
+        
+        // Also save to shared UserDefaults for widget access
+        UserDefaults.shared?.set(isSubscribed, forKey: "isSubscribed")
     }
     
     func purchase(_ product: Product) async throws -> Bool {

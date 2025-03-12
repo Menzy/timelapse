@@ -18,24 +18,35 @@ class EventDataProvider {
     }
     
     static func getEventData(eventId: UUID?) -> EventData {
+        // Check if user is subscribed
+        let isSubscribed = UserDefaults.shared?.bool(forKey: "isSubscribed") ?? false
+        
         // First try to find the specific selected event
         if let eventId = eventId {
             if let data = UserDefaults.shared?.data(forKey: "allEvents"),
                let events = try? JSONDecoder().decode([Event].self, from: data),
                let selectedEvent = events.first(where: { $0.id == eventId }) {
                 
-                // Use the progressDetails method to calculate days left and total days
-                let details = selectedEvent.progressDetails()
-                return EventData(
-                    daysLeft: details.daysLeft,
-                    totalDays: details.totalDays,
-                    title: selectedEvent.title,
-                    eventId: eventId
-                )
+                // For free users, only allow year tracker events
+                let calendar = Calendar.current
+                let currentYear = calendar.component(.year, from: Date())
+                let isYearTracker = selectedEvent.title == "\(currentYear)"
+                
+                if isSubscribed || isYearTracker {
+                    // Use the progressDetails method to calculate days left and total days
+                    let details = selectedEvent.progressDetails()
+                    return EventData(
+                        daysLeft: details.daysLeft,
+                        totalDays: details.totalDays,
+                        title: selectedEvent.title,
+                        eventId: eventId
+                    )
+                }
             }
         }
         
-        // If no event ID specified or event not found, fall back to year tracker
+        // If no event ID specified, event not found, or user is not subscribed and trying to access a non-year tracker,
+        // fall back to year tracker
         if let data = UserDefaults.shared?.data(forKey: "yearTrackerEvent"),
            let event = try? JSONDecoder().decode(Event.self, from: data) {
             // Use the progressDetails method to calculate days left and total days
