@@ -6,6 +6,8 @@ class EventStore: ObservableObject {
     private let eventsKey = "savedEvents"
     @Published var displaySettings: [UUID: DisplaySettings] = [:]
     private let displaySettingsKey = "savedDisplaySettings"
+    @Published var notificationSettings: [UUID: NotificationSettings] = [:]
+    private let notificationSettingsKey = "savedNotificationSettings"
     
     // The key for the year tracker event that will be shared with the widget
     static let yearTrackerKey = "yearTrackerEvent"
@@ -15,6 +17,7 @@ class EventStore: ObservableObject {
     init() {
         loadEvents()
         loadDisplaySettings()
+        loadNotificationSettings()
         addDefaultYearTrackerIfNeeded()
     }
     
@@ -43,8 +46,12 @@ class EventStore: ObservableObject {
                 // Initialize display settings when saving a new event
                 let newSettings = DisplaySettings()
                 displaySettings[event.id] = newSettings
+                // Initialize notification settings when saving a new event
+                let newNotificationSettings = NotificationSettings()
+                notificationSettings[event.id] = newNotificationSettings
                 saveEvents()
                 saveDisplaySettings()
+                saveNotificationSettings()
                 
                 // If this is a year tracker, save it separately for widget access
                 if isYearTracker {
@@ -195,6 +202,96 @@ class EventStore: ObservableObject {
     private func saveAllEventsForWidget() {
         if let encoded = try? JSONEncoder().encode(events) {
             UserDefaults.shared?.set(encoded, forKey: EventStore.allEventsKey)
+        }
+    }
+    
+    func updateNotificationSettings(for eventId: UUID, settings: NotificationSettings) {
+        // Update the settings in the dictionary
+        notificationSettings[eventId] = settings
+        
+        // Save to UserDefaults
+        saveNotificationSettings()
+        
+        print("Updated notification settings for event \(eventId): \(settings)")
+        print("Current notification settings dictionary: \(notificationSettings)")
+        
+        // Schedule notifications based on the new settings
+        if let event = events.first(where: { $0.id == eventId }) {
+            // Check if this is the year tracker
+            let isYearTracker = event.title == String(Calendar.current.component(.year, from: Date()))
+            
+            // First, remove any existing notifications for this event
+            NotificationManager.shared.removeNotifications(for: eventId)
+            
+            if settings.isEnabled {
+                if isYearTracker && settings.milestoneNotificationsEnabled {
+                    // Schedule special year tracker milestones
+                    NotificationManager.shared.scheduleYearTrackerMilestones(for: event, with: settings)
+                }
+                
+                // Schedule regular notifications
+                NotificationManager.shared.scheduleNotifications(for: event, with: settings)
+            }
+        }
+    }
+    
+    func getNotificationSettings(for eventId: UUID) -> NotificationSettings {
+        let settings = notificationSettings[eventId] ?? NotificationSettings()
+        print("Retrieved notification settings for event \(eventId): \(settings)")
+        return settings
+    }
+    
+    func deleteEvent(withId id: UUID) {
+        if let index = findEventIndex(withId: id) {
+            // Remove notifications for this event
+            NotificationManager.shared.removeNotifications(for: id)
+            
+            // Remove the event and its settings
+            events.remove(at: index)
+            displaySettings.removeValue(forKey: id)
+            notificationSettings.removeValue(forKey: id)
+            
+            saveEvents()
+            saveDisplaySettings()
+            saveNotificationSettings()
+            
+            // Save all events for widget access
+            saveAllEventsForWidget()
+            
+            // Reload widget timeline
+            WidgetCenter.shared.reloadAllTimelines()
+        }
+    }
+    
+    // MARK: - Notification Settings Persistence
+    
+    private func saveNotificationSettings() {
+        if let encoded = try? JSONEncoder().encode(notificationSettings) {
+            UserDefaults.standard.set(encoded, forKey: notificationSettingsKey)
+            
+            // Synchronize UserDefaults to ensure data is written to disk
+            UserDefaults.standard.synchronize()
+            
+            print("Saved notification settings to UserDefaults with key: \(notificationSettingsKey)")
+            
+            // Force a UI update
+            objectWillChange.send()
+        } else {
+            print("Error: Failed to encode notification settings")
+        }
+    }
+    
+    private func loadNotificationSettings() {
+        if let savedSettings = UserDefaults.standard.data(forKey: notificationSettingsKey) {
+            do {
+                let decodedSettings = try JSONDecoder().decode([UUID: NotificationSettings].self, from: savedSettings)
+                notificationSettings = decodedSettings
+                print("Successfully loaded notification settings from UserDefaults: \(notificationSettings)")
+            } catch {
+                print("Error decoding notification settings: \(error.localizedDescription)")
+            }
+        } else {
+            print("No saved notification settings found in UserDefaults")
         }
     }
 }

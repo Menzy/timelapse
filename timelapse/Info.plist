@@ -30,5 +30,7 @@
 		<key>Configuration</key>
 		<string>Products</string>
 	</dict>
+	<key>NSUserNotificationUsageDescription</key>
+	<string>We need to send you notifications about your upcoming events and milestones.</string>
 </dict>
 </plist>

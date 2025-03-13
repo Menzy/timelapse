@@ -6,6 +6,7 @@ struct SettingsView: View {
     @Environment(\.openURL) private var openURL
     @StateObject private var paymentManager = PaymentManager.shared
     @State private var showSubscriptionView = false
+    @State private var showNotificationSettings = false
     
     var body: some View {
         NavigationView {
@@ -15,6 +16,20 @@ struct SettingsView: View {
                         .onChange(of: globalSettings.showGridLayout) { _, _ in
                             globalSettings.saveSettings()
                         }
+                }
+                
+                Section("Notifications") {
+                    Button(action: {
+                        showNotificationSettings = true
+                    }) {
+                        HStack {
+                            Text("Notification Settings")
+                                .foregroundColor(.primary)
+                            Spacer()
+                            Image(systemName: "bell.badge")
+                                .foregroundColor(.blue)
+                        }
+                    }
                 }
                 
                 Section(header: Text("Subscription")) {
@@ -99,6 +114,10 @@ struct SettingsView: View {
             })
             .sheet(isPresented: $showSubscriptionView) {
                 SubscriptionView()
+                    .environmentObject(globalSettings)
+            }
+            .sheet(isPresented: $showNotificationSettings) {
+                GlobalNotificationSettingsView()
                     .environmentObject(globalSettings)
             }
             .onAppear {

@@ -13,6 +13,11 @@ class GlobalSettings: ObservableObject {
     @Published var showGridLayout: Bool = false
     @Published private var systemIsDark: Bool = false
     
+    // Notification-related settings
+    @Published var notificationsEnabled: Bool = false
+    @Published var defaultNotificationTime: Date = Calendar.current.date(from: DateComponents(hour: 9, minute: 0)) ?? Date()
+    @Published var defaultNotificationFrequency: NotificationFrequency = .weekly
+    
     init() {
         // Load saved background style from UserDefaults
         if let savedStyle = UserDefaults.standard.string(forKey: "backgroundStyle"),
@@ -22,6 +27,16 @@ class GlobalSettings: ObservableObject {
         
         // Load grid layout preference
         showGridLayout = UserDefaults.standard.bool(forKey: "showGridLayout")
+        
+        // Load notification preferences
+        notificationsEnabled = UserDefaults.standard.bool(forKey: "notificationsEnabled")
+        if let savedTime = UserDefaults.standard.object(forKey: "defaultNotificationTime") as? Date {
+            defaultNotificationTime = savedTime
+        }
+        if let savedFrequency = UserDefaults.standard.string(forKey: "defaultNotificationFrequency"),
+           let frequency = NotificationFrequency(rawValue: savedFrequency) {
+            defaultNotificationFrequency = frequency
+        }
     }
     
     var effectiveBackgroundStyle: BackgroundStyle {
@@ -43,6 +58,20 @@ class GlobalSettings: ObservableObject {
         systemIsDark = isDark
         objectWillChange.send()
     }
+    
+    // Request notification permissions
+    func requestNotificationPermissions(completion: @escaping (Bool) -> Void) {
+        NotificationManager.shared.requestAuthorization { granted in
+            self.notificationsEnabled = granted
+            self.saveSettings()
+            completion(granted)
+        }
+    }
+    
+    // Check notification authorization status
+    func checkNotificationAuthorizationStatus(completion: @escaping (UNAuthorizationStatus) -> Void) {
+        NotificationManager.shared.checkAuthorizationStatus(completion: completion)
+    }
 }
 
 // Extension to handle persistence
@@ -50,5 +79,10 @@ extension GlobalSettings {
     func saveSettings() {
         UserDefaults.standard.set(backgroundStyle.rawValue, forKey: "backgroundStyle")
         UserDefaults.standard.set(showGridLayout, forKey: "showGridLayout")
+        
+        // Save notification preferences
+        UserDefaults.standard.set(notificationsEnabled, forKey: "notificationsEnabled")
+        UserDefaults.standard.set(defaultNotificationTime, forKey: "defaultNotificationTime")
+        UserDefaults.standard.set(defaultNotificationFrequency.rawValue, forKey: "defaultNotificationFrequency")
     }
 }

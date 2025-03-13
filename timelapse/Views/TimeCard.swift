@@ -53,6 +53,7 @@ struct TimeCard: View {
     @State private var showingEditSheet = false
     @State private var showingShareSheet = false
     @State private var showingActionSheet = false
+    @State private var showingNotificationSettings = false
     @State private var isPressed = false
     @EnvironmentObject var globalSettings: GlobalSettings
     @Binding var selectedTab: Int
@@ -225,12 +226,20 @@ struct TimeCard: View {
             )
             .environmentObject(globalSettings)
         }
+        .sheet(isPresented: $showingNotificationSettings) {
+            NotificationSettingsView(event: event, eventStore: eventStore)
+                .environmentObject(globalSettings)
+        }
         .confirmationDialog("Event Options", isPresented: $showingActionSheet, titleVisibility: .visible) {
             // Only show Edit button for non-year tracker events
             if !isYearTracker {
                 Button("Edit") {
                     showingEditSheet = true
                 }
+            }
+            
+            Button("Notifications") {
+                showingNotificationSettings = true
             }
             
             Button("Share") {
