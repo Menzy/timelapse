@@ -16,8 +16,12 @@ struct timelapseApp: App {
     @StateObject private var paymentManager = PaymentManager.shared
     
     init() {
-        // Set the global accent color
-        UIView.appearance().tintColor = UIColor(Color(hex: "333333"))
+        // Set the global accent color that adapts to color scheme
+        UIView.appearance().tintColor = UIColor { traitCollection in
+            traitCollection.userInterfaceStyle == .dark ?
+                UIColor(Color(hex: "CCCCCC")) : // Light gray for dark mode
+                UIColor(Color(hex: "333333"))  // Dark gray for light mode
+        }
     }
     
     var body: some Scene {
