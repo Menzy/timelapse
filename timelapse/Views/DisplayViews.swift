@@ -94,8 +94,7 @@ struct CountdownView: View {
     }
     
     private var displayText: String {
-        let value = showDaysLeft ? daysLeft : daysSpent
-        return String(format: "%03d", value)
+        return String(format: "%03d", daysLeft)
     }
     
     var body: some View {
