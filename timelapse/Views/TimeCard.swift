@@ -51,6 +51,8 @@ struct TimeCard: View {
     let isGridView: Bool
     @State private var showingDaysLeft = true
     @State private var showingEditSheet = false
+    @State private var showingShareSheet = false
+    @State private var showingActionSheet = false
     @State private var isPressed = false
     @EnvironmentObject var globalSettings: GlobalSettings
     @Binding var selectedTab: Int
@@ -87,6 +89,11 @@ struct TimeCard: View {
             return "\(dayText) \(type)"
         }
     }
+    
+    // Check if this is the year tracker
+    private var isYearTracker: Bool {
+        return title == String(Calendar.current.component(.year, from: Date()))
+    }
 
     @ViewBuilder
     func timeDisplayView() -> some View {
@@ -95,7 +102,7 @@ struct TimeCard: View {
             DotPixelsView(
                 daysLeft: daysLeft,
                 totalDays: totalDays,
-                isYearTracker: title == String(Calendar.current.component(.year, from: Date())),
+                isYearTracker: isYearTracker,
                 startDate: event.creationDate,
                 settings: settings,
                 eventStore: eventStore,
@@ -185,23 +192,52 @@ struct TimeCard: View {
         .scaleEffect(isPressed ? 0.96 : 1.0)
         .animation(.spring(response: 0.3), value: isPressed)
         .onLongPressGesture(minimumDuration: 0.5) {
-            if title != String(Calendar.current.component(.year, from: Date())) {
-                // Strong haptic feedback when long press completes
-                HapticFeedback.impact(style: .heavy)
-                HapticFeedback.success()
-                showingEditSheet = true
+            // Allow long press for all cards, including year tracker
+            HapticFeedback.impact(style: .heavy)
+            HapticFeedback.success()
+            
+            if isYearTracker {
+                // For year tracker, go directly to share sheet
+                showingShareSheet = true
+            } else {
+                // For regular events, show action sheet with options
+                showingActionSheet = true
             }
         } onPressingChanged: { isPressing in
-            if title != String(Calendar.current.component(.year, from: Date())) {
-                if isPressing {
-                    // Light haptic feedback when touch begins
-                    HapticFeedback.impact(style: .light)
-                }
-                isPressed = isPressing
+            // Allow visual feedback for all cards
+            if isPressing {
+                // Light haptic feedback when touch begins
+                HapticFeedback.impact(style: .light)
             }
+            isPressed = isPressing
         }
         .sheet(isPresented: $showingEditSheet) {
             EditEventView(event: event, eventStore: eventStore)
+        }
+        .sheet(isPresented: $showingShareSheet) {
+            ShareableCardView(
+                title: title,
+                event: event,
+                settings: settings,
+                eventStore: eventStore,
+                daysLeft: daysLeft,
+                totalDays: totalDays
+            )
+            .environmentObject(globalSettings)
+        }
+        .confirmationDialog("Event Options", isPresented: $showingActionSheet, titleVisibility: .visible) {
+            // Only show Edit button for non-year tracker events
+            if !isYearTracker {
+                Button("Edit") {
+                    showingEditSheet = true
+                }
+            }
+            
+            Button("Share") {
+                showingShareSheet = true
+            }
+            
+            Button("Cancel", role: .cancel) {}
         }
     }
 }
