@@ -80,7 +80,8 @@ struct TrackEventView: View {
                                 .fontWeight(.semibold)
                                 .foregroundColor(eventTitle.isEmpty ? Color.gray : Color.black)
                                 .frame(maxWidth: .infinity)
-                                .padding()
+                                .padding(.horizontal)
+                                .padding(.vertical, 8)
                         }
                         .disabled(eventTitle.isEmpty)
                     }
