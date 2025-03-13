@@ -12,6 +12,8 @@ struct DotPixelsView: View {
     @State private var tappedIndex: Int? = nil
     // Add binding to control tab selection
     @Binding var selectedTab: Int
+    // Add parameter to control whether to show event highlights
+    var showEventHighlights: Bool = true
     
     var daysCompleted: Int {
         totalDays - daysLeft
@@ -31,7 +33,7 @@ struct DotPixelsView: View {
     }
     
     private func isTargetDate(_ date: Date) -> Bool {
-        if (!isYearTracker) { return false }
+        if (!isYearTracker || !showEventHighlights) { return false }
         let calendar = Calendar.current
         return eventStore.events.contains { event in
             guard event.title != String(calendar.component(.year, from: Date())) else { return false }
@@ -40,6 +42,7 @@ struct DotPixelsView: View {
     }
     
     private func findEventIndex(for date: Date) -> Int? {
+        if (!showEventHighlights) { return nil }
         let calendar = Calendar.current
         let yearString = String(calendar.component(.year, from: Date()))
         return eventStore.events.firstIndex { event in

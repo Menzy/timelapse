@@ -48,7 +48,7 @@ struct ShareableCardView: View {
                 
                 Spacer()
                 
-                Text(isYearTracker ? "Share Year Tracker" : "Share Event")
+                Text(isYearTracker ? "Share Your Year" : "Share Event")
                     .font(.custom("Inter", size: 18))
                     .foregroundColor(globalSettings.invertedColor)
                 

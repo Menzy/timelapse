@@ -58,7 +58,8 @@ struct ShareableTimeCard: View {
                 startDate: event.creationDate,
                 settings: settings,
                 eventStore: eventStore,
-                selectedTab: .constant(0)
+                selectedTab: .constant(0),
+                showEventHighlights: false // Always hide event highlights when sharing
             )
         case .triGrid:
             TriGridView(daysLeft: daysLeft, totalDays: totalDays, settings: settings)
