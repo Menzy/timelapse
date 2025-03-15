@@ -299,7 +299,7 @@ struct miniTimerEntryView : View {
             }
 
             // Bottom info bar - similar to main app (only for non-medium widgets since medium widgets now have in-place labels)
-            if family != .systemMedium && (family != .systemSmall || entry.configuration.displayStyle != .countdown) {
+            if family != .systemMedium {
                 HStack {
                     Text(entry.primaryEventData.title)
                         .font(.system(size: family == .systemSmall ? 8 : 10))

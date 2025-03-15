@@ -295,13 +295,17 @@ struct CountdownWidgetView: View {
     
     var body: some View {
         GeometryReader { geometry in
+            // Reserve space for the info bar at the bottom
+            let infoBarHeight: CGFloat = family == .systemSmall ? 15 : 20
+            let availableHeight = geometry.size.height - infoBarHeight
+            
             Text(String(format: "%03d", daysLeft))
                 .font(.custom("Galgo-Bold", size: 500))
                 .foregroundColor(backgroundTheme == .dark ? .white : .black)
                 .minimumScaleFactor(0.01)
                 .lineLimit(1)
-                .frame(width: geometry.size.width * 1.1, height: geometry.size.height * 1.1)
-                .position(x: geometry.size.width/2, y: geometry.size.height/2)
+                .frame(width: geometry.size.width * 1.1, height: availableHeight * 1.1)
+                .position(x: geometry.size.width/2, y: availableHeight/2)
                 .clipped()
         }
     }
