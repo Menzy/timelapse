@@ -110,7 +110,15 @@ struct TimeCard: View {
                 selectedTab: $selectedTab
             )
         case .triGrid:
-            TriGridView(daysLeft: daysLeft, totalDays: totalDays, settings: settings)
+            TriGridView(
+                daysLeft: daysLeft,
+                totalDays: totalDays,
+                isYearTracker: isYearTracker,
+                startDate: event.creationDate,
+                settings: settings,
+                eventStore: eventStore,
+                selectedTab: $selectedTab
+            )
         case .progressBar:
             ProgressBarView(daysLeft: daysLeft, totalDays: totalDays, settings: settings)
                 .environmentObject(globalSettings)

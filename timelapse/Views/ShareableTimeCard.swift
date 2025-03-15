@@ -62,7 +62,15 @@ struct ShareableTimeCard: View {
                 showEventHighlights: false // Always hide event highlights when sharing
             )
         case .triGrid:
-            TriGridView(daysLeft: daysLeft, totalDays: totalDays, settings: settings)
+            TriGridView(
+                daysLeft: daysLeft,
+                totalDays: totalDays,
+                isYearTracker: isYearTracker,
+                startDate: event.creationDate,
+                settings: settings,
+                eventStore: eventStore,
+                selectedTab: .constant(0)
+            )
         case .progressBar:
             ProgressBarView(daysLeft: daysLeft, totalDays: totalDays, settings: settings)
                 .environmentObject(globalSettings)
@@ -132,4 +140,4 @@ struct ShareableTimeCard: View {
                 .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .black.opacity(0.7) : .white.opacity(0.7))
         }
     }
-} 
+}
