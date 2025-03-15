@@ -229,7 +229,7 @@ struct CustomizeView: View {
     @EnvironmentObject var globalSettings: GlobalSettings
     
     private func updatePercentageForAllCards(_ showPercentage: Bool) {
-        if globalSettings.showGridLayout {
+        if globalSettings.isGridLayoutAvailable && globalSettings.showGridLayout {
             for eventId in eventStore.displaySettings.keys {
                 eventStore.displaySettings[eventId]?.showPercentage = showPercentage
             }
@@ -239,7 +239,7 @@ struct CustomizeView: View {
     var body: some View {
         NavigationView {
             Form {
-                if !globalSettings.showGridLayout {
+                if !globalSettings.isGridLayoutAvailable || !globalSettings.showGridLayout {
                     Section("Display Style") {
                         VStack(spacing: 0) {
                             LazyVGrid(columns: Array(repeating: .init(.flexible()), count: 4), spacing: 15) {

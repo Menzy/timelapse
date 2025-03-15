@@ -89,8 +89,8 @@ class NotificationManager: ObservableObject {
         // Remove any existing notifications for this event
         removeNotifications(for: event.id)
         
-        // If notifications are disabled, just return
-        if !settings.isEnabled {
+        // If notifications are disabled or user is not subscribed, just return
+        if !settings.isEnabled || !PaymentManager.isUserSubscribed() {
             return
         }
         
@@ -283,6 +283,10 @@ class NotificationManager: ObservableObject {
     
     // Special function for year tracker milestones
     func scheduleYearTrackerMilestones(for yearEvent: Event, with settings: NotificationSettings) {
+        // Check if user is subscribed
+        if !PaymentManager.isUserSubscribed() {
+            return
+        }
         // Remove any existing notifications for this event
         removeNotifications(for: yearEvent.id)
         

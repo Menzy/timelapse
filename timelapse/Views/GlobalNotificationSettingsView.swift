@@ -5,6 +5,8 @@ struct GlobalNotificationSettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var authorizationStatus: UNAuthorizationStatus = .notDetermined
     
+    @StateObject private var paymentManager = PaymentManager.shared
+    
     var body: some View {
         NavigationView {
             List {

@@ -227,8 +227,56 @@ struct TimeCard: View {
             .environmentObject(globalSettings)
         }
         .sheet(isPresented: $showingNotificationSettings) {
-            NotificationSettingsView(event: event, eventStore: eventStore)
-                .environmentObject(globalSettings)
+            if globalSettings.areNotificationsAvailable {
+                NotificationSettingsView(event: event, eventStore: eventStore)
+                    .environmentObject(globalSettings)
+            } else {
+                // Pro feature notification view
+                NavigationView {
+                    VStack(spacing: 20) {
+                        Image(systemName: "bell.badge")
+                            .font(.system(size: 50))
+                            .foregroundColor(Color(hex: "FF7F00"))
+                            .padding(.bottom, 10)
+                        
+                        Text("Pro Feature")
+                            .font(.title2.bold())
+                        
+                        Text("Notifications are available with a Pro subscription.")
+                            .multilineTextAlignment(.center)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal)
+                        
+                        Button(action: {
+                            showingNotificationSettings = false
+                            // We need to delay this slightly to avoid presentation conflicts
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                NotificationCenter.default.post(name: NSNotification.Name("ShowSubscriptionView"), object: nil)
+                            }
+                        }) {
+                            Text("Upgrade to Pro")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 24)
+                                .padding(.vertical, 12)
+                                .background(Color(hex: "FF7F00"))
+                                .cornerRadius(10)
+                        }
+                        .padding(.top, 10)
+                    }
+                    .padding()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .navigationTitle("Notification Settings")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("Close") {
+                                showingNotificationSettings = false
+                            }
+                        }
+                    }
+                }
+            }
         }
         .confirmationDialog("Event Options", isPresented: $showingActionSheet, titleVisibility: .visible) {
             // Only show Edit button for non-year tracker events
@@ -238,8 +286,15 @@ struct TimeCard: View {
                 }
             }
             
-            Button("Notifications") {
-                showingNotificationSettings = true
+            if globalSettings.areNotificationsAvailable {
+                Button("Notifications") {
+                    showingNotificationSettings = true
+                }
+            } else {
+                Button("Notifications (Pro)") {
+                    // Go directly to subscription view
+                    NotificationCenter.default.post(name: NSNotification.Name("ShowSubscriptionView"), object: nil)
+                }
             }
             
             Button("Share") {

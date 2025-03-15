@@ -11,9 +11,11 @@ struct ContentView: View {
     @StateObject private var navigationState = NavigationStateManager.shared
     @StateObject private var eventStore = EventStore()
     @StateObject private var globalSettings = GlobalSettings()
+    @StateObject private var paymentManager = PaymentManager.shared
     @Environment(\.colorScheme) private var colorScheme
     @State private var currentDate = Date()
     @State private var yearTrackerSettings: DisplaySettings = DisplaySettings(backgroundStyle: .dark)
+    @State private var showSubscriptionView = false
   
     private func settings(for event: Event) -> DisplaySettings {
         if event.title == String(currentYear) {
@@ -105,7 +107,7 @@ struct ContentView: View {
     
     private var timelineContent: some View {
         VStack(spacing: 0) {
-            if globalSettings.showGridLayout {
+            if globalSettings.isGridLayoutAvailable && globalSettings.showGridLayout {
                 TimelineGridView(eventStore: eventStore, yearTrackerSettings: yearTrackerSettings, selectedTab: $navigationState.selectedTab)
                     .environmentObject(globalSettings)
             } else {
@@ -145,7 +147,7 @@ struct ContentView: View {
     private var navigationContent: some View {
         VStack(spacing: 8) {
             // Page control dots
-            if !globalSettings.showGridLayout {
+            if !globalSettings.isGridLayoutAvailable || !globalSettings.showGridLayout {
                 HStack(spacing: 6) {
                     ForEach(0..<displayedEvents.count, id: \.self) { index in
                         let distance = abs(navigationState.selectedTab - index)
@@ -198,6 +200,13 @@ struct ContentView: View {
         .sheet(isPresented: $navigationState.showingSettings) {
             SettingsView()
                 .environmentObject(globalSettings)
+        }
+        .sheet(isPresented: $showSubscriptionView) {
+            SubscriptionView()
+                .environmentObject(globalSettings)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ShowSubscriptionView"))) { _ in
+            showSubscriptionView = true
         }
     }
 }

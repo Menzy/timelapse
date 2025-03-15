@@ -15,13 +15,12 @@ struct SubscriptionView: View {
                 VStack(spacing: 20) {
                     // Header
                     VStack(spacing: 10) {
-                        Text("Unlock Full Features")
+                        Text("Become a Pro Timelapser")
                             .font(.system(size: 28, weight: .bold))
-                            .foregroundColor(globalSettings.invertedColor)
-                        
-                        Text("Create unlimited events and unlock all premium features")
+                            .foregroundColor(Color.primary)          
+                        Text("Create custom events and unlock all premium features")
                             .font(.system(size: 16))
-                            .foregroundColor(globalSettings.invertedSecondaryColor)
+                            .foregroundColor(Color.secondary)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal)
                     }
@@ -29,10 +28,12 @@ struct SubscriptionView: View {
                     
                     // Features list
                     VStack(alignment: .leading, spacing: 15) {
-                        FeatureRow(icon: "infinity", text: "Create unlimited events")
+                        FeatureRow(icon: "infinity", text: "Track up to 5 custom events")
                         FeatureRow(icon: "paintbrush", text: "Customize all display styles")
                         FeatureRow(icon: "bell", text: "Set reminders for your events")
                         FeatureRow(icon: "icloud", text: "Sync across all your devices")
+                        FeatureRow(icon: "bell", text: "Display all events in clock")
+                        FeatureRow(icon: "grid", text: "Display all events as grid")
                     }
                     .padding(.horizontal, 30)
                     .padding(.vertical, 20)
@@ -66,7 +67,7 @@ struct SubscriptionView: View {
                     }) {
                         Text("Restore Purchases")
                             .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(globalSettings.invertedSecondaryColor)
+                            .foregroundColor(Color.secondary)
                     }
                     .padding(.top, 20)
                     .disabled(isLoading)
@@ -83,7 +84,7 @@ struct SubscriptionView: View {
                         }
                         .font(.system(size: 12, weight: .medium))
                     }
-                    .foregroundColor(globalSettings.invertedSecondaryColor)
+                    .foregroundColor(Color.secondary)
                     .padding(.top, 10)
                     .padding(.bottom, 30)
                 }
@@ -122,7 +123,7 @@ struct FeatureRow: View {
             
             Text(text)
                 .font(.system(size: 16))
-                .foregroundColor(globalSettings.invertedColor)
+                .foregroundColor(Color.primary)
             
             Spacer()
         }
@@ -144,18 +145,18 @@ struct SubscriptionOptionView: View {
                 VStack(alignment: .leading, spacing: 5) {
                     Text(product.displayName)
                         .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(globalSettings.invertedColor)
+                        .foregroundColor(Color.primary)
                     
                     Text(product.description)
                         .font(.system(size: 14))
-                        .foregroundColor(globalSettings.invertedSecondaryColor)
+                        .foregroundColor(Color.secondary)
                 }
                 
                 Spacer()
                 
                 Text(product.displayPrice)
                     .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(globalSettings.invertedColor)
+                    .foregroundColor(Color.primary)
             }
             .padding(.horizontal, 15)
             .padding(.vertical, 10)

@@ -11,6 +11,15 @@ import SwiftUI
 class GlobalSettings: ObservableObject {
     @Published var backgroundStyle: BackgroundStyle = .light
     @Published var showGridLayout: Bool = false
+    
+    // Computed properties to check if premium features are available based on subscription status
+    var isGridLayoutAvailable: Bool {
+        return PaymentManager.isUserSubscribed()
+    }
+    
+    var areNotificationsAvailable: Bool {
+        return PaymentManager.isUserSubscribed()
+    }
     @Published private var systemIsDark: Bool = false
     
     // Notification-related settings

@@ -15,10 +15,7 @@ struct TrackEventView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
-                HStack {
-                    Text("Track Event")
-                        .font(.title2)
-                        .fontWeight(.bold)
+                HStack {        
                     Spacer()
                     Button(action: { dismiss() }) {
                         Image(systemName: "xmark")
@@ -30,7 +27,6 @@ struct TrackEventView: View {
                 }
                 .padding(.horizontal)
                 .padding(.top)
-                
                 Form {
                     Section {
                         TextField("Add your event name", text: $eventTitle)
@@ -52,7 +48,7 @@ struct TrackEventView: View {
                     
                     Section {
                         Button(action: {
-                            if !eventStore.canAddMoreEvents() {
+                            if (!eventStore.canAddMoreEvents()) {
                                 showingLimitAlert = true
                             } else {
                                 let newEvent = Event(
