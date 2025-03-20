@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct DotPixelsView: View {
     let daysLeft: Int
@@ -192,10 +193,16 @@ struct DotPixelsView: View {
             
             // Overlay for date tooltip
             if let date = selectedDate, let index = tappedIndex {
-                let dotPosition = CGPoint(
-                    x: CGFloat(index % gridParams.columns) * gridParams.dotSize + gridParams.dotSize/2 + 20,
-                    y: CGFloat(index / gridParams.columns) * gridParams.dotSize + gridParams.dotSize/2 + 20
-                )
+                let row = index / gridParams.columns
+                let col = index % gridParams.columns
+                
+                // Calculate dot position
+                let dotX = CGFloat(col) * gridParams.dotSize + gridParams.dotSize/2
+                let dotY = CGFloat(row) * gridParams.dotSize + gridParams.dotSize/2
+                
+                // Always position the tooltip above the dot with proper spacing
+                // Use a minimum offset from the top of the view to ensure visibility
+                let tooltipOffset = dotY < 40 ? max(10, dotY - 10) : dotY - 30
                 
                 Text(formatDate(date))
                     .font(.inter(12, weight: .medium))
@@ -205,7 +212,7 @@ struct DotPixelsView: View {
                     .foregroundColor(.white)
                     .cornerRadius(6)
                     .shadow(color: .black.opacity(0.2), radius: 2)
-                    .position(x: dotPosition.x, y: max(dotPosition.y - 20, 20))
+                    .position(x: dotX, y: tooltipOffset)
                     .animation(.none, value: selectedDate)
             }
         }

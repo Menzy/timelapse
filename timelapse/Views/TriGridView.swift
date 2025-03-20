@@ -220,10 +220,16 @@ struct TriGridView: View {
                 }
                 
                 if let date = selectedDate, let index = tappedIndex {
-                    let dotPosition = CGPoint(
-                        x: CGFloat(index % gridParams.columns) * (gridParams.triangleSize + gridParams.spacing) + gridParams.triangleSize/2,
-                        y: CGFloat(index / gridParams.columns) * (gridParams.triangleSize + gridParams.spacing) + gridParams.triangleSize/2
-                    )
+                    let row = index / gridParams.columns
+                    let col = index % gridParams.columns
+                    
+                    // Calculate triangle position
+                    let triangleX = CGFloat(col) * (gridParams.triangleSize + gridParams.spacing) + gridParams.triangleSize/2
+                    let triangleY = CGFloat(row) * (gridParams.triangleSize + gridParams.spacing) + gridParams.triangleSize/2
+                    
+                    // Always position the tooltip above the triangle with proper spacing
+                    // Use a minimum offset from the top of the view to ensure visibility
+                    let tooltipOffset = triangleY < 40 ? max(10, triangleY - 10) : triangleY - 30
                     
                     Text(formatDate(date))
                         .font(.inter(12, weight: .medium))
@@ -233,7 +239,7 @@ struct TriGridView: View {
                         .foregroundColor(.white)
                         .cornerRadius(6)
                         .shadow(color: .black.opacity(0.2), radius: 2)
-                        .position(x: dotPosition.x, y: max(dotPosition.y - 20, 20))
+                        .position(x: triangleX, y: tooltipOffset)
                         .animation(.none, value: selectedDate)
                 }
             }
