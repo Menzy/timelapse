@@ -42,6 +42,28 @@ fileprivate class HapticFeedback {
 }
 
 struct TimeCard: View {
+    // Helper function to determine cutout image based on color
+    private func getCutoutImage(color: Color) -> String {
+        // Extract color components for more reliable comparison
+        guard let components = color.cgColor?.components, components.count >= 3 else {
+            return "blueCut" // Default fallback
+        }
+        
+        // Orange: FF7F00 (approximately R:1.0, G:0.5, B:0.0)
+        if components[0] > 0.9 && components[1] > 0.45 && components[1] < 0.55 && components[2] < 0.1 {
+            return "orangeCut"
+        }
+        // Green: 7FBF54 (approximately R:0.5, G:0.75, B:0.33)
+        else if components[0] > 0.45 && components[0] < 0.55 && 
+                components[1] > 0.7 && components[1] < 0.8 && 
+                components[2] > 0.3 && components[2] < 0.4 {
+            return "greenCut"
+        }
+        // Blue or any other color
+        else {
+            return "blueCut"
+        }
+    }
     let title: String
     let event: Event
     @ObservedObject var settings: DisplaySettings
@@ -83,11 +105,20 @@ struct TimeCard: View {
     var daysText: String {
         if settings.showPercentage {
             return "left"
+        } else if showingDaysLeft {
+            // Special cases for days left
+            if daysLeft < 0 {
+                return "Event Overdue"
+            } else if daysLeft == 0 {
+                return "It's Today"
+            } else {
+                let dayText = daysLeft == 1 ? "day" : "days"
+                return "\(dayText) left"
+            }
         } else {
-            let count = showingDaysLeft ? daysLeft : daysSpent
-            let type = showingDaysLeft ? "left" : "in"
-            let dayText = count == 1 ? "day" : "days"
-            return "\(dayText) \(type)"
+            // Days spent logic remains unchanged
+            let dayText = daysSpent == 1 ? "day" : "days"
+            return "\(dayText) in"
         }
     }
     
@@ -147,18 +178,21 @@ struct TimeCard: View {
             
             HStack {
                 Text(title)
-                    .font(.custom("Inter", size: isGridView ? 8 : 10))
+                    .font(.custom("Inter", size: isGridView ? 8 : 12))
                     .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .white : .black)
                 
                 Spacer()
                 
                 // Wrap percentage/days display in animation block
                 HStack(spacing: 4) {
-                    Text(settings.showPercentage 
-                         ? String(format: "%.0f%%", percentageLeft) 
-                         : String(showingDaysLeft ? daysLeft : daysSpent))
-                        .font(.custom("Inter", size: isGridView ? 10 : 12))
-                        .contentTransition(.numericText())
+                    // Only show the number if we're showing percentage or not in special case (today/overdue)
+                    if settings.showPercentage || (showingDaysLeft && daysLeft > 0) || !showingDaysLeft {
+                        Text(settings.showPercentage 
+                            ? String(format: "%.0f%%", percentageLeft) 
+                            : String(showingDaysLeft ? daysLeft : daysSpent))
+                            .font(.custom("Inter", size: isGridView ? 10 : 12))
+                            .contentTransition(.numericText())
+                    }
                     
                     Text(daysText)
                         .font(.custom("Inter", size: isGridView ? 10 : 12))
@@ -186,10 +220,8 @@ struct TimeCard: View {
                             .aspectRatio(contentMode: .fill)
                             .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
                         
-                        // Cutout image based on display color
-                        let cutoutImage = settings.displayColor == Color(hex: "FF7F00") ? "orangeCut" :
-                                        settings.displayColor == Color(hex: "7FBF54") ? "greenCut" : 
-                                        settings.displayColor == Color(hex: "018AFB") ? "blueCut" : "blueCut"
+                        // Cutout image based on display color - direct mapping with no default fallback
+                        let cutoutImage = getCutoutImage(color: settings.displayColor)
                         Image(cutoutImage)
                             .resizable()
                             .aspectRatio(contentMode: .fill)
@@ -235,56 +267,9 @@ struct TimeCard: View {
             .environmentObject(globalSettings)
         }
         .sheet(isPresented: $showingNotificationSettings) {
-            if globalSettings.areNotificationsAvailable {
-                NotificationSettingsView(event: event, eventStore: eventStore)
-                    .environmentObject(globalSettings)
-            } else {
-                // Pro feature notification view
-                NavigationView {
-                    VStack(spacing: 20) {
-                        Image(systemName: "bell.badge")
-                            .font(.system(size: 50))
-                            .foregroundColor(Color(hex: "FF7F00"))
-                            .padding(.bottom, 10)
-                        
-                        Text("Pro Feature")
-                            .font(.title2.bold())
-                        
-                        Text("Notifications are available with a Pro subscription.")
-                            .multilineTextAlignment(.center)
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal)
-                        
-                        Button(action: {
-                            showingNotificationSettings = false
-                            // We need to delay this slightly to avoid presentation conflicts
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                NotificationCenter.default.post(name: NSNotification.Name("ShowSubscriptionView"), object: nil)
-                            }
-                        }) {
-                            Text("Upgrade to Pro")
-                                .font(.headline)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 24)
-                                .padding(.vertical, 12)
-                                .background(Color(hex: "FF7F00"))
-                                .cornerRadius(10)
-                        }
-                        .padding(.top, 10)
-                    }
-                    .padding()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .navigationTitle("Notification Settings")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Button("Close") {
-                                showingNotificationSettings = false
-                            }
-                        }
-                    }
-                }
-            }
+            // Always show notification settings, removing the pro feature check
+            NotificationSettingsView(event: event, eventStore: eventStore)
+                .environmentObject(globalSettings)
         }
         .confirmationDialog("Event Options", isPresented: $showingActionSheet, titleVisibility: .visible) {
             // Only show Edit button for non-year tracker events
@@ -294,15 +279,9 @@ struct TimeCard: View {
                 }
             }
             
-            if globalSettings.areNotificationsAvailable {
-                Button("Notifications") {
-                    showingNotificationSettings = true
-                }
-            } else {
-                Button("Notifications (Pro)") {
-                    // Go directly to subscription view
-                    NotificationCenter.default.post(name: NSNotification.Name("ShowSubscriptionView"), object: nil)
-                }
+            // Always show notifications option without pro badge
+            Button("Notifications") {
+                showingNotificationSettings = true
             }
             
             Button("Share") {
