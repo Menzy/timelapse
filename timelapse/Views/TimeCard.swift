@@ -77,6 +77,7 @@ struct TimeCard: View {
     @State private var showingActionSheet = false
     @State private var showingNotificationSettings = false
     @State private var isPressed = false
+    @State private var isLongPressing = false
     @EnvironmentObject var globalSettings: GlobalSettings
     @Binding var selectedTab: Int
     @StateObject private var navigationState = NavigationStateManager.shared
@@ -229,9 +230,9 @@ struct TimeCard: View {
                 }
             }
         )
-        // Add visual feedback when pressed
-        .scaleEffect(isPressed ? 0.96 : 1.0)
-        .animation(.spring(response: 0.3), value: isPressed)
+        // Add visual feedback only during long press, not during swipes
+        .scaleEffect(isLongPressing && isPressed ? 0.96 : 1.0)
+        .animation(.spring(response: 0.3), value: isLongPressing)
         .onLongPressGesture(minimumDuration: 0.5) {
             // Allow long press for all cards, including year tracker
             HapticFeedback.impact(style: .heavy)
@@ -245,12 +246,26 @@ struct TimeCard: View {
                 showingActionSheet = true
             }
         } onPressingChanged: { isPressing in
-            // Allow visual feedback for all cards
+            // Only update isPressed state which is used for tracking
+            isPressed = isPressing
+            
+            // Only set long pressing state after a delay to avoid triggering during swipes
             if isPressing {
                 // Light haptic feedback when touch begins
                 HapticFeedback.impact(style: .light)
+                
+                // Use a timer to only set isLongPressing after a delay
+                // This prevents the scale effect from appearing during quick swipes
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    // Only set isLongPressing if still pressing after the delay
+                    if isPressed {
+                        isLongPressing = true
+                    }
+                }
+            } else {
+                // Immediately reset long pressing state when touch ends
+                isLongPressing = false
             }
-            isPressed = isPressing
         }
         .sheet(isPresented: $showingEditSheet) {
             EditEventView(event: event, eventStore: eventStore)
