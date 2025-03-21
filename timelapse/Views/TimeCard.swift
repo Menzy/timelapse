@@ -179,7 +179,7 @@ struct TimeCard: View {
             
             HStack {
                 Text(title)
-                    .font(.custom("Inter", size: isGridView ? 8 : 12))
+                    .font(.custom("Inter", size: isGridView ? 10 : 12))
                     .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .white : .black)
                 
                 Spacer()

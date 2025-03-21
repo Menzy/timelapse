@@ -12,28 +12,10 @@ struct SettingsView: View {
         NavigationView {
             Form {
                 Section("Display") {
-                    if paymentManager.isSubscribed {
-                        Toggle("Show All Events in Grid", isOn: $globalSettings.showGridLayout)
-                            .onChange(of: globalSettings.showGridLayout) { _, _ in
-                                globalSettings.saveSettings()
-                            }
-                    } else {
-                        HStack {
-                            Text("Show All Events in Grid")
-                            Spacer()
-                            Button(action: {
-                                showSubscriptionView = true
-                            }) {
-                                Text("Pro")
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(Color(hex: "FF7F00"))
-                                    .cornerRadius(8)
-                            }
+                    Toggle("Show All Events in Grid", isOn: $globalSettings.showGridLayout)
+                        .onChange(of: globalSettings.showGridLayout) { _, _ in
+                            globalSettings.saveSettings()
                         }
-                    }
                 }
                 
                 Section("Notifications") {

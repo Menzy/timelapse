@@ -117,6 +117,6 @@ class PaymentManager: ObservableObject {
     
     // Helper method to get the event limit based on subscription status
     static func getEventLimit() -> Int {
-        return isUserSubscribed() ? Int.max : 1 // Free users can only create 1 custom event
+        return 5 // Allow 5 custom events plus the year tracker for all users
     }
 }

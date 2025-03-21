@@ -14,7 +14,7 @@ class GlobalSettings: ObservableObject {
     
     // Computed properties to check if premium features are available based on subscription status
     var isGridLayoutAvailable: Bool {
-        return PaymentManager.isUserSubscribed()
+        return true // Make grid layout available to all users
     }
     
     var areNotificationsAvailable: Bool {

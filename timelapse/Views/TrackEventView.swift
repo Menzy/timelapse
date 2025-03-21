@@ -84,15 +84,9 @@ struct TrackEventView: View {
                 }
             }
             .alert("Event Limit Reached", isPresented: $showingLimitAlert) {
-                Button("Subscribe", role: .none) {
-                    showSubscriptionView = true
-                }
-                Button("Cancel", role: .cancel) { }
+                Button("OK", role: .cancel) { }
             } message: {
-                Text("You've reached the free limit of 1 custom event. Subscribe to Premium to create unlimited events.")
-            }
-            .sheet(isPresented: $showSubscriptionView) {
-                SubscriptionView()
+                Text("You've reached the limit of 5 custom events. Delete an existing event to create a new one.")
             }
         }
         .presentationDetents([.fraction(0.6)])

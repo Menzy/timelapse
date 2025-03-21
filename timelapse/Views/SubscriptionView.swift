@@ -33,7 +33,6 @@ struct SubscriptionView: View {
                         FeatureRow(icon: "bell", text: "Set reminders for your events")
                         FeatureRow(icon: "icloud", text: "Sync across all your devices")
                         FeatureRow(icon: "bell", text: "Display all events in clock")
-                        FeatureRow(icon: "grid", text: "Display all events as grid")
                     }
                     .padding(.horizontal, 30)
                     .padding(.vertical, 20)
