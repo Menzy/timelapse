@@ -7,16 +7,16 @@ struct ShareableTimeCard: View {
     let eventStore: EventStore
     let daysLeft: Int
     let totalDays: Int
-    @State private var showingDaysLeft = true
+    let showingDaysLeft: Bool
     @EnvironmentObject var globalSettings: GlobalSettings
     
     // Add computed properties for dynamic scaling
     private var scaledWidth: CGFloat {
-        UIScreen.main.bounds.width * 0.8
+        UIScreen.main.bounds.width * 0.76 // Match TimeCard width
     }
     
     private var scaledHeight: CGFloat {
-        UIScreen.main.bounds.height * 0.45
+        UIScreen.main.bounds.height * 0.45 // Match TimeCard height
     }
     
     var daysSpent: Int {
@@ -101,7 +101,8 @@ struct ShareableTimeCard: View {
                 startDate: event.creationDate,
                 settings: settings,
                 eventStore: eventStore,
-                selectedTab: .constant(0)
+                selectedTab: .constant(0),
+                showEventHighlights: false
             )
         case .progressBar:
             ProgressBarView(daysLeft: daysLeft, totalDays: totalDays, settings: settings)
@@ -118,7 +119,7 @@ struct ShareableTimeCard: View {
     }
     
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 0) {
             // The actual card
             VStack(spacing: 0) {
                 timeDisplayView()
@@ -167,7 +168,7 @@ struct ShareableTimeCard: View {
             .frame(width: scaledWidth, height: scaledHeight)
             
             // Watermark below the card
-            Text(isYearTracker ? "Year Tracker - Created with Timelapse" : "Created with Timelapse")
+            Text(isYearTracker ? "My Year so Far - Created with Timelapse" : "Created with Timelapse")
                 .font(.custom("Inter", size: 8))
                 .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .black.opacity(0.7) : .white.opacity(0.7))
         }

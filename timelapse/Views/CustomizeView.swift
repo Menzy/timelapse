@@ -147,15 +147,21 @@ struct StylePreviewView: View {
     @Environment(\.colorScheme) private var colorScheme
     
     var iconColor: Color {
-        return isSelected ? (colorScheme == .dark ? .white : .black) : Color(hex: "343434")
+        if isSelected {
+            return colorScheme == .dark ? .white : .black
+        } else {
+            return colorScheme == .dark ? Color(hex: "343434") : Color(hex: "8E8E8E")
+        }
     }
     
-    var gradientStroke: LinearGradient {
-        LinearGradient(
-            gradient: Gradient(colors: [Color.black, Color(hex: "989898")]),
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
+    var containerBackgroundColor: Color {
+        return colorScheme == .dark ? Color(hex: "1B1B1B").opacity(0.5) : Color(hex: "F5F5F5")
+    }
+    
+    var gradientColors: [Color] {
+        return colorScheme == .dark ? 
+            [Color.black, Color(hex: "989898")] : 
+            [Color(hex: "E5E5E5"), Color(hex: "CCCCCC")]
     }
     
     var body: some View {
@@ -168,14 +174,14 @@ struct StylePreviewView: View {
                 
                 // Background fill
                 Circle()
-                    .fill(Color(hex: "1B1B1B").opacity(0.5))
+                    .fill(containerBackgroundColor)
                     .frame(maxWidth: 60, maxHeight: 60)
                 
                 // Gradient stroke
                 Circle()
                     .stroke(
                         RadialGradient(
-                            gradient: Gradient(colors: [Color.black, Color(hex: "989898")]),
+                            gradient: Gradient(colors: gradientColors),
                             center: .center,
                             startRadius: 0,
                             endRadius: 30
@@ -257,10 +263,21 @@ struct CustomizeView: View {
                                 ForEach(presets) { preset in
                                     VStack {
                                         ZStack {
+                                            if settings.displayColor == preset.color {
+                                                // Glow effect for selected color
+                                                RoundedRectangle(cornerRadius: 10)
+                                                    .fill(preset.color)
+                                                    .frame(maxWidth: 92, maxHeight: 19)
+                                                    .shadow(color: preset.color.opacity(0.5), radius: 8, x: 0, y: 0)
+                                                    .shadow(color: preset.color.opacity(0.3), radius: 4, x: 0, y: 0)
+                                            }
+                                            
                                             RoundedRectangle(cornerRadius: 10)
-                                                .stroke(settings.displayColor == preset.color ? Color.blue : Color.gray.opacity(0.3), lineWidth: 2)
+                                                .stroke(settings.displayColor == preset.color ? 
+                                                    (globalSettings.effectiveBackgroundStyle == .light ? Color.black : Color.white) : 
+                                                    Color.gray.opacity(0.3), 
+                                                    lineWidth: settings.displayColor == preset.color ? 2 : 1)
                                                 .frame(maxWidth: 92, maxHeight: 19)
-                                                .frame(height: 19)
                                             
                                             RoundedRectangle(cornerRadius: 10)
                                                 .fill(preset.color)
@@ -268,7 +285,9 @@ struct CustomizeView: View {
                                                 .frame(height: 19)
                                         }
                                         .onTapGesture {
-                                            settings.displayColor = preset.color
+                                            withAnimation(.spring(response: 0.3)) {
+                                                settings.displayColor = preset.color
+                                            }
                                         }
                                         
                                         Text(preset.name)

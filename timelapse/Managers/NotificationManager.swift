@@ -126,8 +126,53 @@ class NotificationManager: ObservableObject {
         
         // Create notification content
         let content = UNMutableNotificationContent()
-        content.title = event.title
-        content.body = "You have \(daysLeft) days left until this event."
+        
+        // Special handling for year tracker
+        if event.title == String(Calendar.current.component(.year, from: Date())) {
+            content.title = "Year Progress"
+            
+            // Create a message focused on year progress
+            let message: String
+            if daysLeft > 180 {
+                message = "\(daysLeft) days remain in \(event.title). Let's make the most of this year!"
+            } else if daysLeft > 90 {
+                message = "We're in the second half of \(event.title)! \(daysLeft) days to make it count."
+            } else if daysLeft > 30 {
+                message = "The final quarter of \(event.title) is underway. \(daysLeft) days to achieve your goals!"
+            } else if daysLeft > 7 {
+                message = "\(daysLeft) days left in \(event.title). Finish the year strong!"
+            } else if daysLeft > 1 {
+                message = "Only \(daysLeft) days remain in \(event.title). Time to reflect and prepare for \(Int(event.title)! + 1)!"
+            } else if daysLeft == 1 {
+                message = "Last day of \(event.title)! Tomorrow we welcome \(Int(event.title)! + 1)."
+            } else {
+                message = "Happy New Year! Welcome to \(Int(event.title)! + 1)!"
+            }
+            content.body = message
+        } else {
+            content.title = "Time Update: \(event.title)"
+            
+            // Regular event messages (unchanged)
+            let message: String
+            if daysLeft > 365 {
+                let years = daysLeft / 365
+                let remainingDays = daysLeft % 365
+                message = "\(years) year\(years > 1 ? "s" : "") and \(remainingDays) day\(remainingDays != 1 ? "s" : "") until \(event.title)! The countdown continues..."
+            } else if daysLeft > 30 {
+                let months = daysLeft / 30
+                let remainingDays = daysLeft % 30
+                message = "\(months) month\(months > 1 ? "s" : "") and \(remainingDays) day\(remainingDays != 1 ? "s" : "") until \(event.title). Keep going!"
+            } else if daysLeft > 7 {
+                message = "Just \(daysLeft) days until \(event.title)! Getting closer every day."
+            } else if daysLeft > 1 {
+                message = "Almost there! Only \(daysLeft) days until \(event.title). The excitement builds!"
+            } else if daysLeft == 1 {
+                message = "Tomorrow is the big day - \(event.title)! Get ready!"
+            } else {
+                message = "Today's the day for \(event.title)! The moment has arrived!"
+            }
+            content.body = message
+        }
         content.sound = .default
         
         // Extract hour and minute from the preferred notification time
@@ -195,8 +240,45 @@ class NotificationManager: ObservableObject {
                     
                     // Create notification content
                     let content = UNMutableNotificationContent()
-                    content.title = "Milestone: \(event.title)"
-                    content.body = "You've reached \(percentage)% completion for this event!"
+                    
+                    // Special handling for year tracker milestones
+                    if event.title == String(Calendar.current.component(.year, from: Date())) {
+                        content.title = "Year Milestone"
+                        
+                        // Create year-specific milestone messages
+                        let message: String
+                        switch percentage {
+                        case 75:
+                            message = "We're 75% through \(event.title)! The final quarter of the year begins."
+                        case 50:
+                            message = "Halfway through \(event.title)! What will you accomplish in the remaining months?"
+                        case 25:
+                            message = "First quarter of \(event.title) complete! How's your year shaping up?"
+                        case 90:
+                            message = "90% of \(event.title) complete! Time to start thinking about next year's goals."
+                        default:
+                            message = "\(percentage)% of \(event.title) has passed. Making memories every day!"
+                        }
+                        content.body = message
+                    } else {
+                        content.title = "Milestone Alert: \(event.title)"
+                        
+                        // Regular milestone messages (unchanged)
+                        let message: String
+                        switch percentage {
+                        case 75:
+                            message = "Wow! You're 75% of the way to \(event.title)! The final quarter begins."
+                        case 50:
+                            message = "Halfway there! 50% of the journey to \(event.title) complete. Keep that momentum going!"
+                        case 25:
+                            message = "You've completed 25% of the wait for \(event.title). The adventure continues!"
+                        case 90:
+                            message = "90% complete! The countdown to \(event.title) is in its final stages!"
+                        default:
+                            message = "You've reached \(percentage)% on your journey to \(event.title)!"
+                        }
+                        content.body = message
+                    }
                     content.sound = .default
                     
                     // Create the trigger and request
@@ -231,8 +313,28 @@ class NotificationManager: ObservableObject {
                     
                     // Create notification content
                     let content = UNMutableNotificationContent()
-                    content.title = "Milestone: \(event.title)"
-                    content.body = "Only \(days) days left until this event!"
+                    content.title = "Milestone Alert: \(event.title)"
+                    
+                    // Create more engaging milestone messages
+                    let message: String
+                    switch days {
+                    case 100:
+                        message = "100 days until \(event.title)! Triple digits turning to double soon!"
+                    case 30:
+                        message = "One month left until \(event.title)! Time to start getting excited!"
+                    case 14:
+                        message = "Two weeks to go until \(event.title)! The countdown is getting real!"
+                    case 7:
+                        message = "Just one week remains until \(event.title)! Can you feel the anticipation?"
+                    case 3:
+                        message = "Only 3 days left until \(event.title)! The moment is almost here!"
+                    case 1:
+                        message = "Tomorrow is \(event.title)! The wait is nearly over!"
+                    default:
+                        message = "\(days) days remain until \(event.title)! Each day brings you closer!"
+                    }
+                    
+                    content.body = message
                     content.sound = .default
                     
                     // Create the trigger and request
@@ -261,8 +363,8 @@ class NotificationManager: ObservableObject {
                     
                     // Create notification content
                     let content = UNMutableNotificationContent()
-                    content.title = "Milestone: \(event.title)"
-                    content.body = "Today is a milestone day for your event!"
+                    content.title = "Milestone Alert: \(event.title)"
+                    content.body = "Today marks a special milestone on your journey to \(event.title)! Keep going!"
                     content.sound = .default
                     
                     // Create the trigger and request

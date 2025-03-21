@@ -26,6 +26,7 @@ struct TriGridView: View {
     var startDate: Date = Date()
     var eventStore: EventStore?
     @Binding var selectedTab: Int
+    var showEventHighlights: Bool = true
     
     // If the view is created without a binding, use this initializer
     init(daysLeft: Int, totalDays: Int, settings: DisplaySettings) {
@@ -36,7 +37,7 @@ struct TriGridView: View {
     }
     
     // Add a complete initializer that matches DotPixelsView functionality
-    init(daysLeft: Int, totalDays: Int, isYearTracker: Bool, startDate: Date, settings: DisplaySettings, eventStore: EventStore, selectedTab: Binding<Int>) {
+    init(daysLeft: Int, totalDays: Int, isYearTracker: Bool, startDate: Date, settings: DisplaySettings, eventStore: EventStore, selectedTab: Binding<Int>, showEventHighlights: Bool = true) {
         self.daysLeft = daysLeft
         self.totalDays = totalDays
         self.isYearTracker = isYearTracker
@@ -44,6 +45,7 @@ struct TriGridView: View {
         self.settings = settings
         self.eventStore = eventStore
         self._selectedTab = selectedTab
+        self.showEventHighlights = showEventHighlights
     }
     
     var daysCompleted: Int {
@@ -65,12 +67,12 @@ struct TriGridView: View {
     }
     
     private func isTargetDate(_ date: Date) -> Bool {
-        if (!isYearTracker || eventStore == nil) { return false }
+        if (!isYearTracker || !showEventHighlights) { return false }
         let calendar = Calendar.current
-        return eventStore!.events.contains { event in
+        return eventStore?.events.contains { event in
             guard event.title != String(calendar.component(.year, from: Date())) else { return false }
             return calendar.isDate(date, inSameDayAs: event.targetDate)
-        }
+        } ?? false
     }
     
     private func findEventIndex(for date: Date) -> Int? {

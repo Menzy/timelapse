@@ -277,7 +277,8 @@ struct TimeCard: View {
                 settings: settings,
                 eventStore: eventStore,
                 daysLeft: daysLeft,
-                totalDays: totalDays
+                totalDays: totalDays,
+                showingDaysLeft: showingDaysLeft
             )
             .environmentObject(globalSettings)
         }

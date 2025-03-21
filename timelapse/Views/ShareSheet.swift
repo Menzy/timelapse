@@ -23,10 +23,12 @@ struct ShareableCardView: View {
     let eventStore: EventStore
     let daysLeft: Int
     let totalDays: Int
+    let showingDaysLeft: Bool
     @EnvironmentObject var globalSettings: GlobalSettings
     @Environment(\.dismiss) private var dismiss
     @State private var shareImage: UIImage? = nil
     @State private var isSharePresented: Bool = false
+    @State private var isGeneratingImage: Bool = false
     
     // Check if this is the year tracker
     private var isYearTracker: Bool {
@@ -55,9 +57,7 @@ struct ShareableCardView: View {
                 Spacer()
                 
                 Button(action: {
-                    // Generate the image and present share sheet
-                    generateShareImage()
-                    isSharePresented = true
+                    shareEvent()
                 }) {
                     Image(systemName: "square.and.arrow.up")
                         .font(.system(size: 16, weight: .medium))
@@ -86,32 +86,13 @@ struct ShareableCardView: View {
                     settings: settings,
                     eventStore: eventStore,
                     daysLeft: daysLeft,
-                    totalDays: totalDays
+                    totalDays: totalDays,
+                    showingDaysLeft: showingDaysLeft
                 )
                 .environmentObject(globalSettings)
             }
             
             Spacer()
-            
-            // Share button
-            Button(action: {
-                // Generate the image and present share sheet
-                generateShareImage()
-                isSharePresented = true
-            }) {
-                HStack {
-                    Image(systemName: "square.and.arrow.up")
-                    Text("Share")
-                }
-                .font(.custom("Inter", size: 16))
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.blue)
-                .cornerRadius(12)
-                .padding(.horizontal)
-            }
-            .padding(.bottom, 24)
         }
         .background(globalSettings.effectiveBackgroundStyle.backgroundColor.edgesIgnoringSafeArea(.all))
         .sheet(isPresented: $isSharePresented) {
@@ -119,28 +100,84 @@ struct ShareableCardView: View {
                 ShareSheet(activityItems: [image])
             }
         }
+        .overlay {
+            if isGeneratingImage {
+                Color.black.opacity(0.3)
+                    .edgesIgnoringSafeArea(.all)
+                    .overlay {
+                        ProgressView()
+                            .scaleEffect(1.5)
+                            .tint(.white)
+                    }
+            }
+        }
     }
     
-    private func generateShareImage() {
-        // Create the shareable card view with padding for the watermark
-        let cardView = VStack(spacing: 8) {
-            ShareableTimeCard(
-                title: title,
-                event: event,
-                settings: settings,
-                eventStore: eventStore,
-                daysLeft: daysLeft,
-                totalDays: totalDays
-            )
-            .environmentObject(globalSettings)
-        }
-        .padding(16)
-        .background(globalSettings.effectiveBackgroundStyle.backgroundColor)
-        .cornerRadius(20)
-        .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
+    private func shareEvent() {
+        isGeneratingImage = true
         
-        // Convert the view to an image with extra space for the watermark
-        let size = CGSize(width: UIScreen.main.bounds.width * 0.85, height: UIScreen.main.bounds.height * 0.55)
-        shareImage = cardView.asImage(size: size)
+        // Create a container view with proper padding and background
+        let containerView = ZStack {
+            // Apply background color to the entire view
+            globalSettings.effectiveBackgroundStyle.backgroundColor
+                .edgesIgnoringSafeArea(.all)
+            
+            VStack(spacing: 0) {
+                // Add some top padding
+                Spacer()
+                    .frame(height: 40)
+                
+                // The card with its background
+                ShareableTimeCard(
+                    title: title,
+                    event: event,
+                    settings: settings,
+                    eventStore: eventStore,
+                    daysLeft: daysLeft,
+                    totalDays: totalDays,
+                    showingDaysLeft: showingDaysLeft
+                )
+                .environmentObject(globalSettings)
+                .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
+                
+                // Add some bottom padding
+                Spacer()
+                    .frame(height: 40)
+                
+                // Watermark
+                Text(isYearTracker ? "Year Tracker - Created with Timelapse" : "Created with Timelapse")
+                    .font(.custom("Inter", size: 8))
+                    .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .black.opacity(0.7) : .white.opacity(0.7))
+                    .padding(.top, 16)
+            }
+            .frame(width: UIScreen.main.bounds.width * 0.9)
+            .padding(.horizontal, 20)
+        }
+        .cornerRadius(20)
+        
+        // Generate a larger image to accommodate padding
+        let size = CGSize(
+            width: UIScreen.main.bounds.width * 0.9,
+            height: UIScreen.main.bounds.height * 0.6
+        )
+        
+        // Generate the image asynchronously
+        DispatchQueue.main.async {
+            // Create a UIHostingController with the container view
+            let controller = UIHostingController(rootView: containerView)
+            controller.view.bounds = CGRect(origin: .zero, size: size)
+            
+            // Ensure the background color is applied correctly
+            controller.view.backgroundColor = UIColor(globalSettings.effectiveBackgroundStyle.backgroundColor)
+            
+            // Render the image
+            let renderer = UIGraphicsImageRenderer(size: size)
+            shareImage = renderer.image { _ in
+                controller.view.drawHierarchy(in: controller.view.bounds, afterScreenUpdates: true)
+            }
+            
+            isGeneratingImage = false
+            isSharePresented = true
+        }
     }
 } 
