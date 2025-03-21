@@ -89,8 +89,8 @@ class NotificationManager: ObservableObject {
         // Remove any existing notifications for this event
         removeNotifications(for: event.id)
         
-        // If notifications are disabled or user is not subscribed, just return
-        if !settings.isEnabled || !PaymentManager.isUserSubscribed() {
+        // If notifications are disabled, just return
+        if !settings.isEnabled {
             return
         }
         

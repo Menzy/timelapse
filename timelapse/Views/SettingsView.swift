@@ -37,34 +37,15 @@ struct SettingsView: View {
                 }
                 
                 Section("Notifications") {
-                    if paymentManager.isSubscribed {
-                        Button(action: {
-                            showNotificationSettings = true
-                        }) {
-                            HStack {
-                                Text("Notification Settings")
-                                    .foregroundColor(.primary)
-                                Spacer()
-                                Image(systemName: "bell.badge")
-                                    .foregroundColor(.blue)
-                            }
-                        }
-                    } else {
+                    Button(action: {
+                        showNotificationSettings = true
+                    }) {
                         HStack {
                             Text("Notification Settings")
                                 .foregroundColor(.primary)
                             Spacer()
-                            Button(action: {
-                                showSubscriptionView = true
-                            }) {
-                                Text("Pro")
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(Color(hex: "FF7F00"))
-                                    .cornerRadius(8)
-                            }
+                            Image(systemName: "bell.badge")
+                                .foregroundColor(.blue)
                         }
                     }
                 }

@@ -18,7 +18,7 @@ class GlobalSettings: ObservableObject {
     }
     
     var areNotificationsAvailable: Bool {
-        return PaymentManager.isUserSubscribed()
+        return true
     }
     @Published private var systemIsDark: Bool = false
     
