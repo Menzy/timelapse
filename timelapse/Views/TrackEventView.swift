@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TrackEventView: View {
     @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @State private var eventTitle = ""
     @State private var eventDate = Date()
     @State private var startDate = Date()
@@ -16,6 +17,9 @@ struct TrackEventView: View {
         NavigationView {
             VStack(spacing: 20) {
                 HStack {        
+                    Text("Track Event")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
                     Spacer()
                     Button(action: { dismiss() }) {
                         Image(systemName: "xmark")
@@ -27,6 +31,8 @@ struct TrackEventView: View {
                 }
                 .padding(.horizontal)
                 .padding(.top)
+                // .padding(.bottom, 5)
+                
                 Form {
                     Section {
                         TextField("Add your event name", text: $eventTitle)
@@ -73,12 +79,19 @@ struct TrackEventView: View {
                             }
                         }) {
                             Text("Save")
-                                .fontWeight(.semibold)
-                                .foregroundColor(eventTitle.isEmpty ? Color.gray : Color.black)
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(eventTitle.isEmpty ? .gray : .white)
                                 .frame(maxWidth: .infinity)
-                                .padding(.horizontal)
-                                .padding(.vertical, 8)
+                                .padding(.vertical, 14)
+                                .background(
+                                    eventTitle.isEmpty 
+                                    ? (colorScheme == .dark ? Color.gray.opacity(0.3) : Color.gray.opacity(0.5))
+                                    : (colorScheme == .dark ? Color(hex: "0B7DD1") : Color(hex: "1A8FEF"))
+                                )
+                                .cornerRadius(8)
                         }
+                        .buttonStyle(PlainButtonStyle())
+                        .listRowInsets(EdgeInsets())
                         .disabled(eventTitle.isEmpty)
                     }
                 }
@@ -89,7 +102,7 @@ struct TrackEventView: View {
                 Text("You've reached the limit of 5 custom events. Delete an existing event to create a new one.")
             }
         }
-        .presentationDetents([.fraction(0.6)])
+        .presentationDetents([.fraction(0.5)])
         .presentationDragIndicator(.visible)
         .onAppear {
             Task {

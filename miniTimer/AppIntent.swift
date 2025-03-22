@@ -26,10 +26,7 @@ struct EventQuery: EntityQuery {
     func entities(for identifiers: [UUID]) async throws -> [EventEntity] {
         return identifiers.compactMap { id in
             if let events = loadEvents(), let event = events.first(where: { $0.id == id }) {
-                // Check if this is a year tracker or if user is subscribed
-                if isYearTracker(event) || isUserSubscribed() {
-                    return EventEntity(id: event.id, title: event.title)
-                }
+                return EventEntity(id: event.id, title: event.title)
             }
             return nil
         }
@@ -39,13 +36,8 @@ struct EventQuery: EntityQuery {
         var entities: [EventEntity] = []
         
         if let events = loadEvents() {
-            let isSubscribed = isUserSubscribed()
-            
             for event in events {
-                // Only include year tracker for free users
-                if isSubscribed || isYearTracker(event) {
-                    entities.append(EventEntity(id: event.id, title: event.title))
-                }
+                entities.append(EventEntity(id: event.id, title: event.title))
             }
         }
         
