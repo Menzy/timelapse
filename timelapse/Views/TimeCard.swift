@@ -233,19 +233,7 @@ struct TimeCard: View {
         // Add visual feedback only during long press, not during swipes
         .scaleEffect(isLongPressing && isPressed ? 0.96 : 1.0)
         .animation(.spring(response: 0.3), value: isLongPressing)
-        .onLongPressGesture(minimumDuration: 0.5) {
-            // Allow long press for all cards, including year tracker
-            HapticFeedback.impact(style: .heavy)
-            HapticFeedback.success()
-            
-            if isYearTracker {
-                // For year tracker, go directly to share sheet
-                showingShareSheet = true
-            } else {
-                // For regular events, show action sheet with options
-                showingActionSheet = true
-            }
-        } onPressingChanged: { isPressing in
+        .onLongPressGesture(minimumDuration: 0.5, pressing: { isPressing in
             // Only update isPressed state which is used for tracking
             isPressed = isPressing
             
@@ -265,6 +253,31 @@ struct TimeCard: View {
             } else {
                 // Immediately reset long pressing state when touch ends
                 isLongPressing = false
+            }
+        }) {
+            // Perform when long press is triggered
+            HapticFeedback.impact(style: .heavy)
+            HapticFeedback.success()
+            
+            if isYearTracker {
+                // For year tracker, go directly to share sheet
+                showingShareSheet = true
+            } else {
+                // For regular events, show action sheet with options
+                showingActionSheet = true
+            }
+        }
+        // Add double tap gesture for grid view cards
+        .onTapGesture(count: 2) {
+            if isGridView {
+                HapticFeedback.impact(style: .medium)
+                // Find this event in the eventStore
+                if let eventIndex = eventStore.findEventIndex(withId: event.id) {
+                    // Switch to detailed view
+                    globalSettings.showGridLayout = false
+                    // Set the tab to this event
+                    navigationState.selectedTab = eventIndex
+                }
             }
         }
         .sheet(isPresented: $showingEditSheet) {
