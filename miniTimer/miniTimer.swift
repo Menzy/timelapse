@@ -123,7 +123,7 @@ struct miniTimerEntryView : View {
     }
 
     private var containerPadding: CGFloat {
-        1 // Much smaller padding for a more compact widget design
+        0 // No padding for maximum space utilization in widget design
     }
 
     // Create URL for deep linking to the specific event

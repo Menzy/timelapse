@@ -11,7 +11,6 @@ struct NotificationSettingsView: View {
     @State private var showCustomDaysPicker: Bool = false
     @State private var showMilestoneEditor: Bool = false
     @State private var authorizationStatus: UNAuthorizationStatus = .notDetermined
-    @State private var showSaveConfirmation: Bool = false
     @State private var hasChanges: Bool = false
     
     init(event: Event, eventStore: EventStore) {
@@ -146,13 +145,10 @@ struct NotificationSettingsView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {
                         saveSettings()
-                        showSaveConfirmation = true
                         hasChanges = false
                         
-                        // Automatically dismiss after a short delay
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                            dismiss()
-                        }
+                        // Automatically dismiss after saving
+                        dismiss()
                     }
                     .disabled(!hasChanges)
                 }
@@ -163,26 +159,11 @@ struct NotificationSettingsView: View {
             .sheet(isPresented: $showCustomDaysPicker) {
                 CustomDaysPickerView(days: $notificationSettings.customDays)
             }
-            .overlay(
-                Group {
-                    if showSaveConfirmation {
-                        NotificationSaveConfirmationView()
-                            .transition(.opacity)
-                            .animation(.easeInOut, value: showSaveConfirmation)
-                    }
-                }
-            )
             .onAppear {
                 checkAuthorizationStatus()
             }
             .onChange(of: notificationSettings) { _, _ in
                 hasChanges = true
-            }
-            .onDisappear {
-                // Save settings when view disappears if there are changes
-                if hasChanges {
-                    saveSettings()
-                }
             }
         }
     }
@@ -438,27 +419,6 @@ struct DatePickerView: View {
                     }
                 }
             }
-        }
-    }
-}
-
-// Define a local version with a different name to avoid conflicts
-struct NotificationSaveConfirmationView: View {
-    var body: some View {
-        VStack {
-            HStack {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(.green)
-                    .font(.system(size: 20))
-                Text("Settings Saved")
-                    .font(.headline)
-                    .foregroundColor(.primary)
-            }
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.gray.opacity(0.2))
-            )
         }
     }
 }

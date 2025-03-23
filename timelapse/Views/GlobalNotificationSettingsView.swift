@@ -139,7 +139,6 @@ struct YearTrackerNotificationsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var yearTrackerEvent: Event?
     @State private var notificationSettings: NotificationSettings = NotificationSettings()
-    @State private var showSaveConfirmation: Bool = false
     @State private var isSaving: Bool = false
     @State private var hasChanges: Bool = false
     
@@ -228,13 +227,10 @@ struct YearTrackerNotificationsView: View {
                     Button(action: {
                         isSaving = true
                         saveSettings()
-                        showSaveConfirmation = true
                         hasChanges = false
                         
-                        // Automatically dismiss after a short delay
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                            dismiss()
-                        }
+                        // Automatically dismiss
+                        dismiss()
                     }) {
                         HStack {
                             if isSaving {
@@ -258,12 +254,6 @@ struct YearTrackerNotificationsView: View {
                 }
                 dismiss()
             })
-            
-            if showSaveConfirmation {
-                SaveConfirmationView()
-                    .transition(.opacity)
-                    .animation(.easeInOut, value: showSaveConfirmation)
-            }
         }
         .onAppear {
             loadYearTrackerEvent()
@@ -346,26 +336,6 @@ struct YearTrackerNotificationsView: View {
             print("Saved notification settings for Year Tracker: \(notificationSettings)")
         } else {
             print("Error: Could not save notification settings - Year Tracker event not found")
-        }
-    }
-}
-
-struct SaveConfirmationView: View {
-    var body: some View {
-        VStack {
-            HStack {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(.green)
-                    .font(.system(size: 20))
-                Text("Settings Saved")
-                    .font(.headline)
-                    .foregroundColor(.primary)
-            }
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.gray.opacity(0.2))
-            )
         }
     }
 }
