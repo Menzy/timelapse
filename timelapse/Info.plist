@@ -2,16 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>UIAppFonts</key>
-	<array>
-		<string>Galgo.ttf</string>
-		<string>Inter.ttf</string>
-	</array>
-	<key>LSApplicationQueriesSchemes</key>
-	<array>
-		<string>mailto</string>
-		<string>https</string>
-	</array>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -25,12 +15,22 @@
 			</array>
 		</dict>
 	</array>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>mailto</string>
+		<string>https</string>
+	</array>
+	<key>NSUserNotificationUsageDescription</key>
+	<string>We need to send you notifications about your upcoming events and milestones.</string>
 	<key>StoreKit</key>
 	<dict>
 		<key>Configuration</key>
 		<string>Products</string>
 	</dict>
-	<key>NSUserNotificationUsageDescription</key>
-	<string>We need to send you notifications about your upcoming events and milestones.</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Galgo.ttf</string>
+		<string>Inter.ttf</string>
+	</array>
 </dict>
 </plist>

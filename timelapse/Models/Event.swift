@@ -35,8 +35,8 @@ struct Event: Identifiable, Codable {
             let totalDays = calendar.dateComponents([.day], from: startOfYear, to: targetDate).day ?? 365
             return (daysLeft, totalDays)
         } else {
-            // For user-created events, calculate exact days without adjustment
-            let daysLeft = max(0, calendar.dateComponents([.day], from: startDate, to: targetDate).day ?? 0)
+            // For user-created events, allow negative days for overdue events
+            let daysLeft = calendar.dateComponents([.day], from: startDate, to: targetDate).day ?? 0
             
             // Calculate total days from creation date to target date for other events
             let totalDays = max(1, calendar.dateComponents([.day], from: calendar.startOfDay(for: creationDate), to: targetDate).day ?? 1)

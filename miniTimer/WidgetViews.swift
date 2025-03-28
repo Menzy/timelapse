@@ -293,13 +293,28 @@ struct CountdownWidgetView: View {
     let family: WidgetFamily
     let backgroundTheme: BackgroundChoice
     
+    // Determine the display text based on daysLeft
+    private var displayText: String {
+        if daysLeft < 0 {
+            // For overdue events, show "000" with the negative number effect
+            return "000"
+        } else if daysLeft == 0 {
+            // For today's events
+            return "000"
+        } else {
+            // Format with leading zeros for standard display
+            return String(format: "%03d", daysLeft)
+        }
+    }
+    
     var body: some View {
         GeometryReader { geometry in
             // Reserve space for the info bar at the bottom
             let infoBarHeight: CGFloat = family == .systemSmall ? 15 : 20
             let availableHeight = geometry.size.height - infoBarHeight
             
-            Text(String(format: "%03d", daysLeft))
+            // Main countdown number
+            Text(displayText)
                 .font(.custom("Galgo-Bold", size: 500))
                 .foregroundColor(backgroundTheme == .dark ? .white : .black)
                 .minimumScaleFactor(0.01)

@@ -131,6 +131,24 @@ struct miniTimerEntryView : View {
         guard let eventId = eventId else { return nil }
         return URL(string: "timelapse://event/\(eventId.uuidString)")
     }
+    
+    // Helper function to get appropriate days text based on daysLeft value
+    private func daysLeftText(_ daysLeft: Int) -> String {
+        if daysLeft < 0 {
+            return "Event Overdue"
+        } else if daysLeft == 0 {
+            return "It's Today"
+        } else if daysLeft == 1 {
+            return "day left"
+        } else {
+            return "days left"
+        }
+    }
+    
+    // Helper function to determine if we should show the days count
+    private func shouldShowDaysCount(_ daysLeft: Int) -> Bool {
+        return daysLeft > 0
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -183,10 +201,12 @@ struct miniTimerEntryView : View {
                             Spacer()
 
                             HStack(spacing: 4) {
-                                Text("\(entry.primaryEventData.daysLeft)")
-                                    .font(.system(size: 8))
+                                if shouldShowDaysCount(entry.primaryEventData.daysLeft) {
+                                    Text("\(entry.primaryEventData.daysLeft)")
+                                        .font(.system(size: 8))
+                                }
 
-                                Text(entry.primaryEventData.daysLeft == 1 ? "day left" : "days left")
+                                Text(daysLeftText(entry.primaryEventData.daysLeft))
                                     .font(.system(size: 8))
                             }
                             .foregroundColor(textColor)
@@ -240,10 +260,12 @@ struct miniTimerEntryView : View {
                             Spacer()
 
                             HStack(spacing: 4) {
-                                Text("\(entry.secondaryEventData.daysLeft)")
-                                    .font(.system(size: 8))
+                                if shouldShowDaysCount(entry.secondaryEventData.daysLeft) {
+                                    Text("\(entry.secondaryEventData.daysLeft)")
+                                        .font(.system(size: 8))
+                                }
 
-                                Text(entry.secondaryEventData.daysLeft == 1 ? "day left" : "days left")
+                                Text(daysLeftText(entry.secondaryEventData.daysLeft))
                                     .font(.system(size: 8))
                             }
                             .foregroundColor(textColor)
@@ -301,10 +323,12 @@ struct miniTimerEntryView : View {
                     Spacer()
 
                     HStack(spacing: family == .systemSmall ? 2 : 4) {
-                        Text("\(entry.primaryEventData.daysLeft)")
-                            .font(.system(size: family == .systemSmall ? 8 : 10))
+                        if shouldShowDaysCount(entry.primaryEventData.daysLeft) {
+                            Text("\(entry.primaryEventData.daysLeft)")
+                                .font(.system(size: family == .systemSmall ? 8 : 10))
+                        }
 
-                        Text(entry.primaryEventData.daysLeft == 1 ? "day left" : "days left")
+                        Text(daysLeftText(entry.primaryEventData.daysLeft))
                             .font(.system(size: family == .systemSmall ? 8 : 10))
                     }
                     .foregroundColor(textColor)
