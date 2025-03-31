@@ -96,6 +96,10 @@ struct CountdownView: View {
     }
     
     private var displayText: String {
+        // Return "000" when the event is due (today) or overdue
+        if daysLeft <= 0 {
+            return "000"
+        }
         return String(format: "%03d", daysLeft)
     }
     

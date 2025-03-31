@@ -96,16 +96,31 @@ struct TimeCard: View {
     }
     
     var percentageLeft: Double {
-        (Double(daysLeft) / Double(totalDays)) * 100
+        // If days left is negative (event has passed), return 0% left
+        if daysLeft <= 0 {
+            return 0
+        }
+        return (Double(daysLeft) / Double(totalDays)) * 100
     }
     
     var percentageSpent: Double {
-        (Double(daysSpent) / Double(totalDays)) * 100
+        // Cap at 100% when event has passed its target date
+        if daysSpent >= totalDays {
+            return 100
+        }
+        return (Double(daysSpent) / Double(totalDays)) * 100
     }
     
     var daysText: String {
         if settings.showPercentage {
-            return "left"
+            // Even in percentage mode, show the special messages for today/overdue
+            if daysLeft < 0 {
+                return "Event Overdue"
+            } else if daysLeft == 0 {
+                return "It's Today"
+            } else {
+                return "left"
+            }
         } else if showingDaysLeft {
             // Special cases for days left
             if daysLeft < 0 {
@@ -181,16 +196,21 @@ struct TimeCard: View {
                 Text(title)
                     .font(.custom("Inter", size: isGridView ? 10 : 12))
                     .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .white : .black)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(width: isGridView ? nil : (scaledWidth * 0.5), alignment: .leading)
                 
                 Spacer()
                 
                 // Wrap percentage/days display in animation block
                 HStack(spacing: 4) {
-                    // Only show the number if we're showing percentage or not in special case (today/overdue)
-                    if settings.showPercentage || (showingDaysLeft && daysLeft > 0) || !showingDaysLeft {
-                        Text(settings.showPercentage 
-                            ? String(format: "%.0f%%", percentageLeft) 
-                            : String(showingDaysLeft ? daysLeft : daysSpent))
+                    // Only show the percentage/number if not at target date or overdue
+                    if settings.showPercentage && daysLeft > 0 {
+                        Text(String(format: "%.0f%%", percentageLeft))
+                            .font(.custom("Inter", size: isGridView ? 10 : 12))
+                            .contentTransition(.numericText())
+                    } else if !settings.showPercentage && ((showingDaysLeft && daysLeft > 0) || !showingDaysLeft) {
+                        Text(String(showingDaysLeft ? daysLeft : daysSpent))
                             .font(.custom("Inter", size: isGridView ? 10 : 12))
                             .contentTransition(.numericText())
                     }
@@ -218,14 +238,16 @@ struct TimeCard: View {
                     ZStack {
                         Image(globalSettings.effectiveBackgroundStyle == .light ? "blackMain" : "whiteMain")
                             .resizable()
-                            .aspectRatio(contentMode: .fill)
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: scaledWidth, height: scaledHeight)
                             .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
                         
                         // Cutout image based on display color - direct mapping with no default fallback
                         let cutoutImage = getCutoutImage(color: settings.displayColor)
                         Image(cutoutImage)
                             .resizable()
-                            .aspectRatio(contentMode: .fill)
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: scaledWidth, height: scaledHeight)
                     }
                 }
             }

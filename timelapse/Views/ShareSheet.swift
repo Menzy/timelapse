@@ -116,16 +116,21 @@ struct ShareableCardView: View {
     private func shareEvent() {
         isGeneratingImage = true
         
+        // Calculate proper dimensions for the exported image
+        // Use fixed aspect ratio for consistent exports
+        let exportWidth: CGFloat = 1200 // Higher resolution for better quality
+        let exportHeight: CGFloat = 1600
+        
         // Create a container view with proper padding and background
         let containerView = ZStack {
             // Apply background color to the entire view
             globalSettings.effectiveBackgroundStyle.backgroundColor
-                .edgesIgnoringSafeArea(.all)
+                .ignoresSafeArea()
             
             VStack(spacing: 0) {
                 // Add some top padding
                 Spacer()
-                    .frame(height: 40)
+                    .frame(height: exportHeight * 0.05)
                 
                 // The card with its background
                 ShareableTimeCard(
@@ -139,32 +144,31 @@ struct ShareableCardView: View {
                 )
                 .environmentObject(globalSettings)
                 .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
+                .frame(width: exportWidth * 0.85, height: exportHeight * 0.7)
                 
                 // Add some bottom padding
                 Spacer()
-                    .frame(height: 40)
+                    .frame(height: exportHeight * 0.05)
                 
                 // Watermark
                 Text(isYearTracker ? "Year Tracker - Created with Timelapse" : "Created with Timelapse")
-                    .font(.custom("Inter", size: 8))
+                    .font(.custom("Inter", size: 12))
                     .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .black.opacity(0.7) : .white.opacity(0.7))
                     .padding(.top, 16)
+                    .padding(.bottom, exportHeight * 0.03)
             }
-            .frame(width: UIScreen.main.bounds.width * 0.9)
-            .padding(.horizontal, 20)
+            .frame(width: exportWidth, height: exportHeight)
         }
-        .cornerRadius(20)
+        .frame(width: exportWidth, height: exportHeight)
         
-        // Generate a larger image to accommodate padding
-        let size = CGSize(
-            width: UIScreen.main.bounds.width * 0.9,
-            height: UIScreen.main.bounds.height * 0.6
-        )
+        // Set fixed size for the export
+        let size = CGSize(width: exportWidth, height: exportHeight)
         
         // Generate the image asynchronously
         DispatchQueue.main.async {
             // Create a UIHostingController with the container view
             let controller = UIHostingController(rootView: containerView)
+            controller.view.frame = CGRect(origin: .zero, size: size)
             controller.view.bounds = CGRect(origin: .zero, size: size)
             
             // Ensure the background color is applied correctly
