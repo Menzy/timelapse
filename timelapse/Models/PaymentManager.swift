@@ -2,9 +2,10 @@ import StoreKit
 import SwiftUI
 
 // Product identifiers
-enum SubscriptionType: String, CaseIterable {
-    case monthly = "com.wanmenzy.timelapse.subscription.monthly"
-    case yearly = "com.wanmenzy.timelapse.subscription.yearly"
+enum ProductType: String, CaseIterable {
+    case lifetime = "lifetime1"
+    case yearlySubscription = "timelapseAnnualSubscription1"
+    case monthlySubscription = "timelapseMonthlySubscription1"
 }
 
 class PaymentManager: ObservableObject {
@@ -13,8 +14,9 @@ class PaymentManager: ObservableObject {
     @Published var products: [Product] = []
     @Published var purchasedSubscriptions: [Product] = []
     @Published var isSubscribed = false
+    @Published var hasLifetimePurchase = false
     
-    private var productIDs = SubscriptionType.allCases.map { $0.rawValue }
+    private var productIDs = ProductType.allCases.map { $0.rawValue }
     private var updateListenerTask: Task<Void, Error>?
     
     init() {
@@ -44,23 +46,32 @@ class PaymentManager: ObservableObject {
     @MainActor
     func updateSubscriptionStatus() async {
         var purchasedProducts: [Product] = []
+        var lifetimePurchased = false
         
         for await result in Transaction.currentEntitlements {
             if case .verified(let transaction) = result {
                 if let product = products.first(where: { $0.id == transaction.productID }) {
                     purchasedProducts.append(product)
+                    
+                    // Check if this is a lifetime purchase
+                    if product.id == ProductType.lifetime.rawValue {
+                        lifetimePurchased = true
+                    }
                 }
             }
         }
         
         self.purchasedSubscriptions = purchasedProducts
+        self.hasLifetimePurchase = lifetimePurchased
         self.isSubscribed = !purchasedProducts.isEmpty
         
         // Save subscription status to UserDefaults for access across the app
         UserDefaults.standard.set(isSubscribed, forKey: "isSubscribed")
+        UserDefaults.standard.set(hasLifetimePurchase, forKey: "hasLifetimePurchase")
         
         // Also save to shared UserDefaults for widget access
         UserDefaults.shared?.set(isSubscribed, forKey: "isSubscribed")
+        UserDefaults.shared?.set(hasLifetimePurchase, forKey: "hasLifetimePurchase")
     }
     
     func purchase(_ product: Product) async throws -> Bool {
@@ -113,6 +124,11 @@ class PaymentManager: ObservableObject {
     // Helper method to check if user is subscribed
     static func isUserSubscribed() -> Bool {
         return UserDefaults.standard.bool(forKey: "isSubscribed")
+    }
+    
+    // Helper method to check if user has lifetime purchase
+    static func hasLifetimePurchase() -> Bool {
+        return UserDefaults.standard.bool(forKey: "hasLifetimePurchase")
     }
     
     // Helper method to get the event limit based on subscription status

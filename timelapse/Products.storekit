@@ -1,15 +1,89 @@
 {
+  "appPolicies" : {
+    "eula" : "",
+    "policies" : [
+      {
+        "locale" : "en_US",
+        "policyText" : "",
+        "policyURL" : ""
+      }
+    ]
+  },
   "identifier" : "9B7EAFD0-5E1E-4E1D-8D4A-1F9C87D10300",
   "nonRenewingSubscriptions" : [
 
   ],
   "products" : [
-
+    {
+      "displayPrice" : "14.99",
+      "familyShareable" : false,
+      "internalID" : "lifetime1",
+      "localizations" : [
+        {
+          "description" : "One-time payment, unlimited access forever",
+          "displayName" : "Lifetime Access",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "lifetime1",
+      "referenceName" : "Lifetime Purchase",
+      "type" : "NonConsumable"
+    }
   ],
   "settings" : {
     "_applicationInternalID" : "com.wanmenzy.timelapse",
     "_developerTeamID" : "ABCDE12345",
-    "_lastSynchronizedDate" : 705359232.97882998
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 705359232.97882998,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Load Products"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Purchase"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Verification"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Store Sync"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Subscription Status"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Transaction"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Manage Subscriptions Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Refund Request Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Offer Code Redeem Sheet"
+      }
+    ]
   },
   "subscriptionGroups" : [
     {
@@ -30,10 +104,10 @@
           "codeOffers" : [
 
           ],
-          "displayPrice" : "2.99",
+          "displayPrice" : "0.99",
           "familyShareable" : false,
           "groupNumber" : 1,
-          "internalID" : "com.wanmenzy.timelapse.subscription.monthly",
+          "internalID" : "timelapseMonthlySubscription1",
           "introductoryOffer" : {
             "internalID" : "B8E8C2E0-5B1A-4D9E-8F3A-1F9C87D10300",
             "numberOfPeriods" : 1,
@@ -42,16 +116,19 @@
           },
           "localizations" : [
             {
-              "description" : "Create unlimited events and unlock all premium features",
+              "description" : "Create unlimited events and unlock premium features",
               "displayName" : "Monthly Premium",
               "locale" : "en_US"
             }
           ],
-          "productID" : "com.wanmenzy.timelapse.subscription.monthly",
+          "productID" : "timelapseMonthlySubscription1",
           "recurringSubscriptionPeriod" : "P1M",
           "referenceName" : "Monthly Premium",
           "subscriptionGroupID" : "20F40318-D4AE-4B51-8C37-85A20F3A7063",
-          "type" : "RecurringSubscription"
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
         },
         {
           "adHocOffers" : [
@@ -60,34 +137,37 @@
           "codeOffers" : [
 
           ],
-          "displayPrice" : "19.99",
+          "displayPrice" : "8.99",
           "familyShareable" : false,
           "groupNumber" : 1,
-          "internalID" : "com.wanmenzy.timelapse.subscription.yearly",
+          "internalID" : "timelapseAnnualSubscription1",
           "introductoryOffer" : {
             "internalID" : "C9F9D3F1-6C2B-5E0A-9F4B-2G0D98E21411",
             "numberOfPeriods" : 1,
             "paymentMode" : "free",
-            "subscriptionPeriod" : "P2W"
+            "subscriptionPeriod" : "P1W"
           },
           "localizations" : [
             {
-              "description" : "Save 44% with annual billing",
+              "description" : "Save 24% compared to monthly plan",
               "displayName" : "Yearly Premium",
               "locale" : "en_US"
             }
           ],
-          "productID" : "com.wanmenzy.timelapse.subscription.yearly",
+          "productID" : "timelapseAnnualSubscription1",
           "recurringSubscriptionPeriod" : "P1Y",
           "referenceName" : "Yearly Premium",
           "subscriptionGroupID" : "20F40318-D4AE-4B51-8C37-85A20F3A7063",
-          "type" : "RecurringSubscription"
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
         }
       ]
     }
   ],
   "version" : {
-    "major" : 2,
+    "major" : 4,
     "minor" : 0
   }
-} 
+}
