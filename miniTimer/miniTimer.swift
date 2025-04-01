@@ -135,7 +135,8 @@ struct miniTimerEntryView : View {
     // Helper function to get appropriate days text based on daysLeft value
     private func daysLeftText(_ daysLeft: Int) -> String {
         if daysLeft < 0 {
-            return "Event Overdue"
+            let daysPassed = abs(daysLeft)
+            return daysPassed == 1 ? "day ago" : "days ago"
         } else if daysLeft == 0 {
             return "It's Today"
         } else if daysLeft == 1 {
@@ -147,7 +148,7 @@ struct miniTimerEntryView : View {
     
     // Helper function to determine if we should show the days count
     private func shouldShowDaysCount(_ daysLeft: Int) -> Bool {
-        return daysLeft > 0
+        return daysLeft != 0 // Show count for both future and overdue events
     }
 
     var body: some View {
@@ -202,7 +203,7 @@ struct miniTimerEntryView : View {
 
                             HStack(spacing: 4) {
                                 if shouldShowDaysCount(entry.primaryEventData.daysLeft) {
-                                    Text("\(entry.primaryEventData.daysLeft)")
+                                    Text("\(abs(entry.primaryEventData.daysLeft))")
                                         .font(.system(size: 8))
                                 }
 
@@ -261,7 +262,7 @@ struct miniTimerEntryView : View {
 
                             HStack(spacing: 4) {
                                 if shouldShowDaysCount(entry.secondaryEventData.daysLeft) {
-                                    Text("\(entry.secondaryEventData.daysLeft)")
+                                    Text("\(abs(entry.secondaryEventData.daysLeft))")
                                         .font(.system(size: 8))
                                 }
 
@@ -324,7 +325,7 @@ struct miniTimerEntryView : View {
 
                     HStack(spacing: family == .systemSmall ? 2 : 4) {
                         if shouldShowDaysCount(entry.primaryEventData.daysLeft) {
-                            Text("\(entry.primaryEventData.daysLeft)")
+                            Text("\(abs(entry.primaryEventData.daysLeft))")
                                 .font(.system(size: family == .systemSmall ? 8 : 10))
                         }
 
