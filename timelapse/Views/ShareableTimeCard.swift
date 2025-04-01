@@ -41,9 +41,11 @@ struct ShareableTimeCard: View {
     
     var daysText: String {
         if settings.showPercentage {
-            // Even in percentage mode, show the special messages for today/overdue
+            // Even in percentage mode, handle special messages
             if daysLeft < 0 {
-                return "Event Overdue"
+                let daysPassed = abs(daysLeft)
+                let dayText = daysPassed == 1 ? "day" : "days"
+                return "\(dayText) ago"
             } else if daysLeft == 0 {
                 return "It's Today"
             } else {
@@ -52,7 +54,9 @@ struct ShareableTimeCard: View {
         } else if showingDaysLeft {
             // Special cases for days left
             if daysLeft < 0 {
-                return "Event Overdue"
+                let daysPassed = abs(daysLeft)
+                let dayText = daysPassed == 1 ? "day" : "days"
+                return "\(dayText) ago"
             } else if daysLeft == 0 {
                 return "It's Today"
             } else {
@@ -157,8 +161,14 @@ struct ShareableTimeCard: View {
                         if settings.showPercentage && daysLeft > 0 {
                             Text(String(format: "%.0f%%", percentageLeft))
                                 .font(.custom("Inter", size: 12))
-                        } else if !settings.showPercentage && ((showingDaysLeft && daysLeft > 0) || !showingDaysLeft) {
-                            Text(String(showingDaysLeft ? daysLeft : daysSpent))
+                        } else if settings.showPercentage && daysLeft < 0 {
+                            // Show days passed for overdue events in percentage mode
+                            Text(String(abs(daysLeft)))
+                                .font(.custom("Inter", size: 12))
+                        } else if !settings.showPercentage && ((showingDaysLeft && daysLeft != 0) || !showingDaysLeft) {
+                            // Show positive days left, days spent, or days overdue
+                            let displayValue = showingDaysLeft ? (daysLeft < 0 ? abs(daysLeft) : daysLeft) : daysSpent
+                            Text(String(displayValue))
                                 .font(.custom("Inter", size: 12))
                         }
                         
