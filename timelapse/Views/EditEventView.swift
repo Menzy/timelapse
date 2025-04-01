@@ -27,11 +27,21 @@ struct EditEventView: View {
                              selection: $startDate,
                              in: ...eventDate,
                              displayedComponents: [.date])
-                    DatePicker("End Date", 
-                             selection: $eventDate,
-                             in: Date()...,
-                             displayedComponents: [.date])
                     
+                    // For end date, use the original date even if it's in the past
+                    if event.targetDate < Date() {
+                        // For overdue events, allow selecting the original date or any future date
+                        DatePicker("End Date", 
+                                 selection: $eventDate,
+                                 in: min(event.targetDate, Date())...,
+                                 displayedComponents: [.date])
+                    } else {
+                        // For future events, maintain current behavior
+                        DatePicker("End Date", 
+                                 selection: $eventDate,
+                                 in: Date()...,
+                                 displayedComponents: [.date])
+                    }
                 }
                 
                 Section {
