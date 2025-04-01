@@ -10,6 +10,7 @@
 		40DED2092D6E658100DB557C /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 40DED2082D6E658100DB557C /* WidgetKit.framework */; };
 		40DED20B2D6E658100DB557C /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 40DED20A2D6E658100DB557C /* SwiftUI.framework */; };
 		40DED21C2D6E658300DB557C /* miniTimerExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 40DED2062D6E658100DB557C /* miniTimerExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		B522BB972D9C201100CFC3D8 /* SwiftSVG in Frameworks */ = {isa = PBXBuildFile; productRef = B522BB962D9C201100CFC3D8 /* SwiftSVG */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -85,6 +86,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B522BB972D9C201100CFC3D8 /* SwiftSVG in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -151,6 +153,7 @@
 			);
 			name = timelapse;
 			packageProductDependencies = (
+				B522BB962D9C201100CFC3D8 /* SwiftSVG */,
 			);
 			productName = timelapse;
 			productReference = 400256382D666B8800FCD299 /* timelapse.app */;
@@ -206,6 +209,7 @@
 			mainGroup = 4002562F2D666B8800FCD299;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				B522BB952D9C201100CFC3D8 /* XCRemoteSwiftPackageReference "SwiftSVG" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 400256392D666B8800FCD299 /* Products */;
@@ -537,6 +541,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		B522BB952D9C201100CFC3D8 /* XCRemoteSwiftPackageReference "SwiftSVG" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/mchoe/SwiftSVG.git";
+			requirement = {
+				branch = master;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		B522BB962D9C201100CFC3D8 /* SwiftSVG */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B522BB952D9C201100CFC3D8 /* XCRemoteSwiftPackageReference "SwiftSVG" */;
+			productName = SwiftSVG;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 400256302D666B8800FCD299 /* Project object */;
 }

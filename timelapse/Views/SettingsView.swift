@@ -7,6 +7,9 @@ struct SettingsView: View {
     @StateObject private var paymentManager = PaymentManager.shared
     @State private var showSubscriptionView = false
     @State private var showNotificationSettings = false
+    @State private var showResetColorsConfirmation = false
+    @State private var showResetThemesConfirmation = false
+    @State private var refreshNeeded = false
     
     var body: some View {
         NavigationView {
@@ -16,6 +19,30 @@ struct SettingsView: View {
                         .onChange(of: globalSettings.showGridLayout) { _, _ in
                             globalSettings.saveSettings()
                         }
+                    
+                    Button(action: {
+                        showResetColorsConfirmation = true
+                    }) {
+                        HStack {
+                            Text("Reset Display Colors")
+                                .foregroundColor(.primary)
+                            Spacer()
+                            Image(systemName: "arrow.counterclockwise")
+                                .foregroundColor(.blue)
+                        }
+                    }
+                    
+                    Button(action: {
+                        showResetThemesConfirmation = true
+                    }) {
+                        HStack {
+                            Text("Reset Background Themes")
+                                .foregroundColor(.primary)
+                            Spacer()
+                            Image(systemName: "arrow.counterclockwise")
+                                .foregroundColor(.blue)
+                        }
+                    }
                 }
                 
                 Section("Notifications") {
@@ -144,6 +171,40 @@ struct SettingsView: View {
                 Task {
                     await paymentManager.updateSubscriptionStatus()
                 }
+            }
+            .confirmationDialog(
+                "Reset Display Colors",
+                isPresented: $showResetColorsConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Reset All Colors", role: .destructive) {
+                    // Reset all colors to defaults
+                    DisplayColor.resetAllColorsToDefaults()
+                    refreshNeeded = true
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This will reset all display colors to their factory defaults. This action cannot be undone.")
+            }
+            .onChange(of: refreshNeeded) { _, _ in
+                if refreshNeeded {
+                    // This forces a refresh after colors are reset
+                    refreshNeeded = false
+                }
+            }
+            .confirmationDialog(
+                "Reset Background Themes",
+                isPresented: $showResetThemesConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Reset All Themes", role: .destructive) {
+                    // Reset all themes to defaults
+                    BackgroundStyle.resetAllThemesToDefaults()
+                    refreshNeeded = true
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This will reset all customizable background themes (Navy, Fire, Dream) to their factory defaults. This action cannot be undone.")
             }
         }
         .presentationDetents([.medium])

@@ -6,6 +6,14 @@
 //
 
 import SwiftUI
+import Combine
+
+// Add this extension to safely access array elements
+extension Array {
+    subscript(safe index: Int) -> Element? {
+        indices.contains(index) ? self[index] : nil
+    }
+}
 
 struct ContentView: View {
     @StateObject private var navigationState = NavigationStateManager.shared
@@ -17,17 +25,35 @@ struct ContentView: View {
     @State private var yearTrackerSettings: DisplaySettings = DisplaySettings(backgroundStyle: .dark)
     @State private var showSubscriptionView = false
     @State private var isAnimatingLayout = false
-  
+    
+    // Animation states
+    @State private var previousBackgroundStyle: BackgroundStyle?
+    @State private var isAnimatingThemeChange: Bool = false
+    @State private var themeChangeProgress: CGFloat = 0.0
+    
+    // Store all notification cancellables
+    @State private var cancellables = Set<AnyCancellable>()
+    
+    private var displayedEvents: [Event] {
+        // Always put year tracker first, then other events
+        let yearTracker = eventStore.events.first { $0.title == YearTrackerUtility.currentYearTitle }
+        let otherEvents = eventStore.events.filter { $0.title != YearTrackerUtility.currentYearTitle }
+        return [yearTracker].compactMap { $0 } + otherEvents
+    }
+    
     private func settings(for event: Event) -> DisplaySettings {
-        if event.title == String(currentYear) {
+        if event.title == YearTrackerUtility.currentYearTitle {
+            // Return the year tracker settings
             return yearTrackerSettings
         }
+        
         if eventStore.displaySettings[event.id] == nil {
             // Create and persist new settings if they don't exist
             let newSettings = DisplaySettings(backgroundStyle: globalSettings.effectiveBackgroundStyle)
             eventStore.displaySettings[event.id] = newSettings
             eventStore.saveDisplaySettings() // Save when creating new settings
         }
+        
         let settings = eventStore.displaySettings[event.id]!
         settings.updateColor(for: globalSettings.effectiveBackgroundStyle)
         return settings
@@ -39,71 +65,6 @@ struct ContentView: View {
             settings.updateColor(for: backgroundStyle)
         }
         eventStore.saveDisplaySettings()
-    }
-    
-    private func scheduleNextUpdate() {
-        let calendar = Calendar.current
-        guard let tomorrow = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: Date())),
-              let midnight = calendar.date(bySettingHour: 0, minute: 0, second: 0, of: tomorrow) else { return }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + midnight.timeIntervalSince(Date())) {
-            currentDate = Date()
-            scheduleNextUpdate()
-        }
-    }
-    
-    var daysLeft: Int {
-        let calendar = Calendar.current
-        let today = currentDate
-        let endOfYear = calendar.date(from: DateComponents(year: calendar.component(.year, from: today) + 1))!
-        return calendar.dateComponents([.day], from: today, to: endOfYear).day ?? 0
-    }
-    
-    var currentYear: Int {
-        Calendar.current.component(.year, from: currentDate)
-    }
-    
-    private var displayedEvents: [Event] {
-        // Always put year tracker first, then other events
-        let yearTracker = eventStore.events.first { $0.title == String(currentYear) }
-        let otherEvents = eventStore.events.filter { $0.title != String(currentYear) }
-        return [yearTracker].compactMap { $0 } + otherEvents
-    }
-    
-    private var backgroundView: some View {
-        Group {
-            switch globalSettings.effectiveBackgroundStyle {
-            case .light:
-                Color.white
-            case .dark:
-                Color(hex: "111111")
-            case .device: 
-                colorScheme == .dark ? Color(hex: "111111") : Color.white
-            case .navy:
-                Color(hex: "001524")
-            case .fire:
-                LinearGradient(
-                    stops: [
-                        .init(color: Color(hex: "EC5F01"), location: 0),
-                        .init(color: Color.black, location: 0.6),
-                        .init(color: .black, location: 1.0)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            case .dream:
-                LinearGradient(
-                    stops: [
-                        .init(color: Color(hex: "A82700"), location: 0),
-                        .init(color: Color(hex: "002728"), location: 0.6),
-                        .init(color: Color(hex: "002728"), location: 1.0)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            }
-        }
-        .ignoresSafeArea()
     }
     
     private var timelineContent: some View {
@@ -182,54 +143,100 @@ struct ContentView: View {
         )
     }
     
-    private var navigationContent: some View {
-        VStack(spacing: 8) {
-            // Page control dots
-            if !globalSettings.isGridLayoutAvailable || !globalSettings.showGridLayout {
-                HStack(spacing: 6) {
-                    ForEach(0..<displayedEvents.count, id: \.self) { index in
-                        let distance = abs(navigationState.selectedTab - index)
-                        let size: CGFloat = distance == 0 ? 6 : max(4, 6 - CGFloat(distance))
-                        let opacity: Double = distance == 0 ? 1 : max(0.3, 1 - Double(distance) * 0.2)
-                        
-                        Circle()
-                            .fill(navigationState.selectedTab == index ? 
-                                 (globalSettings.effectiveBackgroundStyle == .light ? Color.black : Color.white) :
-                                 (globalSettings.effectiveBackgroundStyle == .light ? Color.black.opacity(opacity) : Color.white.opacity(opacity)))
-                            .frame(width: size, height: size)
-                    }
-                }
-                .animation(.easeInOut, value: navigationState.selectedTab)
-                .padding(.bottom, 8)
-            }
-            
-            // Navigation bar
-            NavigationBar()
-        }
-        .padding(.bottom, 40) // Added bottom padding to move navigation up
-    }
-    
     var body: some View {
         ZStack(alignment: .bottom) {
-            backgroundView
+            // Background with transition animation
+            BackgroundView(
+                isAnimating: isAnimatingThemeChange,
+                previousStyle: previousBackgroundStyle,
+                progress: themeChangeProgress
+            )
+            .environmentObject(globalSettings)
+            
+            // Main content
             timelineContent
-            navigationContent
+            
+            // Navigation with page indicators
+            NavigationContentView(
+                selectedTab: navigationState.selectedTab,
+                eventCount: displayedEvents.count
+            )
+            .environmentObject(globalSettings)
         }
         .onChange(of: globalSettings.backgroundStyle) { oldStyle, newStyle in
             updateAllColors(for: newStyle)
+            
+            // Trigger blob animation
+            if oldStyle != newStyle {
+                previousBackgroundStyle = oldStyle
+                isAnimatingThemeChange = true
+                themeChangeProgress = 0
+                
+                // Animate the blob expansion
+                withAnimation(.interpolatingSpring(
+                    mass: 1.0,
+                    stiffness: 80,
+                    damping: 15,
+                    initialVelocity: 0
+                ).speed(0.8)) {
+                    themeChangeProgress = 1.0
+                }
+                
+                // Reset animation state after completion
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                    isAnimatingThemeChange = false
+                    themeChangeProgress = 0
+                }
+            }
         }
         .onChange(of: colorScheme) { oldColorScheme, newColorScheme in
             globalSettings.updateSystemAppearance(newColorScheme == .dark)
         }
+        .onChange(of: yearTrackerSettings.displayColor) { _, _ in
+            YearTrackerUtility.saveSettings(yearTrackerSettings)
+        }
+        .onChange(of: yearTrackerSettings.style) { _, _ in
+            YearTrackerUtility.saveSettings(yearTrackerSettings)
+        }
+        .onChange(of: yearTrackerSettings.showPercentage) { _, _ in
+            YearTrackerUtility.saveSettings(yearTrackerSettings)
+        }
+        .onChange(of: yearTrackerSettings.isUsingDefaultColor) { _, _ in
+            YearTrackerUtility.saveSettings(yearTrackerSettings)
+        }
         .onAppear {
+            // Initialize date and schedule updates
             currentDate = Date()
-            scheduleNextUpdate()
+            NotificationUtility.scheduleNextDayUpdate {
+                currentDate = Date()
+            }
+            
+            // Update system appearance
             globalSettings.updateSystemAppearance(colorScheme == .dark)
+            
+            // Load year tracker settings
+            YearTrackerUtility.loadSettings(into: yearTrackerSettings)
+            
+            // Set up notification observers for year tracker color changes
+            YearTrackerUtility.setupColorChangeObserver(for: yearTrackerSettings) {
+                YearTrackerUtility.saveSettings(yearTrackerSettings)
+            }
+            .store(in: &cancellables)
+            
+            // Set up observers for theme change notifications
+            let themeObservers = NotificationUtility.setupThemeChangeObservers(for: globalSettings)
+            themeObservers.forEach { $0.store(in: &cancellables) }
         }
         .sheet(isPresented: $navigationState.showingCustomize) {
             if let event = displayedEvents[safe: navigationState.selectedTab] {
                 CustomizeView(settings: settings(for: event), eventStore: eventStore)
                     .environmentObject(globalSettings)
+                    .onDisappear {
+                        // Save year tracker settings when customization is done
+                        if event.title == YearTrackerUtility.currentYearTitle {
+                            YearTrackerUtility.saveSettings(yearTrackerSettings)
+                        }
+                    }
             }
         }
         .sheet(isPresented: $navigationState.showingTrackEvent) {
@@ -249,14 +256,7 @@ struct ContentView: View {
     }
 }
 
-// Add this extension to safely access array elements
-extension Array {
-    subscript(safe index: Int) -> Element? {
-        indices.contains(index) ? self[index] : nil
-    }
-}
-
 #Preview {
     ContentView()
-        .environmentObject(GlobalSettings()) // Provide global settings
+        .environmentObject(GlobalSettings())
 }

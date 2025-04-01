@@ -67,6 +67,8 @@ struct ThemeCircleView: View {
     let style: BackgroundStyle
     let isSelected: Bool
     @Environment(\.colorScheme) private var colorScheme
+    @EnvironmentObject var globalSettings: GlobalSettings
+    let onDoubleTap: () -> Void
     
     var body: some View {
         VStack {
@@ -92,36 +94,42 @@ struct ThemeCircleView: View {
                             .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                     )
                 } else if style == .fire {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                stops: [
-                                    .init(color: Color(hex: "EC5F01"), location: 0),
-                                    .init(color: Color.black, location: 0.6),
-                                    .init(color: .black, location: 1.0)
-                                ],
-                                startPoint: .top,
-                                endPoint: .bottom
+                    // Fire theme with gradient
+                    if let gradientColors = style.getGradientColors() {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    stops: [
+                                        .init(color: gradientColors.start, location: 0),
+                                        .init(color: gradientColors.end, location: 0.6),
+                                        .init(color: gradientColors.end, location: 1.0)
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
                             )
-                        )
+                    }
                 } else if style == .dream {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                stops: [
-                                    .init(color: Color(hex: "A82700"), location: 0),
-                                    .init(color: Color(hex: "002728"), location: 0.6),
-                                    .init(color: Color(hex: "002728"), location: 1.0)
-                                ],
-                                startPoint: .top,
-                                endPoint: .bottom
+                    // Dream theme with gradient
+                    if let gradientColors = style.getGradientColors() {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    stops: [
+                                        .init(color: gradientColors.start, location: 0),
+                                        .init(color: gradientColors.end, location: 0.6),
+                                        .init(color: gradientColors.end, location: 1.0)
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
                             )
-                        )
+                    }
                 } else {
                     Circle()
                         .fill(style == .light ? Color.white :
                               style == .dark ? Color(hex: "111111") :
-                              style == .navy ? Color(hex: "001524") : .clear)
+                              style == .navy ? style.backgroundColor : .clear)
                         .overlay(
                             Circle()
                                 .stroke(style == .light ? Color.gray.opacity(0.3) :
@@ -130,8 +138,21 @@ struct ThemeCircleView: View {
                                        lineWidth: 1)
                         )
                 }
+                
+                // If theme is customizable, show indicator
+                if style == .navy || style == .fire || style == .dream {
+                    Circle()
+                        .trim(from: 0, to: 0.15)
+                        .stroke(style == .light ? Color.black : Color.white, lineWidth: 2)
+                        .frame(width: 52, height: 52)
+                }
             }
             .frame(maxWidth: 60, maxHeight: 60)
+            .onTapGesture(count: 2) {
+                if style == .navy || style == .fire || style == .dream {
+                    onDoubleTap()
+                }
+            }
             
             Text(style.rawValue.capitalized)
                 .font(.inter(12, weight: .medium))
@@ -232,6 +253,10 @@ struct CustomizeView: View {
     @ObservedObject var settings: DisplaySettings
     @ObservedObject var eventStore: EventStore
     @State private var showingColorPicker = false
+    @State private var selectedColorForEdit: DisplayColor? = nil
+    @State private var selectedThemeForEdit: BackgroundStyle? = nil
+    @State private var needsDisplayColorRefresh: Bool = false
+    @State private var needsThemeRefresh: Bool = false
     @EnvironmentObject var globalSettings: GlobalSettings
     
     private func updatePercentageForAllCards(_ showPercentage: Bool) {
@@ -289,6 +314,10 @@ struct CustomizeView: View {
                                                 settings.displayColor = preset.color
                                             }
                                         }
+                                        .onTapGesture(count: 2) {
+                                            // Double tap to edit
+                                            selectedColorForEdit = preset
+                                        }
                                         
                                         Text(preset.name)
                                             .font(.inter(12, weight: .medium))
@@ -311,21 +340,39 @@ struct CustomizeView: View {
                             settings.objectWillChange.send()
                             eventStore.saveDisplaySettings()
                         }
+                        .onChange(of: needsDisplayColorRefresh) { oldValue, newValue in
+                            if newValue {
+                                // Force a refresh of the view
+                                needsDisplayColorRefresh = false
+                            }
+                        }
                     }
                 }
                 
                 Section("Background Theme") {
                     LazyVGrid(columns: Array(repeating: .init(.flexible()), count: 3), spacing: 15) {
                         ForEach(BackgroundStyle.allCases, id: \.self) { style in
-                            ThemeCircleView(style: style, isSelected: globalSettings.backgroundStyle == style)
-                                .onTapGesture {
-                                    globalSettings.backgroundStyle = style
-                                    globalSettings.saveSettings()
-                                    eventStore.saveDisplaySettings()
+                            ThemeCircleView(style: style, isSelected: globalSettings.backgroundStyle == style) {
+                                // Double-tap handler
+                                if style == .navy || style == .fire || style == .dream {
+                                    selectedThemeForEdit = style
                                 }
+                            }
+                            .environmentObject(globalSettings)
+                            .onTapGesture {
+                                globalSettings.backgroundStyle = style
+                                globalSettings.saveSettings()
+                                eventStore.saveDisplaySettings()
+                            }
                         }
                     }
                     .padding(.vertical, 10)
+                    .onChange(of: needsThemeRefresh) { oldValue, newValue in
+                        if newValue {
+                            // Force a refresh of the view
+                            needsThemeRefresh = false
+                        }
+                    }
                 }
                 
                 Section("Counter") {
@@ -340,8 +387,77 @@ struct CustomizeView: View {
                 }
             }
             .navigationBarItems(trailing: Button("Done") { dismiss() })
+            .sheet(isPresented: Binding<Bool>(
+                get: { selectedColorForEdit != nil },
+                set: { if !$0 { selectedColorForEdit = nil } }
+            )) {
+                if let colorToEdit = selectedColorForEdit {
+                    EditColorView(
+                        displayColor: colorToEdit,
+                        needsRefresh: $needsDisplayColorRefresh,
+                        eventStore: eventStore
+                    )
+                    .environmentObject(globalSettings)
+                }
+            }
+            .sheet(isPresented: Binding<Bool>(
+                get: { selectedThemeForEdit != nil },
+                set: { if !$0 { selectedThemeForEdit = nil } }
+            )) {
+                if let themeToEdit = selectedThemeForEdit {
+                    EditThemeView(theme: themeToEdit)
+                        .environmentObject(globalSettings)
+                        .onDisappear {
+                            needsThemeRefresh = true
+                        }
+                }
+            }
         }
         .presentationDetents([.medium])
         .presentationDragIndicator(.visible)
+        .onAppear {
+            // Set up theme change notifications
+            setupThemeChangeObservers()
+        }
+    }
+    
+    private func setupThemeChangeObservers() {
+        // Listen for theme change notifications
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("NavyThemeChanged"),
+            object: nil,
+            queue: .main
+        ) { _ in
+            needsThemeRefresh = true
+        }
+        
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("FireThemeChanged"),
+            object: nil,
+            queue: .main
+        ) { _ in
+            needsThemeRefresh = true
+        }
+        
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("DreamThemeChanged"),
+            object: nil,
+            queue: .main
+        ) { _ in
+            needsThemeRefresh = true
+        }
+        
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("AllThemesReset"),
+            object: nil,
+            queue: .main
+        ) { _ in
+            needsThemeRefresh = true
+        }
+    }
+    
+    // Helper function to convert color to hex string
+    private func colorToHex(_ color: Color) -> String {
+        return color.hexString
     }
 }

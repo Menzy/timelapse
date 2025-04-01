@@ -74,29 +74,6 @@ struct ShareableTimeCard: View {
     private var isYearTracker: Bool {
         return title == String(Calendar.current.component(.year, from: Date()))
     }
-    
-    // Helper function to determine cutout image based on color
-    private func getCutoutImage(color: Color) -> String {
-        // Extract color components for more reliable comparison
-        guard let components = color.cgColor?.components, components.count >= 3 else {
-            return "blueCut" // Default fallback
-        }
-        
-        // Orange: FF7F00 (approximately R:1.0, G:0.5, B:0.0)
-        if components[0] > 0.9 && components[1] > 0.45 && components[1] < 0.55 && components[2] < 0.1 {
-            return "orangeCut"
-        }
-        // Green: 7FBF54 (approximately R:0.5, G:0.75, B:0.33)
-        else if components[0] > 0.45 && components[0] < 0.55 && 
-                components[1] > 0.7 && components[1] < 0.8 && 
-                components[2] > 0.3 && components[2] < 0.4 {
-            return "greenCut"
-        }
-        // Blue or any other color
-        else {
-            return "blueCut"
-        }
-    }
 
     @ViewBuilder
     func timeDisplayView() -> some View {
@@ -188,10 +165,12 @@ struct ShareableTimeCard: View {
                         .frame(width: scaledWidth, height: scaledHeight)
                         .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
                     
-                    // Cutout image based on display color
-                    Image(getCutoutImage(color: settings.displayColor))
+                    // Use SVG cutout with dynamic color
+                    Image("cutoutShape")
+                        .renderingMode(.template)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
+                        .foregroundColor(settings.displayColor)
                         .frame(width: scaledWidth, height: scaledHeight)
                 }
             )
