@@ -37,10 +37,10 @@ struct SubscriptionView: View {
                 VStack(spacing: 20) {
                     // Header
                     VStack(spacing: 10) {
-                        Text("Unlock Premium Features")
+                        Text("Upgrade to TimeLapse Pro")
                             .font(.system(size: 28, weight: .bold))
                             .foregroundColor(Color.primary)          
-                        Text("Track unlimited events and enhance your experience")
+                        Text("Master your time with ease")
                             .font(.system(size: 16))
                             .foregroundColor(Color.secondary)
                             .multilineTextAlignment(.center)
@@ -50,24 +50,26 @@ struct SubscriptionView: View {
                     
                     // Features list
                     VStack(alignment: .leading, spacing: 15) {
-                        FeatureRow(icon: "infinity", text: "Track up to 5 custom events")
-                        FeatureRow(icon: "paintbrush", text: "Customize all display styles")
-                        FeatureRow(icon: "bell", text: "Set reminders for your events")
-                        FeatureRow(icon: "icloud", text: "Sync across all your devices")
-                        FeatureRow(icon: "clock", text: "Display all events on the clock")
+                        FeatureRow(icon: "calendar.badge.plus", text: "Create and customize up to 5 custom events")
+                        FeatureRow(icon: "bell.badge", text: "Personalize notifications for each event")
+                        FeatureRow(icon: "square.grid.2x2", text: "View all events in a beautiful, organized grid layout")
+                        FeatureRow(icon: "app.badge", text: "Access custom events as interactive widgets")
+                        FeatureRow(icon: "paintbrush.fill", text: "Customize event appearance with custom hex colors")
+                        FeatureRow(icon: "square.and.arrow.up", text: "Edit, style, and share your events effortlessly")
                     }
                     .padding(.horizontal, 30)
                     .padding(.vertical, 20)
                     
                     // Subscription options
                     if paymentManager.products.isEmpty {
-                        ProgressView()
-                            .padding()
+                        // Use fallback pricing options when products can't be loaded
+                        PricingOptionsView(paymentManager: paymentManager)
                     } else {
                         VStack(spacing: 15) {
                             // Subscription header
                             Text("Choose Your Plan")
                                 .font(.headline)
+                                .foregroundColor(.white)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.horizontal)
                             
@@ -81,6 +83,7 @@ struct SubscriptionView: View {
                             if let lifetimeProduct = lifetimeProduct {
                                 Text("Lifetime Access")
                                     .font(.headline)
+                                    .foregroundColor(.white)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .padding(.top, 20)
                                     .padding(.horizontal)
@@ -109,7 +112,7 @@ struct SubscriptionView: View {
                     }) {
                         Text("Restore Purchases")
                             .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(Color.secondary)
+                            .foregroundColor(Color.white.opacity(0.7))
                     }
                     .padding(.top, 20)
                     .disabled(isLoading)
@@ -121,12 +124,14 @@ struct SubscriptionView: View {
                         
                         HStack(spacing: 5) {
                             Link("Terms of Service", destination: URL(string: "https://www.example.com/terms")!)
+                                .foregroundColor(Color(hex: "FF7F00"))
                             Text("and")
                             Link("Privacy Policy", destination: URL(string: "https://www.example.com/privacy")!)
+                                .foregroundColor(Color(hex: "FF7F00"))
                         }
                         .font(.system(size: 12, weight: .medium))
                     }
-                    .foregroundColor(Color.secondary)
+                    .foregroundColor(Color.white.opacity(0.7))
                     .padding(.top, 10)
                     .padding(.bottom, 30)
                 }
@@ -202,17 +207,17 @@ struct SubscriptionOptionView: View {
                 VStack(alignment: .leading, spacing: 5) {
                     Text(product.displayName)
                         .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(Color.primary)
+                        .foregroundColor(Color.white)
                     
                     VStack(alignment: .leading, spacing: 3) {
                         if let savingsText = savingsText {
                             Text(savingsText)
                                 .font(.system(size: 14))
-                                .foregroundColor(Color.secondary)
+                                .foregroundColor(Color.white.opacity(0.7))
                         } else {
                             Text(product.description)
                                 .font(.system(size: 14))
-                                .foregroundColor(Color.secondary)
+                                .foregroundColor(Color.white.opacity(0.7))
                         }
                         
                         Text(formattedTrialPeriod)
@@ -225,7 +230,7 @@ struct SubscriptionOptionView: View {
                 
                 Text(product.displayPrice)
                     .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(Color.primary)
+                    .foregroundColor(Color.white)
             }
             .padding(.horizontal, 15)
             .padding(.vertical, 10)
@@ -264,7 +269,7 @@ struct SubscriptionOptionView: View {
             .disabled(isLoading)
         }
         .padding(15)
-        .background(Color(white: globalSettings.effectiveBackgroundStyle == .light ? 0.95 : 0.15))
+        .background(Color(white: 0.17)) // Dark gray card background
         .cornerRadius(15)
         .alert(isPresented: $showError) {
             Alert(
@@ -291,11 +296,11 @@ struct LifetimeOptionView: View {
                 VStack(alignment: .leading, spacing: 5) {
                     Text(product.displayName)
                         .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(Color.primary)
+                        .foregroundColor(Color.white)
                     
                     Text("One-time purchase, unlimited access forever")
                         .font(.system(size: 14))
-                        .foregroundColor(Color.secondary)
+                        .foregroundColor(Color.white.opacity(0.7))
                     
                     Text("Pay once, use forever")
                         .font(.system(size: 14, weight: .medium))
@@ -308,11 +313,11 @@ struct LifetimeOptionView: View {
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(product.displayPrice)
                         .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(Color.primary)
+                        .foregroundColor(Color.white)
                     
                     Text("one time")
                         .font(.system(size: 12))
-                        .foregroundColor(Color.secondary)
+                        .foregroundColor(Color.white.opacity(0.7))
                 }
             }
             .padding(.horizontal, 15)
@@ -352,7 +357,7 @@ struct LifetimeOptionView: View {
             .disabled(isLoading)
         }
         .padding(15)
-        .background(Color(white: globalSettings.effectiveBackgroundStyle == .light ? 0.95 : 0.15))
+        .background(Color(white: 0.17)) // Dark gray card background
         .cornerRadius(15)
         .overlay(
             RoundedRectangle(cornerRadius: 15)
@@ -365,6 +370,195 @@ struct LifetimeOptionView: View {
                 dismissButton: .default(Text("OK"))
             )
         }
+    }
+}
+
+struct PricingOptionsView: View {
+    var paymentManager: PaymentManager
+    @EnvironmentObject var globalSettings: GlobalSettings
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedOption: ProductType? = nil
+    @State private var isLoading = false
+    @State private var showError = false
+    @State private var errorMessage = ""
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            // Subscription header
+            Text("Choose Your Plan")
+                .font(.headline)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+            
+            // Monthly option
+            PricingButton(
+                title: "Monthly Premium",
+                subtitle: "7-day free trial, then",
+                price: "$0.99/month",
+                isSelected: selectedOption == .monthlySubscription,
+                isLoading: isLoading && selectedOption == .monthlySubscription,
+                action: { 
+                    selectedOption = .monthlySubscription
+                    handlePurchase(.monthlySubscription)
+                }
+            )
+            .padding(.horizontal)
+            
+            // Yearly option
+            PricingButton(
+                title: "Yearly Premium",
+                subtitle: "Save 24% compared to monthly",
+                price: "$8.99/year",
+                additionalInfo: "7-day free trial",
+                isSelected: selectedOption == .yearlySubscription,
+                isLoading: isLoading && selectedOption == .yearlySubscription,
+                action: { 
+                    selectedOption = .yearlySubscription
+                    handlePurchase(.yearlySubscription)
+                }
+            )
+            .padding(.horizontal)
+            
+            // Lifetime header
+            Text("Lifetime Access")
+                .font(.headline)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 10)
+                .padding(.horizontal)
+            
+            // Lifetime option
+            PricingButton(
+                title: "Lifetime Premium",
+                subtitle: "One-time purchase, unlimited access forever",
+                price: "$19.99",
+                additionalInfo: "Pay once, use forever",
+                isSelected: selectedOption == .lifetime,
+                isLoading: isLoading && selectedOption == .lifetime,
+                action: { 
+                    selectedOption = .lifetime
+                    handlePurchase(.lifetime)
+                }
+            )
+            .padding(.horizontal)
+        }
+        .alert(isPresented: $showError) {
+            Alert(
+                title: Text("Error"),
+                message: Text(errorMessage),
+                dismissButton: .default(Text("OK"))
+            )
+        }
+    }
+    
+    private func handlePurchase(_ productType: ProductType) {
+        isLoading = true
+        
+        Task {
+            do {
+                // Try loading products again in case they failed initially
+                await paymentManager.loadProducts()
+                
+                // Check if the product is now available
+                if let product = paymentManager.products.first(where: { $0.id == productType.rawValue }) {
+                    // Attempt to purchase
+                    let success = try await paymentManager.purchase(product)
+                    if success {
+                        await MainActor.run {
+                            dismiss()
+                        }
+                    }
+                } else {
+                    // Still can't find the product
+                    await MainActor.run {
+                        errorMessage = "Unable to load the selected product. Please try again later."
+                        showError = true
+                        isLoading = false
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    errorMessage = "Purchase failed: \(error.localizedDescription)"
+                    showError = true
+                    isLoading = false
+                }
+            }
+            
+            await MainActor.run {
+                isLoading = false
+            }
+        }
+    }
+}
+
+struct PricingButton: View {
+    var title: String
+    var subtitle: String
+    var price: String
+    var additionalInfo: String? = nil
+    var isSelected: Bool
+    var isLoading: Bool = false
+    var action: () -> Void
+    @EnvironmentObject var globalSettings: GlobalSettings
+    
+    var body: some View {
+        Button(action: action) {
+            VStack {
+                HStack {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(title)
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(Color.white)
+                        
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(subtitle)
+                                .font(.system(size: 14))
+                                .foregroundColor(Color.white.opacity(0.7))
+                            
+                            if let additionalInfo = additionalInfo {
+                                Text(additionalInfo)
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(Color(hex: "FF7F00"))
+                            }
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    Text(price)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(Color.white)
+                }
+                .padding(.horizontal, 15)
+                .padding(.vertical, 10)
+                
+                ZStack {
+                    Text(title == "Lifetime Premium" ? "Buy Now" : "Subscribe")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.white)
+                        .opacity(isLoading ? 0 : 1)
+                    
+                    if isLoading {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(Color(hex: "FF7F00"))
+                .cornerRadius(10)
+            }
+            .padding(15)
+            .background(Color(white: 0.17)) // Dark gray card background
+            .cornerRadius(15)
+            .overlay(
+                RoundedRectangle(cornerRadius: 15)
+                    .stroke(isSelected ? Color(hex: "FF7F00") : (title == "Lifetime Premium" ? Color(hex: "FF7F00") : Color.clear), lineWidth: 2)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+        .disabled(isLoading)
     }
 }
 
