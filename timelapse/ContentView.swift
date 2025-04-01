@@ -16,6 +16,7 @@ struct ContentView: View {
     @State private var currentDate = Date()
     @State private var yearTrackerSettings: DisplaySettings = DisplaySettings(backgroundStyle: .dark)
     @State private var showSubscriptionView = false
+    @State private var isAnimatingLayout = false
   
     private func settings(for event: Event) -> DisplaySettings {
         if event.title == String(currentYear) {
@@ -110,6 +111,16 @@ struct ContentView: View {
             if globalSettings.isGridLayoutAvailable && globalSettings.showGridLayout {
                 TimelineGridView(eventStore: eventStore, yearTrackerSettings: yearTrackerSettings, selectedTab: $navigationState.selectedTab)
                     .environmentObject(globalSettings)
+                    .transition(
+                        .asymmetric(
+                            insertion: .scale(scale: 0.95)
+                                .combined(with: .opacity)
+                                .animation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0.3)),
+                            removal: .scale(scale: 1.05)
+                                .combined(with: .opacity)
+                                .animation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0.3))
+                        )
+                    )
             } else {
                 GeometryReader { geometry in
                     TabView(selection: $navigationState.selectedTab) {
@@ -128,9 +139,19 @@ struct ContentView: View {
                                 selectedTab: $navigationState.selectedTab
                             )
                             .frame(width: geometry.size.width * 0.76)
-                            .offset(y: -40) // Move the card up by 40 points
+                            .offset(y: -40)
                             .tag(index)
                             .environmentObject(globalSettings)
+                            .transition(
+                                .asymmetric(
+                                    insertion: .scale(scale: 1.05)
+                                        .combined(with: .opacity)
+                                        .animation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0.3)),
+                                    removal: .scale(scale: 0.95)
+                                        .combined(with: .opacity)
+                                        .animation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0.3))
+                                )
+                            )
                         }
                     }
                 }
@@ -142,6 +163,23 @@ struct ContentView: View {
                 }
             }
         }
+        .gesture(
+            MagnificationGesture()
+                .onEnded { scale in
+                    if globalSettings.isGridLayoutAvailable {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0.3)) {
+                            // Toggle grid layout when pinch threshold is met
+                            if scale < 0.8 {
+                                // Pinch in - switch to grid
+                                globalSettings.showGridLayout = true
+                            } else if scale > 1.2 {
+                                // Pinch out - switch to list
+                                globalSettings.showGridLayout = false
+                            }
+                        }
+                    }
+                }
+        )
     }
     
     private var navigationContent: some View {

@@ -85,12 +85,32 @@ struct SettingsView: View {
                 }
                 
                 Section {
-                    NavigationLink(destination: PrivacyPolicyView()) {
-                        Text("Privacy Policy")
+                    Button(action: {
+                        if let url = URL(string: "https://www.wanmenzy.me/privacy-policy") {
+                            openURL(url)
+                        }
+                    }) {
+                        HStack {
+                            Text("Privacy Policy")
+                                .foregroundColor(.primary)
+                            Spacer()
+                            Image(systemName: "arrow.up.forward.app")
+                                .foregroundColor(.blue)
+                        }
                     }
                     
-                    NavigationLink(destination: TermsOfServiceView()) {
-                        Text("Terms of Service")
+                    Button(action: {
+                        if let url = URL(string: "https://www.wanmenzy.me/terms") {
+                            openURL(url)
+                        }
+                    }) {
+                        HStack {
+                            Text("Terms of Service")
+                                .foregroundColor(.primary)
+                            Spacer()
+                            Image(systemName: "arrow.up.forward.app")
+                                .foregroundColor(.blue)
+                        }
                     }
                     
                     NavigationLink(destination: AboutView()) {
@@ -131,113 +151,104 @@ struct SettingsView: View {
     }
 }
 
-struct PrivacyPolicyView: View {
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Privacy Policy")
-                    .font(.title.bold())
-                    .padding(.bottom, 8)
-                
-                Text("Last updated: \(Date().formatted(date: .long, time: .omitted))")
-                    .foregroundColor(.secondary)
-                
-                Text("Your privacy is important to us. This Privacy Policy explains how we collect, use, and protect your personal information.")
-                
-                Group {
-                    Text("Information We Collect").font(.headline)
-                    Text("We do not collect any personal information. All your data is stored locally on your device.")
-                    
-                    Text("Data Storage").font(.headline)
-                    Text("All event data and preferences are stored locally on your device and are not transmitted to any external servers.")
-                }
-                
-                // Add more privacy policy content as needed
-            }
-            .padding()
-        }
-        .navigationTitle("Privacy Policy")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
-struct TermsOfServiceView: View {
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Terms of Service")
-                    .font(.title.bold())
-                    .padding(.bottom, 8)
-                
-                Text("Last updated: \(Date().formatted(date: .long, time: .omitted))")
-                    .foregroundColor(.secondary)
-                
-                Text("By using our app, you agree to these terms. Please read them carefully.")
-                
-                Group {
-                    Text("1. Acceptance of Terms").font(.headline)
-                    Text("By accessing and using this application, you accept and agree to be bound by the terms and provision of this agreement.")
-                    
-                    Text("2. App License").font(.headline)
-                    Text("We grant you a limited, non-exclusive, non-transferable, revocable license to use the app for your personal, non-commercial purposes.")
-                }
-                
-                // Add more terms of service content as needed
-            }
-            .padding()
-        }
-        .navigationTitle("Terms of Service")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
 struct AboutView: View {
+    @Environment(\.openURL) private var openURL
+    
     var body: some View {
         List {
             Section {
-                VStack(spacing: 16) {
+                VStack(spacing: 20) {
                     Image("AppIcon") // Make sure to have this in your assets
                         .resizable()
                         .frame(width: 100, height: 100)
-                        .cornerRadius(20)
+                        .cornerRadius(22)
+                        .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
                     
                     Text("Timelapse")
-                        .font(.title2.bold())
+                        .font(.system(size: 28, weight: .bold))
                     
                     Text("Version \(Bundle.main.releaseVersionNumber ?? "1.0.0")")
                         .foregroundColor(.secondary)
+                        .font(.system(size: 16))
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical)
+                .padding(.vertical, 24)
                 .listRowInsets(EdgeInsets())
                 .listRowBackground(Color.clear)
             }
             
             Section("Creators") {
-                HStack {
-                    Text("Design & Development")
-                    Spacer()
-                    Text("Your Name")
-                        .foregroundColor(.secondary)
+                Button(action: {
+                    if let url = URL(string: "https://www.instagram.com/jnrkay") {
+                        openURL(url)
+                    }
+                }) {
+                    HStack {
+                        Text("Design")
+                            .foregroundColor(.primary)
+                        Spacer()
+                        Text("Ed Jnr")
+                            .foregroundColor(.secondary)
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 12))
+                            .foregroundColor(.blue)
+                    }
+                }
+                
+                Button(action: {
+                    if let url = URL(string: "https://www.instagram.com/menzy.svg") {
+                        openURL(url)
+                    }
+                }) {
+                    HStack {
+                        Text("Development")
+                            .foregroundColor(.primary)
+                        Spacer()
+                        Text("Wan Menzy")
+                            .foregroundColor(.secondary)
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 12))
+                            .foregroundColor(.blue)
+                    }
                 }
             }
             
             Section("Contact") {
                 Button(action: {
-                    if let url = URL(string: "mailto:support@yourdomain.com") {
+                    if let url = URL(string: "mailto:wanmenzy@gmail.com") {
                         UIApplication.shared.open(url)
                     }
                 }) {
-                    Text("Contact Support")
+                    HStack {
+                        Text("Contact Support")
+                            .foregroundColor(.primary)
+                        Spacer()
+                        Image(systemName: "envelope.fill")
+                            .foregroundColor(.blue)
+                    }
                 }
                 
                 Button(action: {
-                    if let url = URL(string: "https://yourdomain.com") {
-                        UIApplication.shared.open(url)
+                    if let url = URL(string: "https://www.wanmenzy.me/timelapse") {
+                        openURL(url)
                     }
                 }) {
-                    Text("Visit Website")
+                    HStack {
+                        Text("Visit Website")
+                            .foregroundColor(.primary)
+                        Spacer()
+                        Image(systemName: "globe")
+                            .foregroundColor(.blue)
+                    }
                 }
+            }
+            
+            Section {
+                Text("Thank you for using Timelapse! We hope it helps you keep track of your important dates and events.")
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
+                    .padding(.vertical, 6)
+                    .listRowBackground(Color(.systemGroupedBackground))
             }
         }
         .navigationTitle("About")
