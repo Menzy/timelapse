@@ -72,6 +72,67 @@ struct EventQuery: EntityQuery {
     }
 }
 
+// Dynamic color entity for widget configuration
+struct ColorEntity: AppEntity, TypeDisplayRepresentable {
+    var id: String
+    var name: String
+    var hexValue: String
+    
+    static var defaultQuery = ColorQuery()
+    static var typeDisplayRepresentation: TypeDisplayRepresentation = "Display Color"
+    
+    var displayRepresentation: DisplayRepresentation {
+        DisplayRepresentation(title: "\(name)")
+    }
+}
+
+struct ColorQuery: EntityQuery {
+    func entities(for identifiers: [String]) async throws -> [ColorEntity] {
+        return identifiers.compactMap { colorId in
+            let defaultName = colorId.capitalized
+            let defaultHex: String
+            
+            switch colorId {
+            case "orange": defaultHex = "FF7F00"
+            case "blue": defaultHex = "018AFB"
+            case "green": defaultHex = "7FBF54"
+            default: defaultHex = "FF7F00"
+            }
+            
+            // Get custom color name and hex if available
+            let name = UserDefaults.shared?.string(forKey: "\(colorId)ColorName") ?? defaultName
+            let hex = UserDefaults.shared?.string(forKey: "\(colorId)ColorHex") ?? defaultHex
+            
+            return ColorEntity(id: colorId, name: name, hexValue: hex)
+        }
+    }
+    
+    func suggestedEntities() async throws -> [ColorEntity] {
+        var entities: [ColorEntity] = []
+        let colorIds = ["orange", "blue", "green"]
+        
+        for colorId in colorIds {
+            let defaultName = colorId.capitalized
+            let defaultHex: String
+            
+            switch colorId {
+            case "orange": defaultHex = "FF7F00"
+            case "blue": defaultHex = "018AFB"
+            case "green": defaultHex = "7FBF54"
+            default: defaultHex = "FF7F00"
+            }
+            
+            // Get custom color name and hex if available
+            let name = UserDefaults.shared?.string(forKey: "\(colorId)ColorName") ?? defaultName
+            let hex = UserDefaults.shared?.string(forKey: "\(colorId)ColorHex") ?? defaultHex
+            
+            entities.append(ColorEntity(id: colorId, name: name, hexValue: hex))
+        }
+        
+        return entities
+    }
+}
+
 struct ConfigurationAppIntent: WidgetConfigurationIntent {
     static var title: LocalizedStringResource { "Configuration" }
     static var description: IntentDescription { "Configure your event tracker widget appearance." }
@@ -83,8 +144,8 @@ struct ConfigurationAppIntent: WidgetConfigurationIntent {
     @Parameter(title: "Display Style", default: .dotPixels)
     var displayStyle: DisplayStyleChoice
     
-    @Parameter(title: "Display Color", default: .orange)
-    var displayColor: ColorChoice
+    @Parameter(title: "Display Color", default: nil)
+    var displayColor: ColorEntity?
     
     @Parameter(title: "Background Theme", default: .dark)
     var backgroundTheme: BackgroundChoice
@@ -96,8 +157,8 @@ struct ConfigurationAppIntent: WidgetConfigurationIntent {
     @Parameter(title: "Second Display Style", default: .progressBar)
     var secondaryDisplayStyle: DisplayStyleChoice
     
-    @Parameter(title: "Second Display Color", default: .blue)
-    var secondaryDisplayColor: ColorChoice
+    @Parameter(title: "Second Display Color", default: nil)
+    var secondaryDisplayColor: ColorEntity?
 }
 
 enum DisplayStyleChoice: String, AppEnum {
@@ -113,27 +174,6 @@ enum DisplayStyleChoice: String, AppEnum {
         .progressBar: "ProgressBar",
         .countdown: "Countdown"
     ]
-}
-
-enum ColorChoice: String, AppEnum {
-    case orange
-    case blue
-    case green
-    
-    static var typeDisplayRepresentation: TypeDisplayRepresentation = "Display Color"
-    static var caseDisplayRepresentations: [ColorChoice: DisplayRepresentation] = [
-        .orange: "Orange",
-        .blue: "Blue",
-        .green: "Green"
-    ]
-    
-    var color: Color {
-        switch self {
-        case .orange: return Color(hex: "FF7F00") // Exact orange from main app
-        case .blue: return Color(hex: "018AFB")   // Exact blue from main app
-        case .green: return Color(hex: "7FBF54")  // Exact green from main app
-        }
-    }
 }
 
 enum BackgroundChoice: String, AppEnum {

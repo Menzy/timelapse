@@ -7,6 +7,7 @@
 
 import WidgetKit
 import SwiftUI
+import Intents
 
 // Enhanced EventDataProvider to support fetching data for multiple events
 class EventDataProvider {
@@ -63,6 +64,14 @@ class EventDataProvider {
 }
 
 struct Provider: AppIntentTimelineProvider {
+    // Store the timestamp of the last color update to force widget refreshes
+    private var lastColorUpdateTimestamp: Date {
+        if let timestamp = UserDefaults.shared?.object(forKey: "lastColorUpdateTimestamp") as? Date {
+            return timestamp
+        }
+        return Date.distantPast
+    }
+    
     func placeholder(in context: Context) -> SimpleEntry {
         let primaryData = EventDataProvider.getEventData(eventId: nil)
         let secondaryData = EventDataProvider.getEventData(eventId: nil)
@@ -71,7 +80,8 @@ struct Provider: AppIntentTimelineProvider {
             date: Date(),
             primaryEventData: primaryData,
             secondaryEventData: secondaryData,
-            configuration: ConfigurationAppIntent()
+            configuration: ConfigurationAppIntent(),
+            colorUpdateTimestamp: lastColorUpdateTimestamp
         )
     }
 
@@ -83,7 +93,8 @@ struct Provider: AppIntentTimelineProvider {
             date: Date(),
             primaryEventData: primaryData,
             secondaryEventData: secondaryData,
-            configuration: configuration
+            configuration: configuration,
+            colorUpdateTimestamp: lastColorUpdateTimestamp
         )
     }
 
@@ -95,7 +106,8 @@ struct Provider: AppIntentTimelineProvider {
             date: Date(),
             primaryEventData: primaryData,
             secondaryEventData: secondaryData,
-            configuration: configuration
+            configuration: configuration,
+            colorUpdateTimestamp: lastColorUpdateTimestamp
         )
 
         // Update at midnight
@@ -111,12 +123,40 @@ struct SimpleEntry: TimelineEntry {
     let primaryEventData: EventDataProvider.EventData
     let secondaryEventData: EventDataProvider.EventData
     let configuration: ConfigurationAppIntent
+    let colorUpdateTimestamp: Date
+}
+
+// Helper extension to get color from ColorEntity
+extension ColorEntity {
+    var color: Color {
+        Color(hex: hexValue)
+    }
+    
+    // Get a default orange color entity if none is specified
+    static var defaultOrange: ColorEntity {
+        ColorEntity(id: "orange", name: "Orange", hexValue: "FF7F00")
+    }
+    
+    // Get a default blue color entity if none is specified
+    static var defaultBlue: ColorEntity {
+        ColorEntity(id: "blue", name: "Blue", hexValue: "018AFB")
+    }
 }
 
 struct miniTimerEntryView : View {
     var entry: Provider.Entry
     @Environment(\.widgetFamily) var family
     @Environment(\.colorScheme) var colorScheme
+    
+    // Get primary display color, with fallback to default orange
+    private var primaryColor: Color {
+        entry.configuration.displayColor?.color ?? ColorEntity.defaultOrange.color
+    }
+    
+    // Get secondary display color, with fallback to default blue
+    private var secondaryColor: Color {
+        entry.configuration.secondaryDisplayColor?.color ?? ColorEntity.defaultBlue.color
+    }
 
     private var textColor: Color {
         entry.configuration.backgroundTheme == .dark ? .white : .black
@@ -196,7 +236,7 @@ struct miniTimerEntryView : View {
                         HStack {
                             Text(entry.primaryEventData.title)
                                 .font(.system(size: 8))
-                                .foregroundColor(textColor)
+                                .foregroundColor(primaryColor)
                                 .lineLimit(1)
 
                             Spacer()
@@ -213,7 +253,7 @@ struct miniTimerEntryView : View {
                             .foregroundColor(textColor)
                         }
                     }
-                    .accentColor(entry.configuration.displayColor.color)
+                    .accentColor(primaryColor)
 
                     // Secondary display - Right side
                     VStack(spacing: 0) {
@@ -255,7 +295,7 @@ struct miniTimerEntryView : View {
                         HStack {
                             Text(entry.secondaryEventData.title)
                                 .font(.system(size: 8))
-                                .foregroundColor(textColor)
+                                .foregroundColor(secondaryColor)
                                 .lineLimit(1)
 
                             Spacer()
@@ -273,8 +313,14 @@ struct miniTimerEntryView : View {
                         }
 
                     }
-                    .accentColor(entry.configuration.secondaryDisplayColor.color)
+                    .accentColor(secondaryColor)
                 }
+                .padding(containerPadding)
+                .background(
+                    entry.configuration.backgroundTheme == .dark ?
+                        Color.black :
+                        Color.white
+                )
             } else {
                 // Single display for small and large widgets
                 ZStack {
@@ -309,7 +355,7 @@ struct miniTimerEntryView : View {
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .accentColor(entry.configuration.displayColor.color)
+                .accentColor(primaryColor)
                 .widgetURL(createDeepLink(for: entry.primaryEventData.eventId))
             }
 
@@ -318,7 +364,7 @@ struct miniTimerEntryView : View {
                 HStack {
                     Text(entry.primaryEventData.title)
                         .font(.system(size: family == .systemSmall ? 8 : 10))
-                        .foregroundColor(textColor)
+                        .foregroundColor(primaryColor)
                         .lineLimit(1)
 
                     Spacer()
@@ -354,12 +400,12 @@ struct miniTimer: Widget {
 }
 
 extension ConfigurationAppIntent {
-    fileprivate static var preview: ConfigurationAppIntent {
+    static var preview: ConfigurationAppIntent {
         let intent = ConfigurationAppIntent()
         intent.displayStyle = .dotPixels
-        intent.secondaryDisplayStyle = .progressBar
-        intent.displayColor = .orange
-        intent.secondaryDisplayColor = .blue
+        intent.secondaryDisplayStyle = .progressBar 
+        intent.displayColor = ColorEntity.defaultOrange
+        intent.secondaryDisplayColor = ColorEntity.defaultBlue
         intent.backgroundTheme = .dark
         return intent
     }
@@ -371,7 +417,7 @@ extension ConfigurationAppIntent {
     let primaryData = EventDataProvider.EventData(daysLeft: 300, totalDays: 365, title: "2025", eventId: UUID())
     let secondaryData = EventDataProvider.EventData(daysLeft: 150, totalDays: 180, title: "Project X", eventId: UUID())
     
-    SimpleEntry(date: .now, primaryEventData: primaryData, secondaryEventData: secondaryData, configuration: .preview)
+    SimpleEntry(date: .now, primaryEventData: primaryData, secondaryEventData: secondaryData, configuration: .preview, colorUpdateTimestamp: Date())
 }
 
 #Preview(as: .systemMedium) {
@@ -380,5 +426,5 @@ extension ConfigurationAppIntent {
     let primaryData = EventDataProvider.EventData(daysLeft: 300, totalDays: 365, title: "2025", eventId: UUID())
     let secondaryData = EventDataProvider.EventData(daysLeft: 150, totalDays: 180, title: "Project X", eventId: UUID())
 
-    SimpleEntry(date: .now, primaryEventData: primaryData, secondaryEventData: secondaryData, configuration: .preview)
+    SimpleEntry(date: .now, primaryEventData: primaryData, secondaryEventData: secondaryData, configuration: .preview, colorUpdateTimestamp: Date())
 }

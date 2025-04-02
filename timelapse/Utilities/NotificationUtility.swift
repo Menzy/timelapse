@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import WidgetKit
 
 // Utility for handling theme change notifications
 enum NotificationUtility {
@@ -31,7 +32,14 @@ enum NotificationUtility {
               let midnight = calendar.date(bySettingHour: 0, minute: 0, second: 0, of: tomorrow) else { return }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + midnight.timeIntervalSince(Date())) {
+            // Force widget timeline to reload at midnight
+            WidgetCenter.shared.reloadAllTimelines()
+            
+            // Call the original completion handler
             completion()
+            
+            // Schedule the next update for the following midnight
+            scheduleNextDayUpdate(completion: completion)
         }
     }
 } 

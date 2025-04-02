@@ -1,4 +1,5 @@
 import SwiftUI
+import WidgetKit
 
 enum TimeDisplayStyle: String, CaseIterable, Codable {
     case dotPixels
@@ -205,13 +206,13 @@ struct DisplayColor: Identifiable {
     static func getPresets(for backgroundStyle: BackgroundStyle) -> [DisplayColor] {
         // Get user's custom colors from UserDefaults if available
         let orangeColor = getUserColor(for: "orange", defaultHex: defaultOrangeHex)
-        let orangeName = UserDefaults.standard.string(forKey: "orangeColorName") ?? defaultColorNames["orange"]!
+        let orangeName = getSharedDefaults()?.string(forKey: "orangeColorName") ?? defaultColorNames["orange"]!
         
         let blueColor = getUserColor(for: "blue", defaultHex: defaultBlueHex)
-        let blueName = UserDefaults.standard.string(forKey: "blueColorName") ?? defaultColorNames["blue"]!
+        let blueName = getSharedDefaults()?.string(forKey: "blueColorName") ?? defaultColorNames["blue"]!
         
         let greenColor = getUserColor(for: "green", defaultHex: defaultGreenHex)
-        let greenName = UserDefaults.standard.string(forKey: "greenColorName") ?? defaultColorNames["green"]!
+        let greenName = getSharedDefaults()?.string(forKey: "greenColorName") ?? defaultColorNames["green"]!
         
         return [
             DisplayColor(id: "orange", name: orangeName, color: orangeColor),
@@ -227,22 +228,41 @@ struct DisplayColor: Identifiable {
     
     // Helper to get user's custom color value from UserDefaults
     private static func getUserColor(for colorID: String, defaultHex: String) -> Color {
-        if let savedHex = UserDefaults.standard.string(forKey: "\(colorID)ColorHex") {
+        if let savedHex = getSharedDefaults()?.string(forKey: "\(colorID)ColorHex") {
             return Color(hex: savedHex)
         }
         return Color(hex: defaultHex)
     }
     
+    // Get shared UserDefaults if available
+    private static func getSharedDefaults() -> UserDefaults? {
+        return UserDefaults(suiteName: "group.com.wanmenzy.timelapseStorage")
+    }
+    
     // Save the edits to UserDefaults and post notification to update all displays
     func saveEdits() {
-        // Save the updated color and name to UserDefaults
+        // Save the updated color and name to both standard and shared UserDefaults
         UserDefaults.standard.set(color.hexString, forKey: "\(id)ColorHex")
         UserDefaults.standard.set(name, forKey: "\(id)ColorName")
+        
+        // Also save to shared UserDefaults for widget access
+        if let shared = UserDefaults(suiteName: "group.com.wanmenzy.timelapseStorage") {
+            shared.set(color.hexString, forKey: "\(id)ColorHex")
+            shared.set(name, forKey: "\(id)ColorName")
+            
+            // Update timestamp to force widget refresh
+            shared.set(Date(), forKey: "lastColorUpdateTimestamp")
+        }
         
         // Post a notification to update all views using this color
         NotificationCenter.default.post(name: Notification.Name("DisplayColorChanged"), 
                                         object: nil,
                                         userInfo: ["colorID": id, "newColor": color])
+        
+        // Request widget refresh
+        #if !WIDGET_EXTENSION
+        WidgetCenter.shared.reloadAllTimelines()
+        #endif
     }
     
     // Get the default hex value for this color
@@ -319,8 +339,26 @@ struct DisplayColor: Identifiable {
         UserDefaults.standard.removeObject(forKey: "greenColorHex")
         UserDefaults.standard.removeObject(forKey: "greenColorName")
         
+        // Also reset in shared UserDefaults
+        if let shared = UserDefaults(suiteName: "group.com.wanmenzy.timelapseStorage") {
+            shared.removeObject(forKey: "orangeColorHex")
+            shared.removeObject(forKey: "orangeColorName")
+            shared.removeObject(forKey: "blueColorHex") 
+            shared.removeObject(forKey: "blueColorName")
+            shared.removeObject(forKey: "greenColorHex")
+            shared.removeObject(forKey: "greenColorName")
+            
+            // Update timestamp to force widget refresh
+            shared.set(Date(), forKey: "lastColorUpdateTimestamp")
+        }
+        
         // Post notification to refresh all views
         NotificationCenter.default.post(name: Notification.Name("AllDisplayColorsReset"), object: nil)
+        
+        // Request widget refresh
+        #if !WIDGET_EXTENSION
+        WidgetCenter.shared.reloadAllTimelines()
+        #endif
     }
 }
 
