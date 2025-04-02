@@ -20,6 +20,16 @@ struct SettingsView: View {
                             globalSettings.saveSettings()
                         }
                     
+                    NavigationLink(destination: AppIconPickerView()) {
+                        HStack {
+                            Text("App Icon")
+                                .foregroundColor(.primary)
+                            Spacer()
+                            Image(systemName: "app.fill")
+                                .foregroundColor(.blue)
+                        }
+                    }
+                    
                     Button(action: {
                         showResetColorsConfirmation = true
                     }) {
@@ -214,12 +224,13 @@ struct SettingsView: View {
 
 struct AboutView: View {
     @Environment(\.openURL) private var openURL
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
         List {
             Section {
                 VStack(spacing: 20) {
-                    Image("AppIcon") // Make sure to have this in your assets
+                    Image(colorScheme == .dark ? "AppIcon-light" : "AppIcon-dark")
                         .resizable()
                         .frame(width: 100, height: 100)
                         .cornerRadius(22)
