@@ -32,5 +32,38 @@
 		<string>Galgo.ttf</string>
 		<string>Inter.ttf</string>
 	</array>
+	<key>CFBundleIcons</key>
+	<dict>
+		<key>CFBundleAlternateIcons</key>
+		<dict>
+			<key>fire</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array>
+					<string>fire-light</string>
+				</array>
+				<key>UIPrerenderedIcon</key>
+				<false/>
+			</dict>
+			<key>splick</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array>
+					<string>splick-light</string>
+				</array>
+				<key>UIPrerenderedIcon</key>
+				<false/>
+			</dict>
+		</dict>
+		<key>CFBundlePrimaryIcon</key>
+		<dict>
+			<key>CFBundleIconFiles</key>
+			<array>
+				<string>AppIcon</string>
+			</array>
+			<key>UIPrerenderedIcon</key>
+			<false/>
+		</dict>
+	</dict>
 </dict>
 </plist>
