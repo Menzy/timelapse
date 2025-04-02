@@ -26,7 +26,7 @@ struct TriGridView: View {
     var startDate: Date = Date()
     var eventStore: EventStore?
     @Binding var selectedTab: Int
-    var showEventHighlights: Bool = true
+    var showEventHighlights: Bool = false
     
     // If the view is created without a binding, use this initializer
     init(daysLeft: Int, totalDays: Int, settings: DisplaySettings) {
@@ -37,7 +37,7 @@ struct TriGridView: View {
     }
     
     // Add a complete initializer that matches DotPixelsView functionality
-    init(daysLeft: Int, totalDays: Int, isYearTracker: Bool, startDate: Date, settings: DisplaySettings, eventStore: EventStore, selectedTab: Binding<Int>, showEventHighlights: Bool = true) {
+    init(daysLeft: Int, totalDays: Int, isYearTracker: Bool, startDate: Date, settings: DisplaySettings, eventStore: EventStore, selectedTab: Binding<Int>, showEventHighlights: Bool = false) {
         self.daysLeft = daysLeft
         self.totalDays = totalDays
         self.isYearTracker = isYearTracker
@@ -67,12 +67,8 @@ struct TriGridView: View {
     }
     
     private func isTargetDate(_ date: Date) -> Bool {
-        if (!isYearTracker || !showEventHighlights) { return false }
-        let calendar = Calendar.current
-        return eventStore?.events.contains { event in
-            guard event.title != String(calendar.component(.year, from: Date())) else { return false }
-            return calendar.isDate(date, inSameDayAs: event.targetDate)
-        } ?? false
+        // Always return false to disable event highlighting
+        return false
     }
     
     private func findEventIndex(for date: Date) -> Int? {
@@ -91,6 +87,7 @@ struct TriGridView: View {
         tappedIndex = index
         
         // If this is a target date in year tracker, navigate to its event
+        // (Keeping this part for compatibility but it won't trigger due to isTargetDate always returning false)
         if isYearTracker, let eventIndex = findEventIndex(for: date) {
             withAnimation {
                 selectedTab = eventIndex
@@ -180,7 +177,6 @@ struct TriGridView: View {
         let isDaysLeft = index >= (totalDays - daysLeft)
         let date = dateForIndex(index)
         let isSelected = selectedDate == date
-        let isTarget = isTargetDate(date)
         
         ZStack {
             RoundedTriangle(fillColor: isSelected ? settings.displayColor : (isDaysLeft ?
@@ -188,16 +184,7 @@ struct TriGridView: View {
                     settings.displayColor))
                 .aspectRatio(1.0, contentMode: .fill)
             
-            // Add highlight for target dates
-            if isTarget {
-                RoundedTriangle(fillColor: .clear)
-                    .aspectRatio(1.0, contentMode: .fill)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 3)
-                            .stroke(settings.displayColor, lineWidth: 2)
-                    )
-                    .animation(.smooth, value: isTarget)
-            }
+            // Removed highlight overlay for target dates
         }
         .onTapGesture {
             handleTap(index: index, date: date)
