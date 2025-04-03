@@ -124,23 +124,6 @@ struct ContentView: View {
                 }
             }
         }
-        .gesture(
-            MagnificationGesture()
-                .onEnded { scale in
-                    if globalSettings.isGridLayoutAvailable {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0.3)) {
-                            // Toggle grid layout when pinch threshold is met
-                            if scale < 0.8 {
-                                // Pinch in - switch to grid
-                                globalSettings.showGridLayout = true
-                            } else if scale > 1.2 {
-                                // Pinch out - switch to list
-                                globalSettings.showGridLayout = false
-                            }
-                        }
-                    }
-                }
-        )
     }
     
     var body: some View {
