@@ -294,4 +294,39 @@ class EventStore: ObservableObject {
             print("No saved notification settings found in UserDefaults")
         }
     }
+    
+    // Get events based on subscription status
+    func getEventsLimitedBySubscription() -> [Event] {
+        // If the user is subscribed, return all events
+        if PaymentManager.isUserSubscribed() {
+            return events
+        }
+        
+        // For free users, return the year tracker plus the allowed number of custom events
+        let yearTracker = events.first { 
+            $0.title == String(Calendar.current.component(.year, from: Date())) 
+        }
+        
+        // Get the event limit from PaymentManager (1 for free users)
+        let customEventLimit = PaymentManager.getEventLimit()
+        
+        // Get all non-year-tracker events
+        let customEvents = events.filter { 
+            $0.title != String(Calendar.current.component(.year, from: Date())) 
+        }
+        
+        // Sort custom events by creation date (newest first) and take only up to the limit
+        let allowedCustomEvents = customEvents
+            .sorted(by: { $0.creationDate > $1.creationDate })
+            .prefix(customEventLimit)
+        
+        // Combine year tracker with allowed custom events
+        var result: [Event] = []
+        if let yearTracker = yearTracker {
+            result.append(yearTracker)
+        }
+        result.append(contentsOf: allowedCustomEvents)
+        
+        return result
+    }
 }

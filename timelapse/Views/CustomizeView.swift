@@ -426,7 +426,7 @@ struct CustomizeView: View {
                 }
                 
                 Section("Counter") {
-                    Toggle("Toggle Percentage", isOn: Binding(
+                    Toggle("Show Percentage left", isOn: Binding(
                         get: { settings.showPercentage },
                         set: { newValue in
                             settings.showPercentage = newValue

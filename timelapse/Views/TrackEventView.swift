@@ -115,5 +115,11 @@ struct TrackEventView: View {
                 await paymentManager.updateSubscriptionStatus()
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SubscriptionStatusChanged"))) { _ in
+            // Refresh the view to update based on subscription status
+            Task {
+                await paymentManager.updateSubscriptionStatus()
+            }
+        }
     }
 }

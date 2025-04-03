@@ -84,6 +84,9 @@ class PaymentManager: ObservableObject {
         var purchasedProducts: [Product] = []
         var lifetimePurchased = false
         
+        // Store current status to check for changes
+        let wasSubscribed = isSubscribed
+        
         // Transaction.currentEntitlements doesn't throw so we don't need a try/catch
         for await result in Transaction.currentEntitlements {
             switch result {
@@ -125,6 +128,13 @@ class PaymentManager: ObservableObject {
         // Also save to shared UserDefaults for widget access
         UserDefaults.shared?.set(isSubscribed, forKey: "isSubscribed")
         UserDefaults.shared?.set(hasLifetimePurchase, forKey: "hasLifetimePurchase")
+        
+        // If subscription status changed, post a notification so the UI can refresh
+        if wasSubscribed != isSubscribed {
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(name: NSNotification.Name("SubscriptionStatusChanged"), object: nil)
+            }
+        }
     }
     
     func purchase(_ product: Product) async throws -> Bool {

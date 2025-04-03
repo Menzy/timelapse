@@ -416,7 +416,7 @@ struct PricingOptionsView: View {
                 }) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 30)
-                            .fill(Color(hex: "FF7F00").opacity(0.85))
+                            .fill(Color(hex: "FF7F00").opacity(isLoading && selectedOption == .monthlySubscription ? 0.6 : 0.85))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 30)
                                     .stroke(Color.white.opacity(0.2), lineWidth: 1)
@@ -443,11 +443,24 @@ struct PricingOptionsView: View {
                             }
                         }
                         .padding(.vertical, 10)
+                        .opacity(isLoading && selectedOption == .monthlySubscription ? 0.7 : 1)
                         
                         if isLoading && selectedOption == .monthlySubscription {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                .scaleEffect(1.5)
+                            HStack(spacing: 4) {
+                                ForEach(0..<3) { i in
+                                    Circle()
+                                        .fill(Color.white)
+                                        .frame(width: 5, height: 5)
+                                        .opacity(0.7)
+                                        .scaleEffect(isLoading ? 1 : 0.5)
+                                        .animation(
+                                            Animation.easeInOut(duration: 0.4)
+                                                .repeatForever(autoreverses: true)
+                                                .delay(Double(i) * 0.2),
+                                            value: isLoading
+                                        )
+                                }
+                            }
                         }
                     }
                     .frame(height: 65)
@@ -461,7 +474,7 @@ struct PricingOptionsView: View {
                 }) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 30)
-                            .fill(Color(hex: "FF7F00").opacity(0.85))
+                            .fill(Color(hex: "FF7F00").opacity(isLoading && selectedOption == .yearlySubscription ? 0.6 : 0.85))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 30)
                                     .stroke(Color.white.opacity(0.2), lineWidth: 1)
@@ -488,11 +501,24 @@ struct PricingOptionsView: View {
                             }
                         }
                         .padding(.vertical, 10)
+                        .opacity(isLoading && selectedOption == .yearlySubscription ? 0.7 : 1)
                         
                         if isLoading && selectedOption == .yearlySubscription {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                .scaleEffect(1.5)
+                            HStack(spacing: 4) {
+                                ForEach(0..<3) { i in
+                                    Circle()
+                                        .fill(Color.white)
+                                        .frame(width: 5, height: 5)
+                                        .opacity(0.7)
+                                        .scaleEffect(isLoading ? 1 : 0.5)
+                                        .animation(
+                                            Animation.easeInOut(duration: 0.4)
+                                                .repeatForever(autoreverses: true)
+                                                .delay(Double(i) * 0.2),
+                                            value: isLoading
+                                        )
+                                }
+                            }
                         }
                         
                         // Save badge with dynamic percentage
@@ -533,7 +559,7 @@ struct PricingOptionsView: View {
             }) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 30)
-                        .fill(Color(hex: "FF7F00").opacity(0.75))
+                        .fill(Color(hex: "FF7F00").opacity(isLoading && selectedOption == .lifetime ? 0.6 : 0.75))
                         .overlay(
                             RoundedRectangle(cornerRadius: 30)
                                 .stroke(Color.white.opacity(0.2), lineWidth: 1)
@@ -560,11 +586,24 @@ struct PricingOptionsView: View {
                         }
                     }
                     .padding(.vertical, 10)
+                    .opacity(isLoading && selectedOption == .lifetime ? 0.7 : 1)
                     
                     if isLoading && selectedOption == .lifetime {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .scaleEffect(1.5)
+                        HStack(spacing: 4) {
+                            ForEach(0..<3) { i in
+                                Circle()
+                                    .fill(Color.white)
+                                    .frame(width: 5, height: 5)
+                                    .opacity(0.7)
+                                    .scaleEffect(isLoading ? 1 : 0.5)
+                                    .animation(
+                                        Animation.easeInOut(duration: 0.4)
+                                            .repeatForever(autoreverses: true)
+                                            .delay(Double(i) * 0.2),
+                                        value: isLoading
+                                    )
+                            }
+                        }
                     }
                 }
                 .frame(height: 65)
@@ -588,9 +627,10 @@ struct PricingOptionsView: View {
                     isLoading = false
                 }
             }) {
-                Text("Restore Purchases")
+                Text(isLoading && selectedOption == nil ? "Restoring..." : "Restore Purchases")
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(Color.secondary)
+                    .foregroundColor(isLoading && selectedOption == nil ? Color.secondary.opacity(0.7) : Color.secondary)
+                    .opacity(isLoading && selectedOption == nil ? 0.7 : 1)
             }
             .padding(.top, 20)
             .disabled(isLoading)

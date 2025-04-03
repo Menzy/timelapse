@@ -34,10 +34,20 @@ struct ContentView: View {
     // Store all notification cancellables
     @State private var cancellables = Set<AnyCancellable>()
     
+    @State private var showSubscriptionExpiredAlert = false
+    @State private var hiddenEventsCount = 0
+    @State private var viewRefreshTrigger = false
+    
     private var displayedEvents: [Event] {
+        // Using viewRefreshTrigger here will cause this property to be recalculated when it changes
+        _ = viewRefreshTrigger
+        
+        // Get events limited by subscription status
+        let limitedEvents = eventStore.getEventsLimitedBySubscription()
+        
         // Always put year tracker first, then other events
-        let yearTracker = eventStore.events.first { $0.title == YearTrackerUtility.currentYearTitle }
-        let otherEvents = eventStore.events.filter { $0.title != YearTrackerUtility.currentYearTitle }
+        let yearTracker = limitedEvents.first { $0.title == YearTrackerUtility.currentYearTitle }
+        let otherEvents = limitedEvents.filter { $0.title != YearTrackerUtility.currentYearTitle }
         return [yearTracker].compactMap { $0 } + otherEvents
     }
     
@@ -178,7 +188,7 @@ struct ContentView: View {
     }
     
     var body: some View {
-        ZStack(alignment: .bottom) {
+        ZStack {
             // Background with transition animation
             BackgroundView(
                 isAnimating: isAnimatingThemeChange,
@@ -187,15 +197,48 @@ struct ContentView: View {
             )
             .environmentObject(globalSettings)
             
-            // Main content
-            timelineContent
-            
-            // Navigation with page indicators
-            NavigationContentView(
-                selectedTab: navigationState.selectedTab,
-                eventCount: displayedEvents.count
-            )
-            .environmentObject(globalSettings)
+            ZStack(alignment: .bottom) {
+                // Main content
+                timelineContent
+                
+                // Navigation with page indicators
+                NavigationContentView(
+                    selectedTab: navigationState.selectedTab,
+                    eventCount: displayedEvents.count
+                )
+                .environmentObject(globalSettings)
+                
+                // Show upgrade banner if events are hidden due to subscription limits
+                if !paymentManager.isSubscribed && eventStore.events.count > eventStore.getEventsLimitedBySubscription().count {
+                    VStack {
+                        Spacer()
+                        Button(action: {
+                            showSubscriptionView = true
+                        }) {
+                            HStack {
+                                Text("\(eventStore.events.count - eventStore.getEventsLimitedBySubscription().count) \(eventStore.events.count - eventStore.getEventsLimitedBySubscription().count == 1 ? "event" : "events") hidden")
+                                    .font(.footnote)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.white)
+                                
+                                Text("Upgrade to Pro")
+                                    .font(.footnote)
+                                    .fontWeight(.bold)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color.yellow)
+                                    .foregroundColor(.black)
+                                    .cornerRadius(4)
+                            }
+                            .padding(.horizontal, 15)
+                            .padding(.vertical, 8)
+                            .background(Color.black.opacity(0.7))
+                            .cornerRadius(20)
+                            .padding(.bottom, 10)
+                        }
+                    }
+                }
+            }
         }
         .onChange(of: globalSettings.backgroundStyle) { oldStyle, newStyle in
             updateAllColors(for: newStyle)
@@ -286,6 +329,28 @@ struct ContentView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ShowSubscriptionView"))) { _ in
             showSubscriptionView = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SubscriptionStatusChanged"))) { _ in
+            // Force refresh the view to update displayed events based on subscription status
+            // This ensures that if a user's subscription expires, excess events are hidden
+            viewRefreshTrigger.toggle()
+            
+            // Check if subscription was lost and there are hidden events
+            if !paymentManager.isSubscribed {
+                let hiddenCount = eventStore.events.count - eventStore.getEventsLimitedBySubscription().count
+                if hiddenCount > 0 {
+                    hiddenEventsCount = hiddenCount
+                    showSubscriptionExpiredAlert = true
+                }
+            }
+        }
+        .alert("Subscription Expired", isPresented: $showSubscriptionExpiredAlert) {
+            Button("Subscribe", role: .none) {
+                showSubscriptionView = true
+            }
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Your subscription has expired. \(hiddenEventsCount) \(hiddenEventsCount == 1 ? "event is" : "events are") now hidden. Upgrade to TimeLapse Pro to regain access to all your events.")
         }
     }
 }

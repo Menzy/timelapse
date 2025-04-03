@@ -11,10 +11,10 @@ enum TimeDisplayStyle: String, CaseIterable, Codable {
 enum BackgroundStyle: String, CaseIterable, Codable {
     case light
     case dark
+    case device
     case navy
     case fire
     case dream
-    case device
     
     // Default theme color constants
     static let defaultNavyHex = "001524"
