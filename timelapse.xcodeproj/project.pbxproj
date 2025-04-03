@@ -11,6 +11,7 @@
 		40DED20B2D6E658100DB557C /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 40DED20A2D6E658100DB557C /* SwiftUI.framework */; };
 		40DED21C2D6E658300DB557C /* miniTimerExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 40DED2062D6E658100DB557C /* miniTimerExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		B522BB972D9C201100CFC3D8 /* SwiftSVG in Frameworks */ = {isa = PBXBuildFile; productRef = B522BB962D9C201100CFC3D8 /* SwiftSVG */; };
+		B522BD4D2D9DDBF700CFC3D8 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B522BD4C2D9DDBF700CFC3D8 /* StoreKit.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -42,6 +43,7 @@
 		40DED2062D6E658100DB557C /* miniTimerExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = miniTimerExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		40DED2082D6E658100DB557C /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		40DED20A2D6E658100DB557C /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		B522BD4C2D9DDBF700CFC3D8 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		B5A236FC2D7EFF8E006DEC8A /* miniTimerExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = miniTimerExtension.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -87,6 +89,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B522BB972D9C201100CFC3D8 /* SwiftSVG in Frameworks */,
+				B522BD4D2D9DDBF700CFC3D8 /* StoreKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -125,6 +128,7 @@
 		40DED2072D6E658100DB557C /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				B522BD4C2D9DDBF700CFC3D8 /* StoreKit.framework */,
 				40DED2082D6E658100DB557C /* WidgetKit.framework */,
 				40DED20A2D6E658100DB557C /* SwiftUI.framework */,
 			);
@@ -415,7 +419,7 @@
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -450,7 +454,7 @@
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -478,7 +482,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -506,7 +510,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
