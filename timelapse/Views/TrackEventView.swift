@@ -97,9 +97,15 @@ struct TrackEventView: View {
                 }
             }
             .alert("Event Limit Reached", isPresented: $showingLimitAlert) {
+                Button("Subscribe", role: .none) {
+                    showSubscriptionView = true
+                }
                 Button("OK", role: .cancel) { }
             } message: {
-                Text("You've reached the limit of 5 custom events. Delete an existing event to create a new one.")
+                Text("Free users can create only 1 custom event in addition to the year tracker. Upgrade to TimeLapse Pro to create up to 5 custom events.")
+            }
+            .sheet(isPresented: $showSubscriptionView) {
+                SubscriptionView()
             }
         }
         .presentationDetents([.fraction(0.5)])
