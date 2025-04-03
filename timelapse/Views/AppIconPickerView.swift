@@ -2,8 +2,10 @@ import SwiftUI
 
 struct AppIconPickerView: View {
     @StateObject private var iconManager = AppIconManager()
+    @StateObject private var paymentManager = PaymentManager.shared
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
+    @State private var showSubscriptionView = false
     
     var body: some View {
         ZStack {
@@ -22,7 +24,13 @@ struct AppIconPickerView: View {
                 HStack(spacing: 24) {
                     ForEach(AppIconType.allCases) { iconType in
                         Button(action: {
-                            iconManager.changeAppIcon(to: iconType)
+                            // Check if user is subscribed before allowing icon change
+                            if paymentManager.isSubscribed {
+                                iconManager.changeAppIcon(to: iconType)
+                            } else {
+                                // Show subscription view for non-subscribers
+                                showSubscriptionView = true
+                            }
                         }) {
                             ZStack(alignment: .bottomTrailing) {
                                 // App icon preview
@@ -59,6 +67,14 @@ struct AppIconPickerView: View {
         .navigationBarItems(trailing: Button("Done") {
             dismiss()
         })
+        .sheet(isPresented: $showSubscriptionView) {
+            SubscriptionView()
+        }
+        .onAppear {
+            Task {
+                await paymentManager.updateSubscriptionStatus()
+            }
+        }
     }
 }
 

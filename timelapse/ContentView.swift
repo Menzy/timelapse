@@ -69,20 +69,71 @@ struct ContentView: View {
     
     private var timelineContent: some View {
         VStack(spacing: 0) {
-            if globalSettings.isGridLayoutAvailable && globalSettings.showGridLayout {
-                TimelineGridView(eventStore: eventStore, yearTrackerSettings: yearTrackerSettings, selectedTab: $navigationState.selectedTab)
-                    .environmentObject(globalSettings)
-                    .transition(
-                        .asymmetric(
-                            insertion: .scale(scale: 0.95)
-                                .combined(with: .opacity)
-                                .animation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0.3)),
-                            removal: .scale(scale: 1.05)
-                                .combined(with: .opacity)
-                                .animation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0.3))
+            if globalSettings.showGridLayout {
+                if paymentManager.isSubscribed {
+                    // Subscribed user can see grid view
+                    TimelineGridView(eventStore: eventStore, yearTrackerSettings: yearTrackerSettings, selectedTab: $navigationState.selectedTab)
+                        .environmentObject(globalSettings)
+                        .transition(
+                            .asymmetric(
+                                insertion: .scale(scale: 0.95)
+                                    .combined(with: .opacity)
+                                    .animation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0.3)),
+                                removal: .scale(scale: 1.05)
+                                    .combined(with: .opacity)
+                                    .animation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0.3))
+                            )
                         )
-                    )
+                } else {
+                    // Non-subscribed user trying to use grid view
+                    // Reset the grid layout setting and show subscription prompt
+                    GeometryReader { geometry in
+                        VStack {
+                            // Default to tab view but also show subscription prompt
+                            TabView(selection: $navigationState.selectedTab) {
+                                ForEach(Array(displayedEvents.enumerated()), id: \.element.id) { index, event in
+                                    let progress = event.progressDetails()
+                                    let eventSettings = settings(for: event)
+                                    
+                                    TimeCard(
+                                        title: event.title,
+                                        event: event,
+                                        settings: eventSettings,
+                                        eventStore: eventStore,
+                                        daysLeft: progress.daysLeft,
+                                        totalDays: progress.totalDays,
+                                        isGridView: false,
+                                        selectedTab: $navigationState.selectedTab
+                                    )
+                                    .frame(width: geometry.size.width * 0.76)
+                                    .offset(y: -40)
+                                    .tag(index)
+                                    .environmentObject(globalSettings)
+                                    .transition(
+                                        .asymmetric(
+                                            insertion: .scale(scale: 1.05)
+                                                .combined(with: .opacity)
+                                                .animation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0.3)),
+                                            removal: .scale(scale: 0.95)
+                                                .combined(with: .opacity)
+                                                .animation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0.3))
+                                        )
+                                    )
+                                }
+                            }
+                            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+                        }
+                        .onAppear {
+                            // Reset the setting and trigger subscription view
+                            DispatchQueue.main.async {
+                                globalSettings.showGridLayout = false
+                                showSubscriptionView = true
+                            }
+                        }
+                    }
+                }
             } else {
+                // Standard tab view for all users
                 GeometryReader { geometry in
                     TabView(selection: $navigationState.selectedTab) {
                         ForEach(Array(displayedEvents.enumerated()), id: \.element.id) { index, event in

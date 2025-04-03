@@ -54,11 +54,13 @@ struct TimeCard: View {
     @State private var showingShareSheet = false
     @State private var showingActionSheet = false
     @State private var showingNotificationSettings = false
+    @State private var showingSubscriptionView = false
     @State private var isPressed = false
     @State private var isLongPressing = false
     @EnvironmentObject var globalSettings: GlobalSettings
     @Binding var selectedTab: Int
     @StateObject private var navigationState = NavigationStateManager.shared
+    @StateObject private var paymentManager = PaymentManager.shared
     
     // Add computed properties for dynamic scaling
     private var scaledWidth: CGFloat {
@@ -308,8 +310,17 @@ struct TimeCard: View {
             .environmentObject(globalSettings)
         }
         .sheet(isPresented: $showingNotificationSettings) {
-            // Always show notification settings, removing the pro feature check
-            NotificationSettingsView(event: event, eventStore: eventStore)
+            // Check if user has premium access to notification features
+            if paymentManager.isSubscribed {
+                NotificationSettingsView(event: event, eventStore: eventStore)
+                    .environmentObject(globalSettings)
+            } else {
+                SubscriptionView()
+                    .environmentObject(globalSettings)
+            }
+        }
+        .sheet(isPresented: $showingSubscriptionView) {
+            SubscriptionView()
                 .environmentObject(globalSettings)
         }
         .confirmationDialog("Event Options", isPresented: $showingActionSheet, titleVisibility: .visible) {
@@ -320,9 +331,13 @@ struct TimeCard: View {
                 }
             }
             
-            // Always show notifications option without pro badge
+            // Show notifications option with premium gate
             Button("Notifications") {
-                showingNotificationSettings = true
+                if paymentManager.isSubscribed {
+                    showingNotificationSettings = true
+                } else {
+                    showingSubscriptionView = true
+                }
             }
             
             Button("Share") {

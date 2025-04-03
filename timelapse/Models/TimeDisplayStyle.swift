@@ -63,6 +63,31 @@ enum BackgroundStyle: String, CaseIterable, Codable {
         }
     }
     
+    // Background gradient for gradients styles
+    var backgroundGradient: LinearGradient {
+        if let gradientColors = getGradientColors() {
+            return LinearGradient(
+                stops: [
+                    .init(color: gradientColors.start, location: 0),
+                    .init(color: gradientColors.end, location: 0.6),
+                    .init(color: gradientColors.end, location: 1.0)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        } else {
+            // Fallback to a default gradient
+            return LinearGradient(
+                stops: [
+                    .init(color: Color.gray, location: 0),
+                    .init(color: Color.black, location: 1)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        }
+    }
+    
     // Get the default hex value for this theme
     func getDefaultHex() -> String? {
         switch self {

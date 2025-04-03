@@ -19,11 +19,19 @@ class EventDataProvider {
     }
     
     static func getEventData(eventId: UUID?) -> EventData {
-        // First try to find the specific selected event
+        // Check if user is subscribed
+        let isSubscribed = isUserSubscribed()
+        
+        // First try to find the specific selected event (for subscribers only)
         if let eventId = eventId {
             if let data = UserDefaults.shared?.data(forKey: "allEvents"),
                let events = try? JSONDecoder().decode([Event].self, from: data),
                let selectedEvent = events.first(where: { $0.id == eventId }) {
+                
+                // If user is not subscribed, only allow year tracker
+                if !isSubscribed && !isYearTracker(selectedEvent) {
+                    return getYearTrackerData()
+                }
                 
                 // Use the progressDetails method to calculate days left and total days
                 let details = selectedEvent.progressDetails()
@@ -37,6 +45,11 @@ class EventDataProvider {
         }
         
         // If no event ID specified or event not found, fall back to year tracker
+        return getYearTrackerData()
+    }
+    
+    // Helper function to get the year tracker data
+    private static func getYearTrackerData() -> EventData {
         let calendar = Calendar.current
         let currentYear = calendar.component(.year, from: Date())
         
@@ -60,6 +73,18 @@ class EventDataProvider {
             title: defaultYearEvent.title,
             eventId: defaultYearEvent.id
         )
+    }
+    
+    // Helper function to check if an event is the year tracker
+    private static func isYearTracker(_ event: Event) -> Bool {
+        let calendar = Calendar.current
+        let currentYear = calendar.component(.year, from: Date())
+        return event.title == "\(currentYear)"
+    }
+    
+    // Helper function to check subscription status
+    private static func isUserSubscribed() -> Bool {
+        return UserDefaults.shared?.bool(forKey: "isSubscribed") ?? false
     }
 }
 

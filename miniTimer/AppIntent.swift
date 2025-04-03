@@ -36,8 +36,14 @@ struct EventQuery: EntityQuery {
         var entities: [EventEntity] = []
         
         if let events = loadEvents() {
+            // Check if user is subscribed
+            let isSubscribed = isUserSubscribed()
+            
             for event in events {
-                entities.append(EventEntity(id: event.id, title: event.title))
+                // For free users, only add the year tracker event
+                if isSubscribed || isYearTracker(event) {
+                    entities.append(EventEntity(id: event.id, title: event.title))
+                }
             }
         }
         
@@ -68,7 +74,7 @@ struct EventQuery: EntityQuery {
     
     // Helper function to check subscription status
     private func isUserSubscribed() -> Bool {
-        return UserDefaults.standard.bool(forKey: "isSubscribed")
+        return UserDefaults.shared?.bool(forKey: "isSubscribed") ?? false
     }
 }
 

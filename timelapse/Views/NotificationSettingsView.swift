@@ -12,6 +12,7 @@ struct NotificationSettingsView: View {
     @State private var showMilestoneEditor: Bool = false
     @State private var authorizationStatus: UNAuthorizationStatus = .notDetermined
     @State private var hasChanges: Bool = false
+    @StateObject private var paymentManager = PaymentManager.shared
     
     init(event: Event, eventStore: EventStore) {
         self.event = event
@@ -20,150 +21,194 @@ struct NotificationSettingsView: View {
     
     var body: some View {
         NavigationView {
-            List {
-                // Authorization status section
-                Section {
-                    if authorizationStatus == .denied {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Notifications are disabled")
-                                .font(.headline)
-                                .foregroundColor(.red)
-                            
-                            Text("Please enable notifications for this app in your device settings to receive reminders.")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                            
-                            Button("Open Settings") {
-                                if let url = URL(string: UIApplication.openSettingsURLString) {
-                                    UIApplication.shared.open(url)
-                                }
-                            }
-                            .padding(.top, 4)
+            if !paymentManager.isSubscribed {
+                // Show premium upgrade screen
+                VStack(spacing: 20) {
+                    Image(systemName: "bell.badge.fill")
+                        .font(.system(size: 60))
+                        .foregroundColor(.yellow)
+                        .padding(.bottom, 20)
+                    
+                    Text("Premium Feature")
+                        .font(.title2.bold())
+                        .padding(.bottom, 5)
+                    
+                    Text("Notification settings are available for premium subscribers only.")
+                        .font(.body)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20)
+                        .foregroundColor(.secondary)
+                    
+                    Button("Upgrade to Premium") {
+                        dismiss()
+                        // Post notification to show subscription view
+                        NotificationCenter.default.post(name: NSNotification.Name("ShowSubscriptionView"), object: nil)
+                    }
+                    .padding()
+                    .background(Color.yellow)
+                    .foregroundColor(.black)
+                    .cornerRadius(8)
+                    .padding(.top, 10)
+                }
+                .padding()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(UIColor.systemGroupedBackground))
+                .navigationTitle("Notification Settings")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Cancel") {
+                            dismiss()
                         }
-                        .padding(.vertical, 8)
                     }
                 }
-                
-                // Enable notifications toggle
-                Section {
-                    Toggle("Enable Notifications", isOn: $notificationSettings.isEnabled)
-                        .onChange(of: notificationSettings.isEnabled) { oldValue, newValue in
-                            if newValue && authorizationStatus == .notDetermined {
-                                globalSettings.requestNotificationPermissions { granted in
-                                    if !granted {
-                                        notificationSettings.isEnabled = false
+            } else {
+                // Show normal notification settings for premium users
+                List {
+                    // Authorization status section
+                    Section {
+                        if authorizationStatus == .denied {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Notifications are disabled")
+                                    .font(.headline)
+                                    .foregroundColor(.red)
+                                
+                                Text("Please enable notifications for this app in your device settings to receive reminders.")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                
+                                Button("Open Settings") {
+                                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                                        UIApplication.shared.open(url)
                                     }
-                                    checkAuthorizationStatus()
+                                }
+                                .padding(.top, 4)
+                            }
+                            .padding(.vertical, 8)
+                        }
+                    }
+                    
+                    // Enable notifications toggle
+                    Section {
+                        Toggle("Enable Notifications", isOn: $notificationSettings.isEnabled)
+                            .onChange(of: notificationSettings.isEnabled) { oldValue, newValue in
+                                if newValue && authorizationStatus == .notDetermined {
+                                    globalSettings.requestNotificationPermissions { granted in
+                                        if !granted {
+                                            notificationSettings.isEnabled = false
+                                        }
+                                        checkAuthorizationStatus()
+                                    }
                                 }
                             }
-                        }
-                } header: {
-                    Text("Notification Status")
-                }
-                
-                if notificationSettings.isEnabled {
-                    // Frequency section
-                    Section {
-                        Picker("Frequency", selection: $notificationSettings.frequency) {
-                            ForEach(NotificationFrequency.allCases) { frequency in
-                                Text(frequency.rawValue).tag(frequency)
+                    } header: {
+                        Text("Notification Status")
+                    }
+                    
+                    if notificationSettings.isEnabled {
+                        // Frequency section
+                        Section {
+                            Picker("Frequency", selection: $notificationSettings.frequency) {
+                                ForEach(NotificationFrequency.allCases) { frequency in
+                                    Text(frequency.rawValue).tag(frequency)
+                                }
                             }
-                        }
-                        .pickerStyle(NavigationLinkPickerStyle())
-                        
-                        if notificationSettings.frequency == .custom {
+                            .pickerStyle(NavigationLinkPickerStyle())
+                            
+                            if notificationSettings.frequency == .custom {
+                                HStack {
+                                    Text("Every")
+                                    Spacer()
+                                    Text("\(notificationSettings.customDays) days")
+                                        .foregroundColor(.secondary)
+                                }
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    showCustomDaysPicker = true
+                                }
+                            }
+                            
                             HStack {
-                                Text("Every")
+                                Text("Time")
                                 Spacer()
-                                Text("\(notificationSettings.customDays) days")
+                                Text(notificationSettings.notifyTime, style: .time)
                                     .foregroundColor(.secondary)
                             }
                             .contentShape(Rectangle())
                             .onTapGesture {
-                                showCustomDaysPicker = true
+                                showTimePicker = true
                             }
+                        } header: {
+                            Text("Regular Notifications")
+                        } footer: {
+                            Text("You'll receive notifications about this event at the specified frequency.")
                         }
                         
-                        HStack {
-                            Text("Time")
-                            Spacer()
-                            Text(notificationSettings.notifyTime, style: .time)
-                                .foregroundColor(.secondary)
+                        // Milestone notifications section
+                        Section {
+                            Toggle("Enable Milestone Notifications", isOn: $notificationSettings.milestoneNotificationsEnabled)
+                            
+                            if notificationSettings.milestoneNotificationsEnabled {
+                                Picker("Milestone Type", selection: $notificationSettings.milestoneType) {
+                                    ForEach(MilestoneType.allCases) { type in
+                                        Text(type.rawValue).tag(type)
+                                    }
+                                }
+                                .pickerStyle(SegmentedPickerStyle())
+                                .padding(.vertical, 8)
+                                
+                                NavigationLink(destination: MilestoneEditorView(settings: $notificationSettings)) {
+                                    HStack {
+                                        Text("Edit Milestones")
+                                        Spacer()
+                                        Text(milestoneSummary)
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                            }
+                        } header: {
+                            Text("Milestone Notifications")
+                        } footer: {
+                            if isYearTracker {
+                                Text("You'll receive special notifications for important milestones throughout the year.")
+                            } else {
+                                Text("You'll receive notifications when you reach important milestones for this event.")
+                            }
                         }
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            showTimePicker = true
+                    }
+                }
+                .navigationTitle("Notification Settings")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("Cancel") {
+                            dismiss()
                         }
-                    } header: {
-                        Text("Regular Notifications")
-                    } footer: {
-                        Text("You'll receive notifications about this event at the specified frequency.")
                     }
                     
-                    // Milestone notifications section
-                    Section {
-                        Toggle("Enable Milestone Notifications", isOn: $notificationSettings.milestoneNotificationsEnabled)
-                        
-                        if notificationSettings.milestoneNotificationsEnabled {
-                            Picker("Milestone Type", selection: $notificationSettings.milestoneType) {
-                                ForEach(MilestoneType.allCases) { type in
-                                    Text(type.rawValue).tag(type)
-                                }
-                            }
-                            .pickerStyle(SegmentedPickerStyle())
-                            .padding(.vertical, 8)
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Save") {
+                            saveSettings()
+                            hasChanges = false
                             
-                            NavigationLink(destination: MilestoneEditorView(settings: $notificationSettings)) {
-                                HStack {
-                                    Text("Edit Milestones")
-                                    Spacer()
-                                    Text(milestoneSummary)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
+                            // Automatically dismiss after saving
+                            dismiss()
                         }
-                    } header: {
-                        Text("Milestone Notifications")
-                    } footer: {
-                        if isYearTracker {
-                            Text("You'll receive special notifications for important milestones throughout the year.")
-                        } else {
-                            Text("You'll receive notifications when you reach important milestones for this event.")
-                        }
+                        .disabled(!hasChanges)
                     }
                 }
-            }
-            .navigationTitle("Notification Settings")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
+                .sheet(isPresented: $showTimePicker) {
+                    TimePickerView(selectedTime: $notificationSettings.notifyTime)
                 }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
-                        saveSettings()
-                        hasChanges = false
-                        
-                        // Automatically dismiss after saving
-                        dismiss()
-                    }
-                    .disabled(!hasChanges)
+                .sheet(isPresented: $showCustomDaysPicker) {
+                    CustomDaysPickerView(days: $notificationSettings.customDays)
                 }
-            }
-            .sheet(isPresented: $showTimePicker) {
-                TimePickerView(selectedTime: $notificationSettings.notifyTime)
-            }
-            .sheet(isPresented: $showCustomDaysPicker) {
-                CustomDaysPickerView(days: $notificationSettings.customDays)
-            }
-            .onAppear {
-                checkAuthorizationStatus()
-            }
-            .onChange(of: notificationSettings) { _, _ in
-                hasChanges = true
+                .onAppear {
+                    checkAuthorizationStatus()
+                }
+                .onChange(of: notificationSettings) { _, _ in
+                    hasChanges = true
+                }
             }
         }
     }

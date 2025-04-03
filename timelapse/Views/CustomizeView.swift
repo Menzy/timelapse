@@ -66,91 +66,96 @@ struct Triangle: Shape {
 struct ThemeCircleView: View {
     let style: BackgroundStyle
     let isSelected: Bool
-    @Environment(\.colorScheme) private var colorScheme
-    @EnvironmentObject var globalSettings: GlobalSettings
     let onDoubleTap: () -> Void
+    @EnvironmentObject var globalSettings: GlobalSettings
+    @Environment(\.colorScheme) private var colorScheme
+    @StateObject private var paymentManager = PaymentManager.shared
     
     var body: some View {
-        VStack {
-            ZStack {
-                // Selection border
-                Circle()
-                    .stroke(isSelected ? (colorScheme == .dark ? Color.white : Color.black) : Color.gray.opacity(0.3), lineWidth: 2)
-                    .frame(maxWidth: 60, maxHeight: 60)
-                
-                if style == .device {
-                    // Split circle for device theme
-                    HStack(spacing: 0) {
-                        Rectangle()
-                            .fill(Color.white)
-                            .frame(maxWidth: 30, maxHeight: 60)
-                        Rectangle()
-                            .fill(Color(hex: "111111"))
-                            .frame(maxWidth: 30, maxHeight: 60)
-                    }
-                    .clipShape(Circle())
-                    .overlay(
-                        Circle()
-                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                    )
-                } else if style == .fire {
-                    // Fire theme with gradient
-                    if let gradientColors = style.getGradientColors() {
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    stops: [
-                                        .init(color: gradientColors.start, location: 0),
-                                        .init(color: gradientColors.end, location: 0.6),
-                                        .init(color: gradientColors.end, location: 1.0)
-                                    ],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
-                            )
-                    }
-                } else if style == .dream {
-                    // Dream theme with gradient
-                    if let gradientColors = style.getGradientColors() {
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    stops: [
-                                        .init(color: gradientColors.start, location: 0),
-                                        .init(color: gradientColors.end, location: 0.6),
-                                        .init(color: gradientColors.end, location: 1.0)
-                                    ],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
-                            )
-                    }
-                } else {
+        VStack(spacing: 8) {
+            ZStack(alignment: .topTrailing) {
+                ZStack {
+                    // Selection border
                     Circle()
-                        .fill(style == .light ? Color.white :
-                              style == .dark ? Color(hex: "111111") :
-                              style == .navy ? style.backgroundColor : .clear)
+                        .stroke(isSelected ? (colorScheme == .dark ? Color.white : Color.black) : Color.gray.opacity(0.3), lineWidth: 2)
+                        .frame(maxWidth: 60, maxHeight: 60)
+                    
+                    // Background fill
+                    if style == .light {
+                        Circle()
+                            .fill(Color.white)
+                            .frame(maxWidth: 60, maxHeight: 60)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                            )
+                    } else if style == .dark {
+                        Circle()
+                            .fill(Color(hex: "111111"))
+                            .frame(maxWidth: 60, maxHeight: 60)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                            )
+                    } else if style == .navy {
+                        Circle()
+                            .fill(style.backgroundColor)
+                            .frame(maxWidth: 60, maxHeight: 60)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                            )
+                    } else if style == .fire || style == .dream {
+                        // Use a gradient for the fire and dream styles
+                        Circle()
+                            .fill(style.backgroundGradient)
+                            .frame(maxWidth: 60, maxHeight: 60)
+                    } else if style == .device {
+                        // Device style - split circle
+                        HStack(spacing: 0) {
+                            Rectangle()
+                                .fill(Color.white)
+                                .frame(maxWidth: 30, maxHeight: 60)
+                            Rectangle()
+                                .fill(Color(hex: "111111"))
+                                .frame(maxWidth: 30, maxHeight: 60)
+                        }
+                        .clipShape(Circle())
                         .overlay(
                             Circle()
-                                .stroke(style == .light ? Color.gray.opacity(0.3) :
-                                       style == .dark ? Color.gray.opacity(0.3) :
-                                       style == .navy ? Color.gray.opacity(0.3) : .clear,
-                                       lineWidth: 1)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                         )
+                    }
+                    
+                    // If theme is customizable, show indicator
+                    if style == .navy || style == .fire || style == .dream {
+                        Circle()
+                            .trim(from: 0, to: 0.15)
+                            .stroke(style == .light ? Color.black : Color.white, lineWidth: 2)
+                            .frame(width: 52, height: 52)
+                    }
                 }
                 
-                // If theme is customizable, show indicator
-                if style == .navy || style == .fire || style == .dream {
-                    Circle()
-                        .trim(from: 0, to: 0.15)
-                        .stroke(style == .light ? Color.black : Color.white, lineWidth: 2)
-                        .frame(width: 52, height: 52)
+                // Premium badge for customizable themes
+                if (style == .navy || style == .fire || style == .dream) && !paymentManager.isSubscribed {
+                    Text("PRO")
+                        .font(.system(size: 8, weight: .bold))
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 2)
+                        .background(Color.yellow)
+                        .foregroundColor(.black)
+                        .cornerRadius(4)
+                        .offset(x: -2, y: -2)
                 }
             }
             .frame(maxWidth: 60, maxHeight: 60)
             .onTapGesture(count: 2) {
                 if style == .navy || style == .fire || style == .dream {
-                    onDoubleTap()
+                    if paymentManager.isSubscribed {
+                        onDoubleTap()
+                    } else {
+                        // This will be handled by the parent view
+                    }
                 }
             }
             
@@ -258,6 +263,8 @@ struct CustomizeView: View {
     @State private var needsDisplayColorRefresh: Bool = false
     @State private var needsThemeRefresh: Bool = false
     @EnvironmentObject var globalSettings: GlobalSettings
+    @StateObject private var paymentManager = PaymentManager.shared
+    @State private var showSubscriptionView = false
     
     private func updatePercentageForAllCards(_ showPercentage: Bool) {
         if globalSettings.isGridLayoutAvailable && globalSettings.showGridLayout {
@@ -283,31 +290,55 @@ struct CustomizeView: View {
                             }
                             .padding(.vertical, 10)
                             
+                            if !paymentManager.isSubscribed {
+                                HStack {
+                                    Text("Double-tap to edit (Premium)")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                }
+                                .padding(.bottom, 8)
+                            }
+                            
                             LazyVGrid(columns: Array(repeating: .init(.flexible()), count: 3), spacing: 15) {
                                 let presets = DisplayColor.getPresets(for: globalSettings.backgroundStyle)
                                 ForEach(presets) { preset in
                                     VStack {
-                                        ZStack {
-                                            if settings.displayColor == preset.color {
-                                                // Glow effect for selected color
+                                        ZStack(alignment: .topTrailing) {
+                                            ZStack {
+                                                if settings.displayColor == preset.color {
+                                                    // Glow effect for selected color
+                                                    RoundedRectangle(cornerRadius: 10)
+                                                        .fill(preset.color)
+                                                        .frame(maxWidth: 92, maxHeight: 19)
+                                                        .shadow(color: preset.color.opacity(0.5), radius: 8, x: 0, y: 0)
+                                                        .shadow(color: preset.color.opacity(0.3), radius: 4, x: 0, y: 0)
+                                                }
+                                                
+                                                RoundedRectangle(cornerRadius: 10)
+                                                    .stroke(settings.displayColor == preset.color ? 
+                                                        (globalSettings.effectiveBackgroundStyle == .light ? Color.black : Color.white) : 
+                                                        Color.gray.opacity(0.3), 
+                                                        lineWidth: settings.displayColor == preset.color ? 2 : 1)
+                                                    .frame(maxWidth: 92, maxHeight: 19)
+                                                
                                                 RoundedRectangle(cornerRadius: 10)
                                                     .fill(preset.color)
                                                     .frame(maxWidth: 92, maxHeight: 19)
-                                                    .shadow(color: preset.color.opacity(0.5), radius: 8, x: 0, y: 0)
-                                                    .shadow(color: preset.color.opacity(0.3), radius: 4, x: 0, y: 0)
+                                                    .frame(height: 19)
                                             }
                                             
-                                            RoundedRectangle(cornerRadius: 10)
-                                                .stroke(settings.displayColor == preset.color ? 
-                                                    (globalSettings.effectiveBackgroundStyle == .light ? Color.black : Color.white) : 
-                                                    Color.gray.opacity(0.3), 
-                                                    lineWidth: settings.displayColor == preset.color ? 2 : 1)
-                                                .frame(maxWidth: 92, maxHeight: 19)
-                                            
-                                            RoundedRectangle(cornerRadius: 10)
-                                                .fill(preset.color)
-                                                .frame(maxWidth: 92, maxHeight: 19)
-                                                .frame(height: 19)
+                                            // Premium badge (only shown for non-subscribers)
+                                            if !paymentManager.isSubscribed {
+                                                Text("PRO")
+                                                    .font(.system(size: 8, weight: .bold))
+                                                    .padding(.horizontal, 4)
+                                                    .padding(.vertical, 2)
+                                                    .background(Color.yellow)
+                                                    .foregroundColor(.black)
+                                                    .cornerRadius(4)
+                                                    .offset(x: -2, y: -4)
+                                            }
                                         }
                                         .onTapGesture {
                                             withAnimation(.spring(response: 0.3)) {
@@ -315,8 +346,12 @@ struct CustomizeView: View {
                                             }
                                         }
                                         .onTapGesture(count: 2) {
-                                            // Double tap to edit
-                                            selectedColorForEdit = preset
+                                            // Double tap to edit - Pro feature
+                                            if paymentManager.isSubscribed {
+                                                selectedColorForEdit = preset
+                                            } else {
+                                                showSubscriptionView = true
+                                            }
                                         }
                                         
                                         Text(preset.name)
@@ -350,19 +385,34 @@ struct CustomizeView: View {
                 }
                 
                 Section("Background Theme") {
+                    if !paymentManager.isSubscribed {
+                        HStack {
+                            Text("Double-tap customizable themes to edit (Premium)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Spacer()
+                        }
+                        .padding(.bottom, 8)
+                    }
+                    
                     LazyVGrid(columns: Array(repeating: .init(.flexible()), count: 3), spacing: 15) {
                         ForEach(BackgroundStyle.allCases, id: \.self) { style in
-                            ThemeCircleView(style: style, isSelected: globalSettings.backgroundStyle == style) {
+                            ThemeCircleView(style: style, isSelected: globalSettings.backgroundStyle == style, onDoubleTap: {
                                 // Double-tap handler
                                 if style == .navy || style == .fire || style == .dream {
                                     selectedThemeForEdit = style
                                 }
-                            }
+                            })
                             .environmentObject(globalSettings)
                             .onTapGesture {
                                 globalSettings.backgroundStyle = style
                                 globalSettings.saveSettings()
                                 eventStore.saveDisplaySettings()
+                            }
+                            .onTapGesture(count: 2) {
+                                if (style == .navy || style == .fire || style == .dream) && !paymentManager.isSubscribed {
+                                    showSubscriptionView = true
+                                }
                             }
                         }
                     }
@@ -411,6 +461,9 @@ struct CustomizeView: View {
                             needsThemeRefresh = true
                         }
                 }
+            }
+            .sheet(isPresented: $showSubscriptionView) {
+                SubscriptionView()
             }
         }
         .presentationDetents([.medium])

@@ -15,56 +15,164 @@ struct SettingsView: View {
         NavigationView {
             Form {
                 Section("Display") {
-                    Toggle("Show All Events in Grid", isOn: $globalSettings.showGridLayout)
-                        .onChange(of: globalSettings.showGridLayout) { _, _ in
-                            globalSettings.saveSettings()
+                    if paymentManager.isSubscribed {
+                        Toggle("Show All Events in Grid", isOn: $globalSettings.showGridLayout)
+                            .onChange(of: globalSettings.showGridLayout) { _, _ in
+                                globalSettings.saveSettings()
+                            }
+                    } else {
+                        HStack {
+                            Text("Show All Events in Grid")
+                                .foregroundColor(.primary)
+                            Spacer()
+                            
+                            // Premium badge
+                            Text("PRO")
+                                .font(.system(size: 10, weight: .bold))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 3)
+                                .background(Color.yellow)
+                                .foregroundColor(.black)
+                                .cornerRadius(4)
                         }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            showSubscriptionView = true
+                        }
+                    }
                     
-                    NavigationLink(destination: AppIconPickerView()) {
+                    // App Icon picker is now a premium feature
+                    if paymentManager.isSubscribed {
+                        NavigationLink(destination: AppIconPickerView()) {
+                            HStack {
+                                Text("App Icon")
+                                    .foregroundColor(.primary)
+                                Spacer()
+                                Image(systemName: "app.fill")
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                    } else {
                         HStack {
                             Text("App Icon")
                                 .foregroundColor(.primary)
                             Spacer()
-                            Image(systemName: "app.fill")
-                                .foregroundColor(.blue)
+                            
+                            // Premium badge
+                            Text("PRO")
+                                .font(.system(size: 10, weight: .bold))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 3)
+                                .background(Color.yellow)
+                                .foregroundColor(.black)
+                                .cornerRadius(4)
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            showSubscriptionView = true
                         }
                     }
                     
-                    Button(action: {
-                        showResetColorsConfirmation = true
-                    }) {
+                    // Reset Colors is now a premium feature
+                    if paymentManager.isSubscribed {
+                        Button(action: {
+                            showResetColorsConfirmation = true
+                        }) {
+                            HStack {
+                                Text("Reset Display Colors")
+                                    .foregroundColor(.primary)
+                                Spacer()
+                                Image(systemName: "arrow.counterclockwise")
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                    } else {
                         HStack {
                             Text("Reset Display Colors")
                                 .foregroundColor(.primary)
                             Spacer()
-                            Image(systemName: "arrow.counterclockwise")
-                                .foregroundColor(.blue)
+                            
+                            // Premium badge
+                            Text("PRO")
+                                .font(.system(size: 10, weight: .bold))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 3)
+                                .background(Color.yellow)
+                                .foregroundColor(.black)
+                                .cornerRadius(4)
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            showSubscriptionView = true
                         }
                     }
                     
-                    Button(action: {
-                        showResetThemesConfirmation = true
-                    }) {
+                    // Reset Themes is now a premium feature
+                    if paymentManager.isSubscribed {
+                        Button(action: {
+                            showResetThemesConfirmation = true
+                        }) {
+                            HStack {
+                                Text("Reset Background Themes")
+                                    .foregroundColor(.primary)
+                                Spacer()
+                                Image(systemName: "arrow.counterclockwise")
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                    } else {
                         HStack {
                             Text("Reset Background Themes")
                                 .foregroundColor(.primary)
                             Spacer()
-                            Image(systemName: "arrow.counterclockwise")
-                                .foregroundColor(.blue)
+                            
+                            // Premium badge
+                            Text("PRO")
+                                .font(.system(size: 10, weight: .bold))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 3)
+                                .background(Color.yellow)
+                                .foregroundColor(.black)
+                                .cornerRadius(4)
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            showSubscriptionView = true
                         }
                     }
                 }
                 
                 Section("Notifications") {
-                    Button(action: {
-                        showNotificationSettings = true
-                    }) {
+                    if paymentManager.isSubscribed {
+                        Button(action: {
+                            showNotificationSettings = true
+                        }) {
+                            HStack {
+                                Text("Notification Settings")
+                                    .foregroundColor(.primary)
+                                Spacer()
+                                Image(systemName: "bell.badge")
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                    } else {
                         HStack {
                             Text("Notification Settings")
                                 .foregroundColor(.primary)
                             Spacer()
-                            Image(systemName: "bell.badge")
-                                .foregroundColor(.blue)
+                            
+                            // Premium badge
+                            Text("PRO")
+                                .font(.system(size: 10, weight: .bold))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 3)
+                                .background(Color.yellow)
+                                .foregroundColor(.black)
+                                .cornerRadius(4)
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            showSubscriptionView = true
                         }
                     }
                 }
