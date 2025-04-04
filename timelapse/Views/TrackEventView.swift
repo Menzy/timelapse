@@ -2,21 +2,24 @@ import SwiftUI
 
 struct TrackEventView: View {
     @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @State private var eventTitle = ""
     @State private var eventDate = Date()
     @State private var startDate = Date()
     @State private var useCustomStartDate = false
     @ObservedObject var eventStore: EventStore
     @State private var showingLimitAlert = false
+    @State private var showSubscriptionView = false
     @Binding var selectedTab: Int
+    @StateObject private var paymentManager = PaymentManager.shared
     
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
-                HStack {
+                HStack {        
                     Text("Track Event")
-                        .font(.title2)
-                        .fontWeight(.bold)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
                     Spacer()
                     Button(action: { dismiss() }) {
                         Image(systemName: "xmark")
@@ -28,6 +31,7 @@ struct TrackEventView: View {
                 }
                 .padding(.horizontal)
                 .padding(.top)
+                // .padding(.bottom, 5)
                 
                 Form {
                     Section {
@@ -50,12 +54,7 @@ struct TrackEventView: View {
                     
                     Section {
                         Button(action: {
-                            // Count user-created events (excluding year tracker)
-                            let calendar = Calendar.current
-                            let yearString = String(calendar.component(.year, from: Date()))
-                            let userEventCount = eventStore.events.filter { $0.title != yearString }.count
-                            
-                            if userEventCount >= 5 {
+                            if (!eventStore.canAddMoreEvents()) {
                                 showingLimitAlert = true
                             } else {
                                 let newEvent = Event(
@@ -66,6 +65,8 @@ struct TrackEventView: View {
                                 eventStore.saveEvent(newEvent)
                                 
                                 // Find the index of the new event in the displayed events array
+                                let calendar = Calendar.current
+                                let yearString = String(calendar.component(.year, from: Date()))
                                 let yearTracker = eventStore.events.first { $0.title == yearString }
                                 let otherEvents = eventStore.events.filter { $0.title != yearString }
                                 let displayedEvents = [yearTracker].compactMap { $0 } + otherEvents
@@ -78,22 +79,47 @@ struct TrackEventView: View {
                             }
                         }) {
                             Text("Save")
-                                .fontWeight(.semibold)
-                                .foregroundColor(eventTitle.isEmpty ? Color.gray : Color.black)
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(eventTitle.isEmpty ? .gray : .white)
                                 .frame(maxWidth: .infinity)
-                                .padding()
+                                .padding(.vertical, 14)
+                                .background(
+                                    eventTitle.isEmpty 
+                                    ? (colorScheme == .dark ? Color.gray.opacity(0.3) : Color.gray.opacity(0.5))
+                                    : (colorScheme == .dark ? Color(hex: "0B7DD1") : Color(hex: "1A8FEF"))
+                                )
+                                .cornerRadius(8)
                         }
+                        .buttonStyle(PlainButtonStyle())
+                        .listRowInsets(EdgeInsets())
                         .disabled(eventTitle.isEmpty)
                     }
                 }
             }
             .alert("Event Limit Reached", isPresented: $showingLimitAlert) {
+                Button("Subscribe", role: .none) {
+                    showSubscriptionView = true
+                }
                 Button("OK", role: .cancel) { }
             } message: {
-                Text("You can track up to 5 events at a time (plus the year tracker). Please remove an existing event to add a new one.")
+                Text("Free users can create only 1 custom event in addition to the year tracker. Upgrade to TimeLapse Pro to create up to 5 custom events.")
+            }
+            .sheet(isPresented: $showSubscriptionView) {
+                SubscriptionView()
             }
         }
-        .presentationDetents([.fraction(0.55)])
+        .presentationDetents([.fraction(0.5)])
         .presentationDragIndicator(.visible)
+        .onAppear {
+            Task {
+                await paymentManager.updateSubscriptionStatus()
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SubscriptionStatusChanged"))) { _ in
+            // Refresh the view to update based on subscription status
+            Task {
+                await paymentManager.updateSubscriptionStatus()
+            }
+        }
     }
 }

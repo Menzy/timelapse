@@ -1,10 +1,13 @@
 import Foundation
 import WidgetKit
+
 class EventStore: ObservableObject {
     @Published var events: [Event] = []
     private let eventsKey = "savedEvents"
     @Published var displaySettings: [UUID: DisplaySettings] = [:]
     private let displaySettingsKey = "savedDisplaySettings"
+    @Published var notificationSettings: [UUID: NotificationSettings] = [:]
+    private let notificationSettingsKey = "savedNotificationSettings"
     
     // The key for the year tracker event that will be shared with the widget
     static let yearTrackerKey = "yearTrackerEvent"
@@ -14,6 +17,7 @@ class EventStore: ObservableObject {
     init() {
         loadEvents()
         loadDisplaySettings()
+        loadNotificationSettings()
         addDefaultYearTrackerIfNeeded()
     }
     
@@ -32,15 +36,22 @@ class EventStore: ObservableObject {
         // Count user-created events (excluding year tracker)
         let userEventCount = events.filter { $0.title != String(Calendar.current.component(.year, from: Date())) }.count
         
+        // Get the event limit based on subscription status
+        let eventLimit = PaymentManager.getEventLimit()
+        
         // Only allow saving if it's a year tracker or if we haven't reached the limit
-        if isYearTracker || userEventCount < 5 {
+        if isYearTracker || userEventCount < eventLimit {
             if !events.contains(where: { $0.id == event.id }) {
                 events.append(event)
                 // Initialize display settings when saving a new event
                 let newSettings = DisplaySettings()
                 displaySettings[event.id] = newSettings
+                // Initialize notification settings when saving a new event
+                let newNotificationSettings = NotificationSettings()
+                notificationSettings[event.id] = newNotificationSettings
                 saveEvents()
                 saveDisplaySettings()
+                saveNotificationSettings()
                 
                 // If this is a year tracker, save it separately for widget access
                 if isYearTracker {
@@ -54,6 +65,33 @@ class EventStore: ObservableObject {
                 WidgetCenter.shared.reloadAllTimelines()
             }
         }
+    }
+    
+    // Check if user can add more events
+    func canAddMoreEvents() -> Bool {
+        // Count user-created events (excluding year tracker)
+        let userEventCount = events.filter { $0.title != String(Calendar.current.component(.year, from: Date())) }.count
+        
+        // Get the event limit based on subscription status
+        let eventLimit = PaymentManager.getEventLimit()
+        
+        return userEventCount < eventLimit
+    }
+    
+    // Get remaining event slots
+    func remainingEventSlots() -> Int {
+        // Count user-created events (excluding year tracker)
+        let userEventCount = events.filter { $0.title != String(Calendar.current.component(.year, from: Date())) }.count
+        
+        // Get the event limit based on subscription status
+        let eventLimit = PaymentManager.getEventLimit()
+        
+        return max(0, eventLimit - userEventCount)
+    }
+    
+    // Check if user needs to subscribe to add more events
+    func needsSubscriptionForMoreEvents() -> Bool {
+        return !canAddMoreEvents() && !PaymentManager.isUserSubscribed()
     }
     
     func updateEvent(id: UUID, title: String, targetDate: Date, creationDate: Date) {
@@ -165,5 +203,130 @@ class EventStore: ObservableObject {
         if let encoded = try? JSONEncoder().encode(events) {
             UserDefaults.shared?.set(encoded, forKey: EventStore.allEventsKey)
         }
+    }
+    
+    func updateNotificationSettings(for eventId: UUID, settings: NotificationSettings) {
+        // Update the settings in the dictionary
+        notificationSettings[eventId] = settings
+        
+        // Save to UserDefaults
+        saveNotificationSettings()
+        
+        print("Updated notification settings for event \(eventId): \(settings)")
+        print("Current notification settings dictionary: \(notificationSettings)")
+        
+        // Schedule notifications based on the new settings
+        if let event = events.first(where: { $0.id == eventId }) {
+            // Check if this is the year tracker
+            let isYearTracker = event.title == String(Calendar.current.component(.year, from: Date()))
+            
+            // First, remove any existing notifications for this event
+            NotificationManager.shared.removeNotifications(for: eventId)
+            
+            if settings.isEnabled {
+                if isYearTracker && settings.milestoneNotificationsEnabled {
+                    // Schedule special year tracker milestones
+                    NotificationManager.shared.scheduleYearTrackerMilestones(for: event, with: settings)
+                }
+                
+                // Schedule regular notifications
+                NotificationManager.shared.scheduleNotifications(for: event, with: settings)
+            }
+        }
+    }
+    
+    func getNotificationSettings(for eventId: UUID) -> NotificationSettings {
+        let settings = notificationSettings[eventId] ?? NotificationSettings()
+        print("Retrieved notification settings for event \(eventId): \(settings)")
+        return settings
+    }
+    
+    func deleteEvent(withId id: UUID) {
+        if let index = findEventIndex(withId: id) {
+            // Remove notifications for this event
+            NotificationManager.shared.removeNotifications(for: id)
+            
+            // Remove the event and its settings
+            events.remove(at: index)
+            displaySettings.removeValue(forKey: id)
+            notificationSettings.removeValue(forKey: id)
+            
+            saveEvents()
+            saveDisplaySettings()
+            saveNotificationSettings()
+            
+            // Save all events for widget access
+            saveAllEventsForWidget()
+            
+            // Reload widget timeline
+            WidgetCenter.shared.reloadAllTimelines()
+        }
+    }
+    
+    // MARK: - Notification Settings Persistence
+    
+    private func saveNotificationSettings() {
+        if let encoded = try? JSONEncoder().encode(notificationSettings) {
+            UserDefaults.standard.set(encoded, forKey: notificationSettingsKey)
+            
+            // Synchronize UserDefaults to ensure data is written to disk
+            UserDefaults.standard.synchronize()
+            
+            print("Saved notification settings to UserDefaults with key: \(notificationSettingsKey)")
+            
+            // Force a UI update
+            objectWillChange.send()
+        } else {
+            print("Error: Failed to encode notification settings")
+        }
+    }
+    
+    private func loadNotificationSettings() {
+        if let savedSettings = UserDefaults.standard.data(forKey: notificationSettingsKey) {
+            do {
+                let decodedSettings = try JSONDecoder().decode([UUID: NotificationSettings].self, from: savedSettings)
+                notificationSettings = decodedSettings
+                print("Successfully loaded notification settings from UserDefaults: \(notificationSettings)")
+            } catch {
+                print("Error decoding notification settings: \(error.localizedDescription)")
+            }
+        } else {
+            print("No saved notification settings found in UserDefaults")
+        }
+    }
+    
+    // Get events based on subscription status
+    func getEventsLimitedBySubscription() -> [Event] {
+        // If the user is subscribed, return all events
+        if PaymentManager.isUserSubscribed() {
+            return events
+        }
+        
+        // For free users, return the year tracker plus the allowed number of custom events
+        let yearTracker = events.first { 
+            $0.title == String(Calendar.current.component(.year, from: Date())) 
+        }
+        
+        // Get the event limit from PaymentManager (1 for free users)
+        let customEventLimit = PaymentManager.getEventLimit()
+        
+        // Get all non-year-tracker events
+        let customEvents = events.filter { 
+            $0.title != String(Calendar.current.component(.year, from: Date())) 
+        }
+        
+        // Sort custom events by creation date (newest first) and take only up to the limit
+        let allowedCustomEvents = customEvents
+            .sorted(by: { $0.creationDate > $1.creationDate })
+            .prefix(customEventLimit)
+        
+        // Combine year tracker with allowed custom events
+        var result: [Event] = []
+        if let yearTracker = yearTracker {
+            result.append(yearTracker)
+        }
+        result.append(contentsOf: allowedCustomEvents)
+        
+        return result
     }
 }

@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct DotPixelsView: View {
     let daysLeft: Int
@@ -12,6 +13,8 @@ struct DotPixelsView: View {
     @State private var tappedIndex: Int? = nil
     // Add binding to control tab selection
     @Binding var selectedTab: Int
+    // Add parameter to control whether to show event highlights
+    var showEventHighlights: Bool = true
     
     var daysCompleted: Int {
         totalDays - daysLeft
@@ -31,7 +34,7 @@ struct DotPixelsView: View {
     }
     
     private func isTargetDate(_ date: Date) -> Bool {
-        if (!isYearTracker) { return false }
+        if (!isYearTracker || !showEventHighlights) { return false }
         let calendar = Calendar.current
         return eventStore.events.contains { event in
             guard event.title != String(calendar.component(.year, from: Date())) else { return false }
@@ -40,6 +43,7 @@ struct DotPixelsView: View {
     }
     
     private func findEventIndex(for date: Date) -> Int? {
+        if (!showEventHighlights) { return nil }
         let calendar = Calendar.current
         let yearString = String(calendar.component(.year, from: Date()))
         return eventStore.events.firstIndex { event in
@@ -189,10 +193,16 @@ struct DotPixelsView: View {
             
             // Overlay for date tooltip
             if let date = selectedDate, let index = tappedIndex {
-                let dotPosition = CGPoint(
-                    x: CGFloat(index % gridParams.columns) * gridParams.dotSize + gridParams.dotSize/2 + 20,
-                    y: CGFloat(index / gridParams.columns) * gridParams.dotSize + gridParams.dotSize/2 + 20
-                )
+                let row = index / gridParams.columns
+                let col = index % gridParams.columns
+                
+                // Calculate dot position
+                let dotX = CGFloat(col) * gridParams.dotSize + gridParams.dotSize/2
+                let dotY = CGFloat(row) * gridParams.dotSize + gridParams.dotSize/2
+                
+                // Always position the tooltip above the dot with proper spacing
+                // Use a minimum offset from the top of the view to ensure visibility
+                let tooltipOffset = dotY < 40 ? max(10, dotY - 10) : dotY - 30
                 
                 Text(formatDate(date))
                     .font(.inter(12, weight: .medium))
@@ -202,7 +212,7 @@ struct DotPixelsView: View {
                     .foregroundColor(.white)
                     .cornerRadius(6)
                     .shadow(color: .black.opacity(0.2), radius: 2)
-                    .position(x: dotPosition.x, y: max(dotPosition.y - 20, 20))
+                    .position(x: dotX, y: tooltipOffset)
                     .animation(.none, value: selectedDate)
             }
         }

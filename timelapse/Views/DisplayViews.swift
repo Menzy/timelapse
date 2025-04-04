@@ -34,8 +34,8 @@ struct ProgressBarView: View {
     
     private let segmentCount = 25
     private let segmentWidth: CGFloat = 8
-    private var segmentHeight: CGFloat {
-        globalSettings.showGridLayout ? 30 : 45
+    private func calculateSegmentHeight(_ containerHeight: CGFloat) -> CGFloat {
+        return containerHeight * (globalSettings.showGridLayout ? 0.16 : 0.18)
     }
     private let segmentCornerRadius: CGFloat = 8
     private let segmentSpacing: CGFloat = 2.5
@@ -62,22 +62,24 @@ struct ProgressBarView: View {
     }
     
     var body: some View {
-        VStack {
-            Spacer()
-            HStack(spacing: segmentSpacing) {
-                ForEach(0..<segmentCount, id: \.self) { index in
-                    RoundedRectangle(cornerRadius: segmentCornerRadius)
-                        .fill(segmentColor(index: index))
-                        .frame(width: nil, height: segmentHeight)
+        GeometryReader { geometry in
+            VStack {
+                Spacer()
+                HStack(spacing: segmentSpacing) {
+                    ForEach(0..<segmentCount, id: \.self) { index in
+                        RoundedRectangle(cornerRadius: segmentCornerRadius)
+                            .fill(segmentColor(index: index))
+                            .frame(width: nil, height: calculateSegmentHeight(geometry.size.height))
+                    }
                 }
+                .padding(4)
+                .background(
+                    RoundedRectangle(cornerRadius: segmentCornerRadius)
+                        .stroke(settings.displayColor, lineWidth: 1)
+                )
+                .padding(.vertical, 4)
+                Spacer()
             }
-            .padding(4)
-            .background(
-                RoundedRectangle(cornerRadius: segmentCornerRadius)
-                    .stroke(settings.displayColor, lineWidth: 1)
-            )
-            .padding(.vertical, 4)
-            Spacer()
         }
     }
 }
@@ -94,8 +96,11 @@ struct CountdownView: View {
     }
     
     private var displayText: String {
-        let value = showDaysLeft ? daysLeft : daysSpent
-        return String(format: "%03d", value)
+        // Return "000" when the event is due (today) or overdue
+        if daysLeft <= 0 {
+            return "000"
+        }
+        return String(format: "%03d", daysLeft)
     }
     
     var body: some View {

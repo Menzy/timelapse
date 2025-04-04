@@ -66,72 +66,98 @@ struct Triangle: Shape {
 struct ThemeCircleView: View {
     let style: BackgroundStyle
     let isSelected: Bool
+    let onDoubleTap: () -> Void
+    @EnvironmentObject var globalSettings: GlobalSettings
     @Environment(\.colorScheme) private var colorScheme
+    @StateObject private var paymentManager = PaymentManager.shared
     
     var body: some View {
-        VStack {
-            ZStack {
-                // Selection border
-                Circle()
-                    .stroke(isSelected ? (colorScheme == .dark ? Color.white : Color.black) : Color.gray.opacity(0.3), lineWidth: 2)
-                    .frame(maxWidth: 60, maxHeight: 60)
-                
-                if style == .device {
-                    // Split circle for device theme
-                    HStack(spacing: 0) {
-                        Rectangle()
-                            .fill(Color.white)
-                            .frame(maxWidth: 30, maxHeight: 60)
-                        Rectangle()
-                            .fill(Color(hex: "111111"))
-                            .frame(maxWidth: 30, maxHeight: 60)
-                    }
-                    .clipShape(Circle())
-                    .overlay(
+        VStack(spacing: 8) {
+            ZStack(alignment: .topTrailing) {
+                ZStack {
+                    // Selection border
+                    Circle()
+                        .stroke(isSelected ? (colorScheme == .dark ? Color.white : Color.black) : Color.gray.opacity(0.3), lineWidth: 2)
+                        .frame(maxWidth: 60, maxHeight: 60)
+                    
+                    // Background fill
+                    if style == .light {
                         Circle()
-                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                    )
-                } else if style == .fire {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                stops: [
-                                    .init(color: Color(hex: "EC5F01"), location: 0),
-                                    .init(color: Color.black, location: 0.6),
-                                    .init(color: .black, location: 1.0)
-                                ],
-                                startPoint: .top,
-                                endPoint: .bottom
+                            .fill(Color.white)
+                            .frame(maxWidth: 60, maxHeight: 60)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                             )
-                        )
-                } else if style == .dream {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                stops: [
-                                    .init(color: Color(hex: "A82700"), location: 0),
-                                    .init(color: Color(hex: "002728"), location: 0.6),
-                                    .init(color: Color(hex: "002728"), location: 1.0)
-                                ],
-                                startPoint: .top,
-                                endPoint: .bottom
+                    } else if style == .dark {
+                        Circle()
+                            .fill(Color(hex: "111111"))
+                            .frame(maxWidth: 60, maxHeight: 60)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                             )
-                        )
-                } else {
-                    Circle()
-                        .fill(style == .light ? Color.white :
-                              style == .dark ? Color(hex: "111111") :
-                              style == .navy ? Color(hex: "001524") : .clear)
+                    } else if style == .navy {
+                        Circle()
+                            .fill(style.backgroundColor)
+                            .frame(maxWidth: 60, maxHeight: 60)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                            )
+                    } else if style == .fire || style == .dream {
+                        // Use a gradient for the fire and dream styles
+                        Circle()
+                            .fill(style.backgroundGradient)
+                            .frame(maxWidth: 60, maxHeight: 60)
+                    } else if style == .device {
+                        // Device style - split circle
+                        HStack(spacing: 0) {
+                            Rectangle()
+                                .fill(Color.white)
+                                .frame(maxWidth: 30, maxHeight: 60)
+                            Rectangle()
+                                .fill(Color(hex: "111111"))
+                                .frame(maxWidth: 30, maxHeight: 60)
+                        }
+                        .clipShape(Circle())
                         .overlay(
                             Circle()
-                                .stroke(style == .light ? Color.gray.opacity(0.3) :
-                                       style == .dark ? Color.gray.opacity(0.3) :
-                                       style == .navy ? Color.gray.opacity(0.3) : .clear,
-                                       lineWidth: 1)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                         )
+                    }
+                    
+                    // If theme is customizable, show indicator
+                    if style == .navy || style == .fire || style == .dream {
+                        Circle()
+                            .trim(from: 0, to: 0.15)
+                            .stroke(style == .light ? Color.black : Color.white, lineWidth: 2)
+                            .frame(width: 52, height: 52)
+                    }
+                }
+                
+                // Premium badge for customizable themes
+                if (style == .navy || style == .fire || style == .dream) && !paymentManager.isSubscribed {
+                    Text("PRO")
+                        .font(.system(size: 8, weight: .bold))
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 2)
+                        .background(Color.yellow)
+                        .foregroundColor(.black)
+                        .cornerRadius(4)
+                        .offset(x: -2, y: -2)
                 }
             }
             .frame(maxWidth: 60, maxHeight: 60)
+            .onTapGesture(count: 2) {
+                if style == .navy || style == .fire || style == .dream {
+                    if paymentManager.isSubscribed {
+                        onDoubleTap()
+                    } else {
+                        // This will be handled by the parent view
+                    }
+                }
+            }
             
             Text(style.rawValue.capitalized)
                 .font(.inter(12, weight: .medium))
@@ -147,15 +173,21 @@ struct StylePreviewView: View {
     @Environment(\.colorScheme) private var colorScheme
     
     var iconColor: Color {
-        return isSelected ? (colorScheme == .dark ? .white : .black) : Color(hex: "343434")
+        if isSelected {
+            return colorScheme == .dark ? .white : .black
+        } else {
+            return colorScheme == .dark ? Color(hex: "343434") : Color(hex: "8E8E8E")
+        }
     }
     
-    var gradientStroke: LinearGradient {
-        LinearGradient(
-            gradient: Gradient(colors: [Color.black, Color(hex: "989898")]),
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
+    var containerBackgroundColor: Color {
+        return colorScheme == .dark ? Color(hex: "1B1B1B").opacity(0.5) : Color(hex: "F5F5F5")
+    }
+    
+    var gradientColors: [Color] {
+        return colorScheme == .dark ? 
+            [Color.black, Color(hex: "989898")] : 
+            [Color(hex: "E5E5E5"), Color(hex: "CCCCCC")]
     }
     
     var body: some View {
@@ -168,14 +200,14 @@ struct StylePreviewView: View {
                 
                 // Background fill
                 Circle()
-                    .fill(Color(hex: "1B1B1B").opacity(0.5))
+                    .fill(containerBackgroundColor)
                     .frame(maxWidth: 60, maxHeight: 60)
                 
                 // Gradient stroke
                 Circle()
                     .stroke(
                         RadialGradient(
-                            gradient: Gradient(colors: [Color.black, Color(hex: "989898")]),
+                            gradient: Gradient(colors: gradientColors),
                             center: .center,
                             startRadius: 0,
                             endRadius: 30
@@ -226,10 +258,16 @@ struct CustomizeView: View {
     @ObservedObject var settings: DisplaySettings
     @ObservedObject var eventStore: EventStore
     @State private var showingColorPicker = false
+    @State private var selectedColorForEdit: DisplayColor? = nil
+    @State private var selectedThemeForEdit: BackgroundStyle? = nil
+    @State private var needsDisplayColorRefresh: Bool = false
+    @State private var needsThemeRefresh: Bool = false
     @EnvironmentObject var globalSettings: GlobalSettings
+    @StateObject private var paymentManager = PaymentManager.shared
+    @State private var showSubscriptionView = false
     
     private func updatePercentageForAllCards(_ showPercentage: Bool) {
-        if globalSettings.showGridLayout {
+        if globalSettings.isGridLayoutAvailable && globalSettings.showGridLayout {
             for eventId in eventStore.displaySettings.keys {
                 eventStore.displaySettings[eventId]?.showPercentage = showPercentage
             }
@@ -239,7 +277,7 @@ struct CustomizeView: View {
     var body: some View {
         NavigationView {
             Form {
-                if !globalSettings.showGridLayout {
+                if !globalSettings.isGridLayoutAvailable || !globalSettings.showGridLayout {
                     Section("Display Style") {
                         VStack(spacing: 0) {
                             LazyVGrid(columns: Array(repeating: .init(.flexible()), count: 4), spacing: 15) {
@@ -252,23 +290,71 @@ struct CustomizeView: View {
                             }
                             .padding(.vertical, 10)
                             
+                            if !paymentManager.isSubscribed {
+                                HStack {
+                                    Text("Double-tap to edit (Premium)")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                }
+                                .padding(.bottom, 8)
+                            }
+                            
                             LazyVGrid(columns: Array(repeating: .init(.flexible()), count: 3), spacing: 15) {
                                 let presets = DisplayColor.getPresets(for: globalSettings.backgroundStyle)
                                 ForEach(presets) { preset in
                                     VStack {
-                                        ZStack {
-                                            RoundedRectangle(cornerRadius: 10)
-                                                .stroke(settings.displayColor == preset.color ? Color.blue : Color.gray.opacity(0.3), lineWidth: 2)
-                                                .frame(maxWidth: 92, maxHeight: 19)
-                                                .frame(height: 19)
+                                        ZStack(alignment: .topTrailing) {
+                                            ZStack {
+                                                if settings.displayColor == preset.color {
+                                                    // Glow effect for selected color
+                                                    RoundedRectangle(cornerRadius: 10)
+                                                        .fill(preset.color)
+                                                        .frame(maxWidth: 92, maxHeight: 19)
+                                                        .shadow(color: preset.color.opacity(0.5), radius: 8, x: 0, y: 0)
+                                                        .shadow(color: preset.color.opacity(0.3), radius: 4, x: 0, y: 0)
+                                                }
+                                                
+                                                RoundedRectangle(cornerRadius: 10)
+                                                    .stroke(settings.displayColor == preset.color ? 
+                                                        (globalSettings.effectiveBackgroundStyle == .light ? Color.black : Color.white) : 
+                                                        Color.gray.opacity(0.3), 
+                                                        lineWidth: settings.displayColor == preset.color ? 2 : 1)
+                                                    .frame(maxWidth: 92, maxHeight: 19)
+                                                
+                                                RoundedRectangle(cornerRadius: 10)
+                                                    .fill(preset.color)
+                                                    .frame(maxWidth: 92, maxHeight: 19)
+                                                    .frame(height: 19)
+                                            }
                                             
-                                            RoundedRectangle(cornerRadius: 10)
-                                                .fill(preset.color)
-                                                .frame(maxWidth: 92, maxHeight: 19)
-                                                .frame(height: 19)
+                                            // Premium badge (only shown for non-subscribers)
+                                            if !paymentManager.isSubscribed {
+                                                Text("PRO")
+                                                    .font(.system(size: 8, weight: .bold))
+                                                    .padding(.horizontal, 4)
+                                                    .padding(.vertical, 2)
+                                                    .background(Color.yellow)
+                                                    .foregroundColor(.black)
+                                                    .cornerRadius(4)
+                                                    .offset(x: -2, y: -4)
+                                            }
                                         }
                                         .onTapGesture {
-                                            settings.displayColor = preset.color
+                                            withAnimation(.spring(response: 0.3)) {
+                                                // Use the new method to set both color and ID
+                                                settings.setDisplayColor(preset.color, withID: preset.id)
+                                                // Still need to save the settings to persist changes
+                                                eventStore.saveDisplaySettings()
+                                            }
+                                        }
+                                        .onTapGesture(count: 2) {
+                                            // Double tap to edit - Pro feature
+                                            if paymentManager.isSubscribed {
+                                                selectedColorForEdit = preset
+                                            } else {
+                                                showSubscriptionView = true
+                                            }
                                         }
                                         
                                         Text(preset.name)
@@ -280,9 +366,8 @@ struct CustomizeView: View {
                             .padding(.vertical, 10)
                         }
                         .onChange(of: settings.displayColor) { oldValue, newValue in
-                            let defaultColor = Color(hex: "FF7F00")
-                            settings.isUsingDefaultColor = (newValue == defaultColor)
-                            settings.objectWillChange.send()
+                            // Settings are already updated by the tap handler
+                            // Just make sure to save the changes
                             eventStore.saveDisplaySettings()
                         }
                         .onChange(of: settings.style) { oldStyle, newStyle in
@@ -292,25 +377,58 @@ struct CustomizeView: View {
                             settings.objectWillChange.send()
                             eventStore.saveDisplaySettings()
                         }
+                        .onChange(of: needsDisplayColorRefresh) { oldValue, newValue in
+                            if newValue {
+                                // Force a refresh of the view
+                                needsDisplayColorRefresh = false
+                            }
+                        }
                     }
                 }
                 
                 Section("Background Theme") {
+                    if !paymentManager.isSubscribed {
+                        HStack {
+                            Text("Double-tap customizable themes to edit (Premium)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Spacer()
+                        }
+                        .padding(.bottom, 8)
+                    }
+                    
                     LazyVGrid(columns: Array(repeating: .init(.flexible()), count: 3), spacing: 15) {
                         ForEach(BackgroundStyle.allCases, id: \.self) { style in
-                            ThemeCircleView(style: style, isSelected: globalSettings.backgroundStyle == style)
-                                .onTapGesture {
-                                    globalSettings.backgroundStyle = style
-                                    globalSettings.saveSettings()
-                                    eventStore.saveDisplaySettings()
+                            ThemeCircleView(style: style, isSelected: globalSettings.backgroundStyle == style, onDoubleTap: {
+                                // Double-tap handler
+                                if style == .navy || style == .fire || style == .dream {
+                                    selectedThemeForEdit = style
                                 }
+                            })
+                            .environmentObject(globalSettings)
+                            .onTapGesture {
+                                globalSettings.backgroundStyle = style
+                                globalSettings.saveSettings()
+                                eventStore.saveDisplaySettings()
+                            }
+                            .onTapGesture(count: 2) {
+                                if (style == .navy || style == .fire || style == .dream) && !paymentManager.isSubscribed {
+                                    showSubscriptionView = true
+                                }
+                            }
                         }
                     }
                     .padding(.vertical, 10)
+                    .onChange(of: needsThemeRefresh) { oldValue, newValue in
+                        if newValue {
+                            // Force a refresh of the view
+                            needsThemeRefresh = false
+                        }
+                    }
                 }
                 
                 Section("Counter") {
-                    Toggle("Toggle Percentage", isOn: Binding(
+                    Toggle("Show Percentage left", isOn: Binding(
                         get: { settings.showPercentage },
                         set: { newValue in
                             settings.showPercentage = newValue
@@ -321,8 +439,80 @@ struct CustomizeView: View {
                 }
             }
             .navigationBarItems(trailing: Button("Done") { dismiss() })
+            .sheet(isPresented: Binding<Bool>(
+                get: { selectedColorForEdit != nil },
+                set: { if !$0 { selectedColorForEdit = nil } }
+            )) {
+                if let colorToEdit = selectedColorForEdit {
+                    EditColorView(
+                        displayColor: colorToEdit,
+                        needsRefresh: $needsDisplayColorRefresh,
+                        eventStore: eventStore
+                    )
+                    .environmentObject(globalSettings)
+                }
+            }
+            .sheet(isPresented: Binding<Bool>(
+                get: { selectedThemeForEdit != nil },
+                set: { if !$0 { selectedThemeForEdit = nil } }
+            )) {
+                if let themeToEdit = selectedThemeForEdit {
+                    EditThemeView(theme: themeToEdit)
+                        .environmentObject(globalSettings)
+                        .onDisappear {
+                            needsThemeRefresh = true
+                        }
+                }
+            }
+            .sheet(isPresented: $showSubscriptionView) {
+                SubscriptionView()
+            }
         }
         .presentationDetents([.medium])
         .presentationDragIndicator(.visible)
+        .onAppear {
+            // Set up theme change notifications
+            setupThemeChangeObservers()
+        }
+    }
+    
+    private func setupThemeChangeObservers() {
+        // Listen for theme change notifications
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("NavyThemeChanged"),
+            object: nil,
+            queue: .main
+        ) { _ in
+            needsThemeRefresh = true
+        }
+        
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("FireThemeChanged"),
+            object: nil,
+            queue: .main
+        ) { _ in
+            needsThemeRefresh = true
+        }
+        
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("DreamThemeChanged"),
+            object: nil,
+            queue: .main
+        ) { _ in
+            needsThemeRefresh = true
+        }
+        
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("AllThemesReset"),
+            object: nil,
+            queue: .main
+        ) { _ in
+            needsThemeRefresh = true
+        }
+    }
+    
+    // Helper function to convert color to hex string
+    private func colorToHex(_ color: Color) -> String {
+        return color.hexString
     }
 }

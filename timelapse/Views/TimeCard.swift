@@ -51,10 +51,16 @@ struct TimeCard: View {
     let isGridView: Bool
     @State private var showingDaysLeft = true
     @State private var showingEditSheet = false
+    @State private var showingShareSheet = false
+    @State private var showingActionSheet = false
+    @State private var showingNotificationSettings = false
+    @State private var showingSubscriptionView = false
     @State private var isPressed = false
+    @State private var isLongPressing = false
     @EnvironmentObject var globalSettings: GlobalSettings
     @Binding var selectedTab: Int
     @StateObject private var navigationState = NavigationStateManager.shared
+    @StateObject private var paymentManager = PaymentManager.shared
     
     // Add computed properties for dynamic scaling
     private var scaledWidth: CGFloat {
@@ -70,22 +76,55 @@ struct TimeCard: View {
     }
     
     var percentageLeft: Double {
-        (Double(daysLeft) / Double(totalDays)) * 100
+        // If days left is negative (event has passed), return 0% left
+        if daysLeft <= 0 {
+            return 0
+        }
+        return (Double(daysLeft) / Double(totalDays)) * 100
     }
     
     var percentageSpent: Double {
-        (Double(daysSpent) / Double(totalDays)) * 100
+        // Cap at 100% when event has passed its target date
+        if daysSpent >= totalDays {
+            return 100
+        }
+        return (Double(daysSpent) / Double(totalDays)) * 100
     }
     
     var daysText: String {
         if settings.showPercentage {
-            return "left"
+            // Even in percentage mode, handle special messages
+            if daysLeft < 0 {
+                let daysPassed = abs(daysLeft)
+                let dayText = daysPassed == 1 ? "day" : "days"
+                return "\(dayText) ago"
+            } else if daysLeft == 0 {
+                return "It's Today"
+            } else {
+                return "left"
+            }
+        } else if showingDaysLeft {
+            // Special cases for days left
+            if daysLeft < 0 {
+                let daysPassed = abs(daysLeft)
+                let dayText = daysPassed == 1 ? "day" : "days"
+                return "\(dayText) ago"
+            } else if daysLeft == 0 {
+                return "It's Today"
+            } else {
+                let dayText = daysLeft == 1 ? "day" : "days"
+                return "\(dayText) left"
+            }
         } else {
-            let count = showingDaysLeft ? daysLeft : daysSpent
-            let type = showingDaysLeft ? "left" : "in"
-            let dayText = count == 1 ? "day" : "days"
-            return "\(dayText) \(type)"
+            // Days spent logic remains unchanged
+            let dayText = daysSpent == 1 ? "day" : "days"
+            return "\(dayText) in"
         }
+    }
+    
+    // Check if this is the year tracker
+    private var isYearTracker: Bool {
+        return title == String(Calendar.current.component(.year, from: Date()))
     }
 
     @ViewBuilder
@@ -95,14 +134,22 @@ struct TimeCard: View {
             DotPixelsView(
                 daysLeft: daysLeft,
                 totalDays: totalDays,
-                isYearTracker: title == String(Calendar.current.component(.year, from: Date())),
+                isYearTracker: isYearTracker,
                 startDate: event.creationDate,
                 settings: settings,
                 eventStore: eventStore,
                 selectedTab: $selectedTab
             )
         case .triGrid:
-            TriGridView(daysLeft: daysLeft, totalDays: totalDays, settings: settings)
+            TriGridView(
+                daysLeft: daysLeft,
+                totalDays: totalDays,
+                isYearTracker: isYearTracker,
+                startDate: event.creationDate,
+                settings: settings,
+                eventStore: eventStore,
+                selectedTab: $selectedTab
+            )
         case .progressBar:
             ProgressBarView(daysLeft: daysLeft, totalDays: totalDays, settings: settings)
                 .environmentObject(globalSettings)
@@ -131,18 +178,33 @@ struct TimeCard: View {
             
             HStack {
                 Text(title)
-                    .font(.custom("Inter", size: isGridView ? 8 : 10))
+                    .font(.custom("Inter", size: isGridView ? 10 : 12))
                     .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .white : .black)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(width: isGridView ? nil : (scaledWidth * 0.5), alignment: .leading)
                 
                 Spacer()
                 
                 // Wrap percentage/days display in animation block
                 HStack(spacing: 4) {
-                    Text(settings.showPercentage 
-                         ? String(format: "%.0f%%", percentageLeft) 
-                         : String(showingDaysLeft ? daysLeft : daysSpent))
-                        .font(.custom("Inter", size: isGridView ? 10 : 12))
-                        .contentTransition(.numericText())
+                    // Only show the percentage/number if not at target date or overdue
+                    if settings.showPercentage && daysLeft > 0 {
+                        Text(String(format: "%.0f%%", percentageLeft))
+                            .font(.custom("Inter", size: isGridView ? 10 : 12))
+                            .contentTransition(.numericText())
+                    } else if settings.showPercentage && daysLeft < 0 {
+                        // Show days passed for overdue events in percentage mode
+                        Text(String(abs(daysLeft)))
+                            .font(.custom("Inter", size: isGridView ? 10 : 12))
+                            .contentTransition(.numericText())
+                    } else if !settings.showPercentage && ((showingDaysLeft && daysLeft != 0) || !showingDaysLeft) {
+                        // Show positive days left, days spent, or days overdue
+                        let displayValue = showingDaysLeft ? (daysLeft < 0 ? abs(daysLeft) : daysLeft) : daysSpent
+                        Text(String(displayValue))
+                            .font(.custom("Inter", size: isGridView ? 10 : 12))
+                            .contentTransition(.numericText())
+                    }
                     
                     Text(daysText)
                         .font(.custom("Inter", size: isGridView ? 10 : 12))
@@ -167,41 +229,122 @@ struct TimeCard: View {
                     ZStack {
                         Image(globalSettings.effectiveBackgroundStyle == .light ? "blackMain" : "whiteMain")
                             .resizable()
-                            .aspectRatio(contentMode: .fill)
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: scaledWidth, height: scaledHeight)
                             .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
                         
-                        // Cutout image based on display color
-                        let cutoutImage = settings.displayColor == Color(hex: "FF7F00") ? "orangeCut" :
-                                        settings.displayColor == Color(hex: "7FBF54") ? "greenCut" : 
-                                        settings.displayColor == Color(hex: "018AFB") ? "blueCut" : "blueCut"
-                        Image(cutoutImage)
+                        // Use SVG cutout with dynamic color
+                        Image("cutoutShape")
+                            .renderingMode(.template)
                             .resizable()
-                            .aspectRatio(contentMode: .fill)
+                            .aspectRatio(contentMode: .fit)
+                            .foregroundColor(settings.displayColor)
+                            .frame(width: scaledWidth, height: scaledHeight)
                     }
                 }
             }
         )
-        // Add visual feedback when pressed
-        .scaleEffect(isPressed ? 0.96 : 1.0)
-        .animation(.spring(response: 0.3), value: isPressed)
-        .onLongPressGesture(minimumDuration: 0.5) {
-            if title != String(Calendar.current.component(.year, from: Date())) {
-                // Strong haptic feedback when long press completes
-                HapticFeedback.impact(style: .heavy)
-                HapticFeedback.success()
-                showingEditSheet = true
-            }
-        } onPressingChanged: { isPressing in
-            if title != String(Calendar.current.component(.year, from: Date())) {
-                if isPressing {
-                    // Light haptic feedback when touch begins
-                    HapticFeedback.impact(style: .light)
+        // Add visual feedback only during long press, not during swipes
+        .scaleEffect(isLongPressing && isPressed ? 0.96 : 1.0)
+        .animation(.spring(response: 0.3), value: isLongPressing)
+        .onLongPressGesture(minimumDuration: 0.5, pressing: { isPressing in
+            // Only update isPressed state which is used for tracking
+            isPressed = isPressing
+            
+            // Only set long pressing state after a delay to avoid triggering during swipes
+            if isPressing {
+                // Light haptic feedback when touch begins
+                HapticFeedback.impact(style: .light)
+                
+                // Use a timer to only set isLongPressing after a delay
+                // This prevents the scale effect from appearing during quick swipes
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    // Only set isLongPressing if still pressing after the delay
+                    if isPressed {
+                        isLongPressing = true
+                    }
                 }
-                isPressed = isPressing
+            } else {
+                // Immediately reset long pressing state when touch ends
+                isLongPressing = false
+            }
+        }) {
+            // Perform when long press is triggered
+            HapticFeedback.impact(style: .heavy)
+            HapticFeedback.success()
+            
+            if isYearTracker {
+                // For year tracker, go directly to share sheet
+                showingShareSheet = true
+            } else {
+                // For regular events, show action sheet with options
+                showingActionSheet = true
+            }
+        }
+        // Add double tap gesture for grid view cards
+        .onTapGesture(count: 2) {
+            if isGridView {
+                HapticFeedback.impact(style: .medium)
+                // Find this event in the eventStore
+                if let eventIndex = eventStore.findEventIndex(withId: event.id) {
+                    // Switch to detailed view
+                    globalSettings.showGridLayout = false
+                    // Set the tab to this event
+                    navigationState.selectedTab = eventIndex
+                }
             }
         }
         .sheet(isPresented: $showingEditSheet) {
             EditEventView(event: event, eventStore: eventStore)
+        }
+        .sheet(isPresented: $showingShareSheet) {
+            ShareableCardView(
+                title: title,
+                event: event,
+                settings: settings,
+                eventStore: eventStore,
+                daysLeft: daysLeft,
+                totalDays: totalDays,
+                showingDaysLeft: showingDaysLeft
+            )
+            .environmentObject(globalSettings)
+        }
+        .sheet(isPresented: $showingNotificationSettings) {
+            // Check if user has premium access to notification features
+            if paymentManager.isSubscribed {
+                NotificationSettingsView(event: event, eventStore: eventStore)
+                    .environmentObject(globalSettings)
+            } else {
+                SubscriptionView()
+                    .environmentObject(globalSettings)
+            }
+        }
+        .sheet(isPresented: $showingSubscriptionView) {
+            SubscriptionView()
+                .environmentObject(globalSettings)
+        }
+        .confirmationDialog("Event Options", isPresented: $showingActionSheet, titleVisibility: .visible) {
+            // Only show Edit button for non-year tracker events
+            if !isYearTracker {
+                Button("Edit") {
+                    showingEditSheet = true
+                }
+            }
+            
+            // Show notifications option with premium gate
+            Button("Notifications") {
+                if paymentManager.isSubscribed {
+                    showingNotificationSettings = true
+                } else {
+                    showingSubscriptionView = true
+                }
+            }
+            
+            Button("Share") {
+                showingShareSheet = true
+            }
+            
+            Button("Cancel", role: .cancel) {}
         }
     }
 }

@@ -26,19 +26,22 @@ struct Event: Identifiable, Codable {
         let startDate = calendar.startOfDay(for: now)
         let targetDate = calendar.startOfDay(for: self.targetDate)
         
-        // Get days between today and target date
-        let daysLeft = max(0, (calendar.dateComponents([.day], from: startDate, to: targetDate).day ?? 0) - 1)
-        
-        // Calculate total days from the start of the year to the target date for the year tracker
+        // Handle differently based on event type
         if title == String(calendar.component(.year, from: now)) {
+            // For year tracker, keep the -1 adjustment
+            let daysLeft = max(0, (calendar.dateComponents([.day], from: startDate, to: targetDate).day ?? 0) - 1)
+            
             let startOfYear = calendar.date(from: DateComponents(year: calendar.component(.year, from: now), month: 1, day: 1))!
             let totalDays = calendar.dateComponents([.day], from: startOfYear, to: targetDate).day ?? 365
             return (daysLeft, totalDays)
+        } else {
+            // For user-created events, allow negative days for overdue events
+            let daysLeft = calendar.dateComponents([.day], from: startDate, to: targetDate).day ?? 0
+            
+            // Calculate total days from creation date to target date for other events
+            let totalDays = max(1, calendar.dateComponents([.day], from: calendar.startOfDay(for: creationDate), to: targetDate).day ?? 1)
+            return (daysLeft, totalDays)
         }
-        
-        // Calculate total days from creation date to target date for other events
-        let totalDays = max(1, calendar.dateComponents([.day], from: calendar.startOfDay(for: creationDate), to: targetDate).day ?? 1)
-        return (daysLeft, totalDays)
     }
     
     static func defaultYearTracker() -> Event {

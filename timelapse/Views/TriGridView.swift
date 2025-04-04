@@ -21,20 +21,78 @@ struct TriGridView: View {
     @State private var selectedDate: Date? = nil
     @State private var tappedIndex: Int? = nil
     
+    // Add these missing parameters to match DotPixelsView
+    var isYearTracker: Bool = false
+    var startDate: Date = Date()
+    var eventStore: EventStore?
+    @Binding var selectedTab: Int
+    var showEventHighlights: Bool = false
+    
+    // If the view is created without a binding, use this initializer
+    init(daysLeft: Int, totalDays: Int, settings: DisplaySettings) {
+        self.daysLeft = daysLeft
+        self.totalDays = totalDays
+        self.settings = settings
+        self._selectedTab = .constant(0)
+    }
+    
+    // Add a complete initializer that matches DotPixelsView functionality
+    init(daysLeft: Int, totalDays: Int, isYearTracker: Bool, startDate: Date, settings: DisplaySettings, eventStore: EventStore, selectedTab: Binding<Int>, showEventHighlights: Bool = false) {
+        self.daysLeft = daysLeft
+        self.totalDays = totalDays
+        self.isYearTracker = isYearTracker
+        self.startDate = startDate
+        self.settings = settings
+        self.eventStore = eventStore
+        self._selectedTab = selectedTab
+        self.showEventHighlights = showEventHighlights
+    }
+    
     var daysCompleted: Int {
         totalDays - daysLeft
     }
     
     private func dateForIndex(_ index: Int) -> Date {
         let calendar = Calendar.current
-        let today = Date()
-        let startOfYear = calendar.date(from: DateComponents(year: calendar.component(.year, from: today)))!
-        return calendar.date(byAdding: .day, value: index, to: startOfYear)!
+        
+        if isYearTracker {
+            // For year tracker, use start of current year as reference
+            let today = Date()
+            let startOfYear = calendar.date(from: DateComponents(year: calendar.component(.year, from: today)))!
+            return calendar.date(byAdding: .day, value: index, to: startOfYear)!
+        } else {
+            // For other events, use the event's start date
+            return calendar.date(byAdding: .day, value: index, to: calendar.startOfDay(for: startDate))!
+        }
+    }
+    
+    private func isTargetDate(_ date: Date) -> Bool {
+        // Always return false to disable event highlighting
+        return false
+    }
+    
+    private func findEventIndex(for date: Date) -> Int? {
+        if (!isYearTracker || eventStore == nil) { return nil }
+        let calendar = Calendar.current
+        let yearString = String(calendar.component(.year, from: Date()))
+        return eventStore!.events.firstIndex { event in
+            guard event.title != yearString,
+                  calendar.isDate(date, inSameDayAs: event.targetDate) else { return false }
+            return true
+        }
     }
     
     private func handleTap(index: Int, date: Date) {
         selectedDate = date
         tappedIndex = index
+        
+        // If this is a target date in year tracker, navigate to its event
+        // (Keeping this part for compatibility but it won't trigger due to isTargetDate always returning false)
+        if isYearTracker, let eventIndex = findEventIndex(for: date) {
+            withAnimation {
+                selectedTab = eventIndex
+            }
+        }
         
         // Reset after 5 seconds
         DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
@@ -120,13 +178,17 @@ struct TriGridView: View {
         let date = dateForIndex(index)
         let isSelected = selectedDate == date
         
-        RoundedTriangle(fillColor: isSelected ? settings.displayColor : (isDaysLeft ?
-                getDaysLeftColor() :
-                settings.displayColor))
-            .aspectRatio(1.0, contentMode: .fill)
-            .onTapGesture {
-                handleTap(index: index, date: date)
-            }
+        ZStack {
+            RoundedTriangle(fillColor: isSelected ? settings.displayColor : (isDaysLeft ?
+                    getDaysLeftColor() :
+                    settings.displayColor))
+                .aspectRatio(1.0, contentMode: .fill)
+            
+            // Removed highlight overlay for target dates
+        }
+        .onTapGesture {
+            handleTap(index: index, date: date)
+        }
     }
     
     var body: some View {
@@ -147,10 +209,16 @@ struct TriGridView: View {
                 }
                 
                 if let date = selectedDate, let index = tappedIndex {
-                    let dotPosition = CGPoint(
-                        x: CGFloat(index % gridParams.columns) * (gridParams.triangleSize + gridParams.spacing) + gridParams.triangleSize/2,
-                        y: CGFloat(index / gridParams.columns) * (gridParams.triangleSize + gridParams.spacing) + gridParams.triangleSize/2
-                    )
+                    let row = index / gridParams.columns
+                    let col = index % gridParams.columns
+                    
+                    // Calculate triangle position
+                    let triangleX = CGFloat(col) * (gridParams.triangleSize + gridParams.spacing) + gridParams.triangleSize/2
+                    let triangleY = CGFloat(row) * (gridParams.triangleSize + gridParams.spacing) + gridParams.triangleSize/2
+                    
+                    // Always position the tooltip above the triangle with proper spacing
+                    // Use a minimum offset from the top of the view to ensure visibility
+                    let tooltipOffset = triangleY < 40 ? max(10, triangleY - 10) : triangleY - 30
                     
                     Text(formatDate(date))
                         .font(.inter(12, weight: .medium))
@@ -160,7 +228,7 @@ struct TriGridView: View {
                         .foregroundColor(.white)
                         .cornerRadius(6)
                         .shadow(color: .black.opacity(0.2), radius: 2)
-                        .position(x: dotPosition.x, y: max(dotPosition.y - 20, 20))
+                        .position(x: triangleX, y: tooltipOffset)
                         .animation(.none, value: selectedDate)
                 }
             }
