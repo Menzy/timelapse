@@ -43,7 +43,11 @@ struct timelapseApp: App {
                 .task {
                     // Initialize payment manager
                     await paymentManager.loadProducts()
-                    await paymentManager.updateSubscriptionStatus()
+                    
+                    // Only update subscription status if necessary (avoid launching subscription view)
+                    if !paymentManager.isSubscribed && !paymentManager.hasLifetimePurchase {
+                        await paymentManager.updateSubscriptionStatus()
+                    }
                     
                     // Setup notifications after the view is loaded
                     setupNotifications()

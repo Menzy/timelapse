@@ -134,10 +134,11 @@ struct ContentView: View {
                             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
                         }
                         .onAppear {
-                            // Reset the setting and trigger subscription view
+                            // Reset the setting but don't automatically trigger subscription view on app start
                             DispatchQueue.main.async {
                                 globalSettings.showGridLayout = false
-                                showSubscriptionView = true
+                                // Don't show subscription view automatically
+                                // showSubscriptionView = true
                             }
                         }
                     }
@@ -328,7 +329,10 @@ struct ContentView: View {
                 .environmentObject(globalSettings)
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ShowSubscriptionView"))) { _ in
-            showSubscriptionView = true
+            // Only show subscription view if user is not already subscribed
+            if !paymentManager.isSubscribed && !paymentManager.hasLifetimePurchase {
+                showSubscriptionView = true
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SubscriptionStatusChanged"))) { _ in
             // Force refresh the view to update displayed events based on subscription status

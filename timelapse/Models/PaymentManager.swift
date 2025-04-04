@@ -27,11 +27,22 @@ class PaymentManager: ObservableObject {
     }
     
     init() {
+        // Start listening for transactions
         updateListenerTask = listenForTransactions()
         
+        // Load cached subscription status from UserDefaults
+        isSubscribed = UserDefaults.standard.bool(forKey: "isSubscribed")
+        hasLifetimePurchase = UserDefaults.standard.bool(forKey: "hasLifetimePurchase")
+        
+        // Load products in background without blocking
         Task {
             await loadProducts()
-            await updateSubscriptionStatus()
+            
+            // Only check with StoreKit if we don't have a cached status
+            // or periodically to keep things fresh (about 1 in 10 launches)
+            if !isSubscribed && !hasLifetimePurchase {
+                await updateSubscriptionStatus()
+            }
         }
     }
     
