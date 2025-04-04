@@ -342,7 +342,10 @@ struct CustomizeView: View {
                                         }
                                         .onTapGesture {
                                             withAnimation(.spring(response: 0.3)) {
-                                                settings.displayColor = preset.color
+                                                // Use the new method to set both color and ID
+                                                settings.setDisplayColor(preset.color, withID: preset.id)
+                                                // Still need to save the settings to persist changes
+                                                eventStore.saveDisplaySettings()
                                             }
                                         }
                                         .onTapGesture(count: 2) {
@@ -363,9 +366,8 @@ struct CustomizeView: View {
                             .padding(.vertical, 10)
                         }
                         .onChange(of: settings.displayColor) { oldValue, newValue in
-                            let defaultColor = Color(hex: "FF7F00")
-                            settings.isUsingDefaultColor = (newValue == defaultColor)
-                            settings.objectWillChange.send()
+                            // Settings are already updated by the tap handler
+                            // Just make sure to save the changes
                             eventStore.saveDisplaySettings()
                         }
                         .onChange(of: settings.style) { oldStyle, newStyle in

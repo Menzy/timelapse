@@ -462,11 +462,11 @@ class DisplaySettings: ObservableObject, Identifiable, Codable {
         if isUsingDefaultColor && !isYearTracker {
             // Get the first color from presets as default
             let presets = DisplayColor.getPresets(for: backgroundStyle)
-            if let defaultColor = presets.first?.color {
-                if displayColor != defaultColor {
+            if let firstPreset = presets.first {
+                if displayColor != firstPreset.color {
                     DispatchQueue.main.async {
-                        self.displayColor = defaultColor
-                        self.associatedColorID = "orange" // First color is orange
+                        self.displayColor = firstPreset.color
+                        self.associatedColorID = firstPreset.id
                     }
                 }
             }
@@ -486,45 +486,53 @@ class DisplaySettings: ObservableObject, Identifiable, Codable {
             if let userInfo = notification.userInfo,
                let colorID = userInfo["colorID"] as? String,
                let newColor = userInfo["newColor"] as? Color,
-               colorID == self.associatedColorID || (self.associatedColorID == nil && self.checkIfUsingStandardColor(colorID)) {
+               colorID == self.associatedColorID {
                 
                 // Update the display color while preserving the isUsingDefaultColor status
                 self.displayColor = newColor
-                self.associatedColorID = colorID
                 
                 // Notify anyone observing this object that it changed
                 self.objectWillChange.send()
             }
         }
-    }
-    
-    // Check if this display is using a standard color (orange, blue, green) without knowing its ID
-    private func checkIfUsingStandardColor(_ colorID: String) -> Bool {
-        let currentHex = displayColor.hexString.uppercased()
         
-        // Get the reference hexes for comparison
-        let referenceHex: String
-        switch colorID {
-        case "orange":
-            referenceHex = UserDefaults.standard.string(forKey: "orangeColorHex") ?? "FF7F00"
-        case "blue":
-            referenceHex = UserDefaults.standard.string(forKey: "blueColorHex") ?? "008CFF"
-        case "green":
-            referenceHex = UserDefaults.standard.string(forKey: "greenColorHex") ?? "7FBF54"
-        default:
-            return false
+        // Listen for global color resets
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("AllDisplayColorsReset"),
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self = self else { return }
+            
+            // Get the current presets
+            let presets = DisplayColor.getPresets(for: self.backgroundStyle)
+            
+            // Find the matching preset with the same ID as this setting
+            if let colorID = self.associatedColorID,
+               let matchingPreset = presets.first(where: { $0.id == colorID }) {
+                self.displayColor = matchingPreset.color
+                self.objectWillChange.send()
+            }
         }
-        
-        return currentHex == referenceHex.uppercased()
     }
     
     init(backgroundStyle: BackgroundStyle = .dark) {
         self._id = UUID()
         self.backgroundStyle = backgroundStyle
-        // Always set orange as default color
-        self.displayColor = Color(hex: "FF7F00") // Default orange
+        
+        // Get the presets for this background style
+        let presets = DisplayColor.getPresets(for: backgroundStyle)
+        
+        // Use the first preset color (which might be pink now if user changed it)
+        if let firstPreset = presets.first {
+            self.displayColor = firstPreset.color
+            self.associatedColorID = firstPreset.id
+        } else {
+            // Fallback if no presets available
+            self.displayColor = Color(hex: "FF7F00")
+            self.associatedColorID = "orange"
+        }
         self.isUsingDefaultColor = true
-        self.associatedColorID = "orange"
         
         // Set up notification observer
         setupNotificationObserver()
@@ -533,9 +541,20 @@ class DisplaySettings: ObservableObject, Identifiable, Codable {
     init() {
         self._id = UUID()
         self.backgroundStyle = .dark
-        self.displayColor = Color(hex: "FF7F00")
+        
+        // Get the presets for dark background
+        let presets = DisplayColor.getPresets(for: .dark)
+        
+        // Use the first preset color (which might be pink now if user changed it)
+        if let firstPreset = presets.first {
+            self.displayColor = firstPreset.color
+            self.associatedColorID = firstPreset.id
+        } else {
+            // Fallback if no presets available
+            self.displayColor = Color(hex: "FF7F00")
+            self.associatedColorID = "orange"
+        }
         self.isUsingDefaultColor = true
-        self.associatedColorID = "orange"
         
         // Set up notification observer
         setupNotificationObserver()
@@ -544,5 +563,13 @@ class DisplaySettings: ObservableObject, Identifiable, Codable {
     deinit {
         // Remove notification observer when this object is deallocated
         NotificationCenter.default.removeObserver(self)
+    }
+    
+    // Public method to set the display color and its associated ID
+    func setDisplayColor(_ color: Color, withID id: String) {
+        self.displayColor = color
+        self.associatedColorID = id
+        self.isUsingDefaultColor = false
+        self.objectWillChange.send()
     }
 }
