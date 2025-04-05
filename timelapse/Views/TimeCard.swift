@@ -61,6 +61,7 @@ struct TimeCard: View {
     @Binding var selectedTab: Int
     @StateObject private var navigationState = NavigationStateManager.shared
     @StateObject private var paymentManager = PaymentManager.shared
+    @State private var showingDeleteConfirmation = false
     
     // Add computed properties for dynamic scaling
     private var scaledWidth: CGFloat {
@@ -273,13 +274,8 @@ struct TimeCard: View {
             HapticFeedback.impact(style: .heavy)
             HapticFeedback.success()
             
-            if isYearTracker {
-                // For year tracker, go directly to share sheet
-                showingShareSheet = true
-            } else {
-                // For regular events, show action sheet with options
-                showingActionSheet = true
-            }
+            // For both year tracker and regular events, show action sheet with options
+            showingActionSheet = true
         }
         // Add double tap gesture for grid view cards
         .onTapGesture(count: 2) {
@@ -312,7 +308,7 @@ struct TimeCard: View {
         .sheet(isPresented: $showingNotificationSettings) {
             // Check if user has premium access to notification features
             if paymentManager.isSubscribed {
-                NotificationSettingsView(event: event, eventStore: eventStore)
+                NotificationSettingsView(event: event, eventStore: eventStore, isYearTracker: isYearTracker)
                     .environmentObject(globalSettings)
             } else {
                 SubscriptionView()
@@ -324,27 +320,78 @@ struct TimeCard: View {
                 .environmentObject(globalSettings)
         }
         .confirmationDialog("Event Options", isPresented: $showingActionSheet, titleVisibility: .visible) {
-            // Only show Edit button for non-year tracker events
-            if !isYearTracker {
+            if isYearTracker {
+                // For year tracker, only show Notifications and Share options
+                // Show notifications option with premium gate
+                Button("Notifications") {
+                    if paymentManager.isSubscribed {
+                        // Open NotificationSettingsView directly for year tracker
+                        showingNotificationSettings = true
+                    } else {
+                        showingSubscriptionView = true
+                    }
+                }
+                
+                Button("Share") {
+                    showingShareSheet = true
+                }
+            } else {
+                // For regular events, show Edit, Notifications, Share, and Delete options
                 Button("Edit") {
                     showingEditSheet = true
                 }
-            }
-            
-            // Show notifications option with premium gate
-            Button("Notifications") {
-                if paymentManager.isSubscribed {
-                    showingNotificationSettings = true
-                } else {
-                    showingSubscriptionView = true
+                
+                // Show notifications option with premium gate
+                Button("Notifications") {
+                    if paymentManager.isSubscribed {
+                        showingNotificationSettings = true
+                    } else {
+                        showingSubscriptionView = true
+                    }
+                }
+                
+                Button("Share") {
+                    showingShareSheet = true
+                }
+                
+                // Add delete option with destructive role
+                Button("Delete", role: .destructive) {
+                    // Show a confirmation dialog before deleting
+                    confirmEventDeletion()
                 }
             }
             
-            Button("Share") {
-                showingShareSheet = true
-            }
-            
             Button("Cancel", role: .cancel) {}
+        }
+        .alert("Delete Event", isPresented: $showingDeleteConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) {
+                deleteEvent()
+            }
+        } message: {
+            Text("Are you sure you want to delete '\(title)'? This action cannot be undone.")
+        }
+    }
+    
+    private func confirmEventDeletion() {
+        // Show the confirmation dialog
+        showingDeleteConfirmation = true
+    }
+    
+    private func deleteEvent() {
+        // Delete the event from the event store
+        eventStore.deleteEvent(withId: event.id)
+        
+        // Provide haptic feedback to confirm deletion
+        HapticFeedback.impact(style: .medium)
+        
+        // If we're in grid view, we don't need to do anything else as the event
+        // will disappear from the grid automatically
+        
+        // If we're in single event view, we need to go back to the grid view
+        if !isGridView {
+            // Switch to grid view
+            globalSettings.showGridLayout = true
         }
     }
 }
