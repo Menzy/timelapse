@@ -384,14 +384,5 @@ struct TimeCard: View {
         
         // Provide haptic feedback to confirm deletion
         HapticFeedback.impact(style: .medium)
-        
-        // If we're in grid view, we don't need to do anything else as the event
-        // will disappear from the grid automatically
-        
-        // If we're in single event view, we need to go back to the grid view
-        if !isGridView {
-            // Switch to grid view
-            globalSettings.showGridLayout = true
-        }
     }
 }

@@ -121,12 +121,12 @@ struct ContentView: View {
                                     .environmentObject(globalSettings)
                                     .transition(
                                         .asymmetric(
-                                            insertion: .scale(scale: 1.05)
+                                            insertion: .move(edge: .trailing)
                                                 .combined(with: .opacity)
-                                                .animation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0.3)),
-                                            removal: .scale(scale: 0.95)
+                                                .animation(.spring(response: 0.4, dampingFraction: 0.8)),
+                                            removal: .move(edge: .leading)
                                                 .combined(with: .opacity)
-                                                .animation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0.3))
+                                                .animation(.spring(response: 0.4, dampingFraction: 0.8))
                                         )
                                     )
                                 }
@@ -167,12 +167,12 @@ struct ContentView: View {
                             .environmentObject(globalSettings)
                             .transition(
                                 .asymmetric(
-                                    insertion: .scale(scale: 1.05)
+                                    insertion: .move(edge: .trailing)
                                         .combined(with: .opacity)
-                                        .animation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0.3)),
-                                    removal: .scale(scale: 0.95)
+                                        .animation(.spring(response: 0.4, dampingFraction: 0.8)),
+                                    removal: .move(edge: .leading)
                                         .combined(with: .opacity)
-                                        .animation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0.3))
+                                        .animation(.spring(response: 0.4, dampingFraction: 0.8))
                                 )
                             )
                         }
