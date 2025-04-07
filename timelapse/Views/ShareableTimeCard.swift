@@ -64,7 +64,7 @@ struct ShareableTimeCard: View {
                 return "\(dayText) left"
             }
         } else {
-            // Days spent logic remains unchanged
+            // Days spent logic
             let dayText = daysSpent == 1 ? "day" : "days"
             return "\(dayText) in"
         }
