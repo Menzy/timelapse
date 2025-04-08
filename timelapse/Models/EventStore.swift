@@ -46,9 +46,22 @@ class EventStore: ObservableObject {
                 // Initialize display settings when saving a new event
                 let newSettings = DisplaySettings()
                 displaySettings[event.id] = newSettings
-                // Initialize notification settings when saving a new event
-                let newNotificationSettings = NotificationSettings()
+                
+                // Initialize notification settings using global defaults
+                var newNotificationSettings = NotificationSettings()
+                
+                // Get global default settings from UserDefaults
+                if let savedTime = UserDefaults.standard.object(forKey: "defaultNotificationTime") as? Date {
+                    newNotificationSettings.notifyTime = savedTime
+                }
+                
+                if let savedFrequency = UserDefaults.standard.string(forKey: "defaultNotificationFrequency"),
+                   let frequency = NotificationFrequency(rawValue: savedFrequency) {
+                    newNotificationSettings.frequency = frequency
+                }
+                
                 notificationSettings[event.id] = newNotificationSettings
+                
                 saveEvents()
                 saveDisplaySettings()
                 saveNotificationSettings()
@@ -212,9 +225,6 @@ class EventStore: ObservableObject {
         // Save to UserDefaults
         saveNotificationSettings()
         
-        print("Updated notification settings for event \(eventId): \(settings)")
-        print("Current notification settings dictionary: \(notificationSettings)")
-        
         // Schedule notifications based on the new settings
         if let event = events.first(where: { $0.id == eventId }) {
             // Check if this is the year tracker
@@ -236,9 +246,11 @@ class EventStore: ObservableObject {
     }
     
     func getNotificationSettings(for eventId: UUID) -> NotificationSettings {
-        let settings = notificationSettings[eventId] ?? NotificationSettings()
-        print("Retrieved notification settings for event \(eventId): \(settings)")
-        return settings
+        if let settings = notificationSettings[eventId] {
+            return settings
+        } else {
+            return NotificationSettings()
+        }
     }
     
     func deleteEvent(withId id: UUID) {
@@ -265,19 +277,16 @@ class EventStore: ObservableObject {
     
     // MARK: - Notification Settings Persistence
     
-    private func saveNotificationSettings() {
+    func saveNotificationSettings() {
         if let encoded = try? JSONEncoder().encode(notificationSettings) {
+            // Use standard UserDefaults for notification settings consistently
             UserDefaults.standard.set(encoded, forKey: notificationSettingsKey)
             
             // Synchronize UserDefaults to ensure data is written to disk
             UserDefaults.standard.synchronize()
             
-            print("Saved notification settings to UserDefaults with key: \(notificationSettingsKey)")
-            
             // Force a UI update
             objectWillChange.send()
-        } else {
-            print("Error: Failed to encode notification settings")
         }
     }
     
@@ -286,12 +295,9 @@ class EventStore: ObservableObject {
             do {
                 let decodedSettings = try JSONDecoder().decode([UUID: NotificationSettings].self, from: savedSettings)
                 notificationSettings = decodedSettings
-                print("Successfully loaded notification settings from UserDefaults: \(notificationSettings)")
             } catch {
-                print("Error decoding notification settings: \(error.localizedDescription)")
+                // Error handling is done silently
             }
-        } else {
-            print("No saved notification settings found in UserDefaults")
         }
     }
     

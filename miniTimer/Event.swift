@@ -39,7 +39,9 @@ struct Event: Identifiable, Codable {
             let daysLeft = calendar.dateComponents([.day], from: startDate, to: targetDate).day ?? 0
             
             // Calculate total days from creation date to target date for other events
-            let totalDays = max(1, calendar.dateComponents([.day], from: calendar.startOfDay(for: creationDate), to: targetDate).day ?? 1)
+            // Add 1 to include the target date itself in the visualization
+            let calculatedDays = calendar.dateComponents([.day], from: calendar.startOfDay(for: creationDate), to: targetDate).day ?? 1
+            let totalDays = max(1, calculatedDays + 1) // Add 1 to include the target date in visualization
             return (daysLeft, totalDays)
         }
     }

@@ -11,13 +11,35 @@ struct DotPixelsView: View {
     @EnvironmentObject var globalSettings: GlobalSettings
     @State private var selectedDate: Date? = nil
     @State private var tappedIndex: Int? = nil
+    @State private var hoveredIndex: Int? = nil
+    @State private var isAnimating = false
+    @State private var gridParams: (columns: Int, dotSize: CGFloat, spacing: CGFloat)? = nil
     // Add binding to control tab selection
     @Binding var selectedTab: Int
     // Add parameter to control whether to show event highlights
     var showEventHighlights: Bool = true
     
+    // Use State to store calculated grid parameters
+    @State private var initialLayoutComplete = false
+    
+    // Track the last version of the events to detect changes
+    @State private var lastEventsVersion: Int = 0
+
     var daysCompleted: Int {
         totalDays - daysLeft
+    }
+    
+    // Add computed property to track events changes
+    private var eventsVersion: Int {
+        // Create a hash of the events' target dates to detect changes
+        var hasher = Hasher()
+        for event in eventStore.events {
+            hasher.combine(event.id)
+            hasher.combine(event.targetDate)
+        }
+        // Also include the totalDays in the hash to detect changes in event duration
+        hasher.combine(totalDays)
+        return hasher.finalize()
     }
     
     private func dateForIndex(_ index: Int) -> Date {
@@ -54,8 +76,25 @@ struct DotPixelsView: View {
     }
     
     private func handleTap(index: Int, date: Date) {
-        selectedDate = date
-        tappedIndex = index
+        // Add haptic feedback
+        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+        impactFeedback.impactOccurred()
+        
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+            selectedDate = date
+            tappedIndex = index
+        }
+        
+        // Animate a pulse effect
+        withAnimation(.easeInOut(duration: 0.5)) {
+            isAnimating = true
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            withAnimation(.easeInOut(duration: 0.5)) {
+                isAnimating = false
+            }
+        }
         
         // If this is a target date, navigate to its event
         if isYearTracker, let eventIndex = findEventIndex(for: date) {
@@ -66,20 +105,28 @@ struct DotPixelsView: View {
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
             if tappedIndex == index {
-                tappedIndex = nil
-                selectedDate = nil
+                withAnimation(.easeOut) {
+                    tappedIndex = nil
+                    selectedDate = nil
+                }
             }
         }
     }
     
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "EEE, MMM d, yyyy"
+        formatter.dateFormat = "EEE, MMM d"
         return formatter.string(from: date)
     }
     
     private func calculateGridParameters(for size: CGSize) -> (columns: Int, dotSize: CGFloat, spacing: CGFloat) {
-        let bottomSpace: CGFloat = 40
+        // If we already have calculated parameters and initial layout is complete, return them
+        // This prevents recalculation during animations
+        if let params = gridParams, initialLayoutComplete {
+            return params
+        }
+        
+        let bottomSpace: CGFloat = DeviceType.isIPad ? 50 : 40
         
         // Use full width and calculate available height
         let availableWidth = size.width
@@ -88,21 +135,40 @@ struct DotPixelsView: View {
         // Calculate optimal number of columns based on aspect ratio
         let aspectRatio = availableWidth / availableHeight
         
+        // Determine spacing based on device type
+        let spacing: CGFloat = DeviceType.isIPad ? 2 : 0 // Add small spacing on iPad for better visibility
+        
         // For large numbers (>100), use dynamic column calculation
         if totalDays > 100 {
             // Base column count on aspect ratio and total items
             let baseColumns = Int(ceil(sqrt(Double(totalDays) * aspectRatio)))
-            let columns = min(max(baseColumns, 10), 25) // Keep columns between 10 and 25
+            
+            // Adjust columns based on device type
+            let columns: Int
+            if DeviceType.isIPad {
+                columns = min(max(baseColumns + 2, 12), 30) // More columns on iPad
+            } else {
+                columns = min(max(baseColumns, 10), 25) // Original columns for iPhone
+            }
+            
             let rows = ceil(Double(totalDays) / Double(columns))
             
-            // Calculate sizes to fit both width and height
-            let widthBasedSize = availableWidth / CGFloat(columns)
-            let heightBasedSize = availableHeight / CGFloat(rows)
+            // Calculate sizes to fit both width and height, accounting for spacing
+            let totalHorizontalSpacing = spacing * CGFloat(columns - 1)
+            let totalVerticalSpacing = spacing * CGFloat(rows - 1)
+            
+            let widthBasedSize = (availableWidth - totalHorizontalSpacing) / CGFloat(columns)
+            let heightBasedSize = (availableHeight - totalVerticalSpacing) / CGFloat(rows)
             
             // Use the smaller size to ensure it fits both dimensions
             let dotSize = min(widthBasedSize, heightBasedSize)
             
-            return (columns, dotSize, 0)
+            let calculatedParams = (columns, dotSize, spacing)
+            // Store the calculated parameters
+            DispatchQueue.main.async {
+                gridParams = calculatedParams
+            }
+            return calculatedParams
         }
         
         // For fewer dots, optimize for both dimensions
@@ -110,30 +176,38 @@ struct DotPixelsView: View {
         var minWastedSpace = CGFloat.infinity
         
         // Calculate maximum columns based on aspect ratio
-        let maxColumns = Int(ceil(sqrt(Double(totalDays) * aspectRatio)))
+        let maxColumnsBase = Int(ceil(sqrt(Double(totalDays) * aspectRatio)))
+        let maxColumns = DeviceType.isIPad ? maxColumnsBase + 1 : maxColumnsBase
         
         // Try different column counts
         for cols in 1...maxColumns {
             let rows = Int(ceil(Double(totalDays) / Double(cols)))
             
-            // Calculate sizes to fit both width and height
-            let widthBasedSize = availableWidth / CGFloat(cols)
-            let heightBasedSize = availableHeight / CGFloat(rows)
+            // Calculate sizes to fit both width and height, accounting for spacing
+            let totalHorizontalSpacing = spacing * CGFloat(cols - 1)
+            let totalVerticalSpacing = spacing * CGFloat(rows - 1)
+            
+            let widthBasedSize = (availableWidth - totalHorizontalSpacing) / CGFloat(cols)
+            let heightBasedSize = (availableHeight - totalVerticalSpacing) / CGFloat(rows)
             
             let dotSize = min(widthBasedSize, heightBasedSize)
             
             // Calculate total used space and wasted space
-            let usedWidth = CGFloat(cols) * dotSize
-            let usedHeight = CGFloat(rows) * dotSize
+            let usedWidth = (CGFloat(cols) * dotSize) + totalHorizontalSpacing
+            let usedHeight = (CGFloat(rows) * dotSize) + totalVerticalSpacing
             let wastedSpace = abs(availableWidth - usedWidth) + abs(availableHeight - usedHeight)
             
             // If this layout wastes less space and maintains good proportions
             if wastedSpace < minWastedSpace {
                 minWastedSpace = wastedSpace
-                bestLayout = (cols, dotSize, 0)
+                bestLayout = (cols, dotSize, spacing)
             }
         }
         
+        // Store the calculated parameters
+        DispatchQueue.main.async {
+            gridParams = bestLayout
+        }
         return bestLayout
     }
     
@@ -150,6 +224,7 @@ struct DotPixelsView: View {
         let date = dateForIndex(index)
         let isSelected = selectedDate == date
         let isTarget = isTargetDate(date)
+        let isHovered = hoveredIndex == index
         
         ZStack {
             // Main circle fill
@@ -157,63 +232,126 @@ struct DotPixelsView: View {
                 .fill(isSelected ? settings.displayColor : (isDaysLeft ?
                       getDaysLeftColor() :
                       settings.displayColor))
+                .scaleEffect(isSelected ? 1.15 : (isHovered ? 1.08 : 1.0))
+                .shadow(color: isSelected || isHovered ? settings.displayColor.opacity(0.5) : .clear, 
+                        radius: isSelected ? 4 : (isHovered ? 2 : 0))
+                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSelected)
+                .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isHovered)
             
             // Add stroke for target dates instead of smaller dot
             if isTarget {
                 Circle()
                     .stroke(settings.displayColor, lineWidth: gridParams.dotSize * 0.15)
-                    .animation(.smooth, value: isTarget)
+                    .scaleEffect(isAnimating && isSelected ? 1.2 : 1.0)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.6).repeatCount(1), value: isAnimating && isSelected)
+            }
+            
+            // Add a subtle glow for today's date
+            if Calendar.current.isDateInToday(date) {
+                Circle()
+                    .fill(settings.displayColor)
+                    .opacity(0.3)
             }
         }
         .onTapGesture {
             handleTap(index: index, date: date)
         }
+        .onHover { isHovering in
+            withAnimation(.easeInOut(duration: 0.2)) {
+                hoveredIndex = isHovering ? index : nil
+            }
+        }
+        .contentShape(Rectangle()) // Improve tap target
     }
     
     var body: some View {
         GeometryReader { geometry in
             let gridParams = calculateGridParameters(for: geometry.size)
             
-            VStack(spacing: 0) {
-                LazyVGrid(
-                    columns: Array(repeating: .init(.fixed(gridParams.dotSize), spacing: 0), 
-                                 count: gridParams.columns),
-                    spacing: 0
-                ) {
-                    ForEach(0..<totalDays, id: \.self) { index in
-                        gridItem(index: index, gridParams: gridParams)
-                            .frame(width: gridParams.dotSize, height: gridParams.dotSize)
+            ZStack {
+                VStack(spacing: 0) {
+                    LazyVGrid(
+                        columns: Array(repeating: .init(.fixed(gridParams.dotSize), spacing: 0), 
+                                     count: gridParams.columns),
+                        spacing: 0
+                    ) {
+                        ForEach(0..<totalDays, id: \.self) { index in
+                            gridItem(index: index, gridParams: gridParams)
+                                .frame(width: gridParams.dotSize, height: gridParams.dotSize)
+                                // Disable any animations for the grid items during layout changes
+                                .transaction { transaction in
+                                    if !initialLayoutComplete {
+                                        transaction.animation = nil
+                                    }
+                                }
+                        }
                     }
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                    
+                    Spacer()
                 }
-                .frame(maxWidth: .infinity, alignment: .topLeading)
                 
-                Spacer()
+                // Overlay for date tooltip
+                if let date = selectedDate, let index = tappedIndex {
+                    let row = index / gridParams.columns
+                    let col = index % gridParams.columns
+                    
+                    // Calculate dot position
+                    let dotX = CGFloat(col) * gridParams.dotSize + gridParams.dotSize/2
+                    let dotY = CGFloat(row) * gridParams.dotSize + gridParams.dotSize/2
+                    
+                    // Always position the tooltip above the dot with proper spacing
+                    // Use a minimum offset from the top of the view to ensure visibility
+                    let tooltipOffset = dotY < 40 ? max(10, dotY - 10) : dotY - 30
+                    
+                    Text(formatDate(date))
+                        .font(.inter(12, weight: .medium))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 4)
+                        .background(globalSettings.effectiveBackgroundStyle == .light ? 
+                            Color(white: 0.1) : 
+                            Color.white)
+                        .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? 
+                            .white : 
+                            .black)
+                        .cornerRadius(6)
+                        .shadow(color: .black.opacity(0.2), radius: 2)
+                        .position(x: dotX, y: tooltipOffset)
+                        .transition(.asymmetric(
+                            insertion: .scale(scale: 0.8).combined(with: .opacity),
+                            removal: .scale(scale: 0.8).combined(with: .opacity)
+                        ))
+                }
             }
-            // Remove padding to allow dots to touch edges
-            
-            // Overlay for date tooltip
-            if let date = selectedDate, let index = tappedIndex {
-                let row = index / gridParams.columns
-                let col = index % gridParams.columns
-                
-                // Calculate dot position
-                let dotX = CGFloat(col) * gridParams.dotSize + gridParams.dotSize/2
-                let dotY = CGFloat(row) * gridParams.dotSize + gridParams.dotSize/2
-                
-                // Always position the tooltip above the dot with proper spacing
-                // Use a minimum offset from the top of the view to ensure visibility
-                let tooltipOffset = dotY < 40 ? max(10, dotY - 10) : dotY - 30
-                
-                Text(formatDate(date))
-                    .font(.inter(12, weight: .medium))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 4)
-                    .background(Color(white: 0.1).opacity(0.9))
-                    .foregroundColor(.white)
-                    .cornerRadius(6)
-                    .shadow(color: .black.opacity(0.2), radius: 2)
-                    .position(x: dotX, y: tooltipOffset)
-                    .animation(.none, value: selectedDate)
+            .onAppear {
+                // Set a flag to indicate that initial layout is complete after a short delay
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    initialLayoutComplete = true
+                    lastEventsVersion = eventsVersion
+                }
+            }
+            .onChange(of: eventsVersion) { oldValue, newValue in
+                if oldValue != newValue {
+                    // If the events have changed, reset the cached grid parameters
+                    DispatchQueue.main.async {
+                        // First reset the layout complete flag to force complete recalculation
+                        initialLayoutComplete = false
+                        // Then clear the cached parameters
+                        self.gridParams = nil
+                        
+                        // After a short delay, mark layout as complete again
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            initialLayoutComplete = true
+                        }
+                    }
+                    lastEventsVersion = newValue
+                }
+            }
+        }
+        // Disable animations during initial rendering and parent view transitions
+        .transaction { transaction in
+            if !initialLayoutComplete {
+                transaction.animation = nil
             }
         }
     }

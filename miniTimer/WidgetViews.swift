@@ -164,19 +164,50 @@ struct TriGridWidgetView: View {
     
     private func calculateGridParameters(for size: CGSize) -> (columns: Int, triangleSize: CGFloat) {
         let availableWidth = size.width
-        let bottomTextSpace: CGFloat = family == .systemSmall ? 25 : 30  // Space for info text
-        let topPadding: CGFloat = family == .systemSmall ? 10 : 20
+        
+        // Adjust space based on widget family
+        let bottomTextSpace: CGFloat
+        let topPadding: CGFloat
+        
+        if family == .systemMedium {
+            // For medium widgets, use less space for text to maximize grid area
+            bottomTextSpace = 15
+            topPadding = 0 // Remove top padding for medium widget
+        } else {
+            bottomTextSpace = family == .systemSmall ? 20 : 25
+            topPadding = 0 // Remove top padding for all widgets
+        }
+        
         let availableHeight = size.height - bottomTextSpace - topPadding
-        let aspectRatio = availableWidth / availableHeight
+        
+        // For medium widget, adjust the aspect ratio calculation to better utilize space
+        let aspectRatio: CGFloat
+        if family == .systemMedium {
+            // For medium widget, we want to encourage more columns
+            aspectRatio = (availableWidth / availableHeight) * 1.2
+        } else {
+            aspectRatio = availableWidth / availableHeight
+        }
         
         // For large numbers (>100), use dynamic column calculation
         if totalDays > 100 {
-            let baseColumns = Int(ceil(sqrt(Double(totalDays) * aspectRatio)))
-            let columns = min(max(baseColumns, 8), 25) // Keep columns between 8 and 25
+            // Adjust base columns calculation for medium widget
+            let baseColumns: Int
+            if family == .systemMedium {
+                baseColumns = Int(ceil(sqrt(Double(totalDays) * aspectRatio * 1.2)))
+            } else {
+                baseColumns = Int(ceil(sqrt(Double(totalDays) * aspectRatio)))
+            }
+            
+            // Adjust min/max columns based on widget family
+            let minColumns = family == .systemMedium ? 10 : 8
+            let maxColumns = family == .systemMedium ? 30 : 25
+            let columns = min(max(baseColumns, minColumns), maxColumns)
+            
             let rows = Int(ceil(Double(totalDays) / Double(columns)))
             
             // Calculate triangle size considering height ratio and spacing
-            let spacing: CGFloat = family == .systemSmall ? 2.0 : 4.0
+            let spacing = getSpacingForFamily()
             let heightRatio: CGFloat = 0.866 // Height ratio for equilateral triangles
             
             let widthBasedSize = (availableWidth - (CGFloat(columns - 1) * spacing)) / CGFloat(columns)
@@ -196,7 +227,7 @@ struct TriGridWidgetView: View {
         // Try different column counts
         for cols in 1...maxColumns {
             let rows = Int(ceil(Double(totalDays) / Double(cols)))
-            let spacing: CGFloat = family == .systemSmall ? 2.0 : 4.0
+            let spacing = getSpacingForFamily()
             let heightRatio: CGFloat = 0.866
             
             // Calculate sizes considering spacing
@@ -218,22 +249,37 @@ struct TriGridWidgetView: View {
         return bestLayout
     }
     
+    // Helper function to get appropriate spacing based on widget family
+    private func getSpacingForFamily() -> CGFloat {
+        switch family {
+        case .systemSmall:
+            return 2.0
+        case .systemMedium:
+            return 3.0 // Slightly smaller spacing for medium to fit more triangles
+        default:
+            return 4.0
+        }
+    }
+    
     var body: some View {
         let daysSpent = totalDays - daysLeft
         
         GeometryReader { geometry in
             let gridParams = calculateGridParameters(for: geometry.size)
+            let spacing = getSpacingForFamily()
             
             LazyVGrid(
-                columns: Array(repeating: .init(.fixed(gridParams.triangleSize), spacing: family == .systemSmall ? 2.0 : 4.0), count: gridParams.columns),
-                spacing: family == .systemSmall ? 2.0 : 4.0
+                columns: Array(repeating: .init(.fixed(gridParams.triangleSize), spacing: spacing), count: gridParams.columns),
+                spacing: spacing
             ) {
                 ForEach(0..<totalDays, id: \.self) { index in
                     RoundedTriangle(fillColor: index < daysSpent ? Color.accentColor : (backgroundTheme == .dark ? Color.white : Color.black))
                         .frame(width: gridParams.triangleSize, height: gridParams.triangleSize)
                 }
             }
-            .frame(width: geometry.size.width, alignment: .leading)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .padding(.top, 0) // No top padding
+            .padding(.bottom, family == .systemSmall ? 2 : 5) // Minimal bottom padding
         }
     }
 }

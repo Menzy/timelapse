@@ -68,10 +68,6 @@ class NotificationManager: ObservableObject {
             DispatchQueue.main.async {
                 completion(granted)
             }
-            
-            if let error = error {
-                print("Error requesting notification authorization: \(error.localizedDescription)")
-            }
         }
     }
     
@@ -86,6 +82,11 @@ class NotificationManager: ObservableObject {
     
     // Schedule notifications for an event based on its notification settings
     func scheduleNotifications(for event: Event, with settings: NotificationSettings) {
+        // Check if user is subscribed or has lifetime purchase
+        if !PaymentManager.isUserSubscribed() && !PaymentManager.hasLifetimePurchase() {
+            return
+        }
+        
         // Remove any existing notifications for this event
         removeNotifications(for: event.id)
         
@@ -383,74 +384,99 @@ class NotificationManager: ObservableObject {
         }
     }
     
-    // Special function for year tracker milestones
-    func scheduleYearTrackerMilestones(for yearEvent: Event, with settings: NotificationSettings) {
-        // Check if user is subscribed
-        if !PaymentManager.isUserSubscribed() {
+    // Schedule special milestone notifications for the year tracker
+    func scheduleYearTrackerMilestones(for event: Event, with settings: NotificationSettings) {
+        // Check if user is subscribed or has lifetime purchase
+        if !PaymentManager.isUserSubscribed() && !PaymentManager.hasLifetimePurchase() {
             return
         }
-        // Remove any existing notifications for this event
-        removeNotifications(for: yearEvent.id)
         
-        // If milestone notifications are disabled, just return
+        // Exit if milestone notifications are not enabled
         if !settings.milestoneNotificationsEnabled {
             return
         }
         
+        // Get the notification time
+        let notifyTime = settings.notifyTime
         let calendar = Calendar.current
+        let timeComponents = calendar.dateComponents([.hour, .minute], from: notifyTime)
+        
+        // Get the current year and create dates for important milestones
+        let currentYear = Calendar.current.component(.year, from: Date())
+        guard let yearEnd = calendar.date(from: DateComponents(year: currentYear, month: 12, day: 31)) else {
+            return
+        }
+        
+        // Get all milestone days that are in the future
         let now = Date()
-        let currentYear = calendar.component(.year, from: now)
         
-        // Extract hour and minute from the preferred notification time
-        let timeComponents = calendar.dateComponents([.hour, .minute], from: settings.notifyTime)
+        // Sort the milestones in ascending order (earliest first)
+        let sortedMilestones = settings.daysLeftMilestones.sorted()
         
-        // Define special year milestones
-        let specialMilestones = [
-            (name: "Halfway through the year", month: 7, day: 2),
-            (name: "100 days left in the year", month: 9, day: 22),
-            (name: "Last quarter of the year", month: 10, day: 1),
-            (name: "30 days left in the year", month: 12, day: 1),
-            (name: "Last week of the year", month: 12, day: 24)
-        ]
-        
-        // Schedule each special milestone
-        for milestone in specialMilestones {
-            // Create the milestone date
-            guard let milestoneDate = calendar.date(from: DateComponents(year: currentYear, month: milestone.month, day: milestone.day)) else {
+        // Loop through each milestone day
+        for daysLeft in sortedMilestones {
+            // Calculate the date for this milestone
+            guard let milestoneDate = calendar.date(byAdding: .day, value: -daysLeft, to: yearEnd) else {
                 continue
             }
             
-            // If this date is in the future
-            if milestoneDate > now {
-                // Create date components for the trigger
-                var dateComponents = calendar.dateComponents([.year, .month, .day], from: milestoneDate)
-                dateComponents.hour = timeComponents.hour
-                dateComponents.minute = timeComponents.minute
-                
-                // Create notification content
-                let content = UNMutableNotificationContent()
-                content.title = "Year Milestone"
-                content.body = milestone.name
-                content.sound = .default
-                
-                // Create the trigger and request
-                let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: false)
-                let identifier = "\(yearEvent.id.uuidString)-year-milestone-\(milestone.month)-\(milestone.day)"
-                let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
-                
-                // Schedule the notification
-                UNUserNotificationCenter.current().add(request) { error in
-                    if let error = error {
-                        print("Error scheduling year milestone notification: \(error.localizedDescription)")
-                    }
-                }
+            // Skip if the milestone date is in the past
+            if milestoneDate < now {
+                continue
             }
-        }
-        
-        // Also schedule custom day-based milestones if they're set
-        if settings.milestoneType == .daysLeft && !settings.daysLeftMilestones.isEmpty {
-            let (daysLeft, totalDays) = yearEvent.progressDetails()
-            scheduleMilestoneNotifications(for: yearEvent, with: settings, daysLeft: daysLeft, totalDays: totalDays)
+            
+            // Create a date with the right time for the notification
+            var components = calendar.dateComponents([.year, .month, .day], from: milestoneDate)
+            components.hour = timeComponents.hour
+            components.minute = timeComponents.minute
+            
+            guard let notificationDate = calendar.date(from: components) else {
+                continue
+            }
+            
+            // If the notification date is in the past, skip it
+            if notificationDate < now {
+                continue
+            }
+            
+            // Create a unique identifier for this milestone notification
+            let identifier = "year-tracker-milestone-\(event.id)-\(daysLeft)"
+            
+            // Create notification content
+            let content = UNMutableNotificationContent()
+            content.title = "Year Milestone: \(daysLeft) Day\(daysLeft == 1 ? "" : "s") Left"
+            
+            // Create a message based on the number of days left
+            let message: String
+            if daysLeft == 183 {
+                message = "We're halfway through \(currentYear)! How are your goals coming along?"
+            } else if daysLeft == 100 {
+                message = "Only 100 days left in \(currentYear). Time to make them count!"
+            } else if daysLeft == 92 {
+                message = "The final quarter of \(currentYear) has begun. What do you want to accomplish?"
+            } else if daysLeft == 30 {
+                message = "The final month of \(currentYear) is here. Let's make it memorable!"
+            } else if daysLeft == 7 {
+                message = "Just one week left in \(currentYear)! Time to reflect and prepare for \(currentYear + 1)."
+            } else if daysLeft == 1 {
+                message = "Tomorrow we'll say goodbye to \(currentYear) and welcome \(currentYear + 1)!"
+            } else {
+                message = "\(daysLeft) days remain in \(currentYear). Make each day count!"
+            }
+            content.body = message
+            content.sound = .default
+            
+            // Create the trigger for the notification
+            let triggerComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: notificationDate)
+            let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: false)
+            
+            // Create the request
+            let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
+            
+            // Schedule the notification
+            UNUserNotificationCenter.current().add(request) { error in
+                // Error handling is done silently
+            }
         }
     }
     

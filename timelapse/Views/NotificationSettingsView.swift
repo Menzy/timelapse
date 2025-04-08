@@ -2,10 +2,11 @@ import SwiftUI
 
 struct NotificationSettingsView: View {
     @EnvironmentObject var globalSettings: GlobalSettings
-    @EnvironmentObject var eventStore: EventStore
     @Environment(\.dismiss) private var dismiss
     
     let event: Event
+    let eventStore: EventStore
+    let isYearTracker: Bool
     @State private var notificationSettings: NotificationSettings
     @State private var showTimePicker: Bool = false
     @State private var showCustomDaysPicker: Bool = false
@@ -14,8 +15,10 @@ struct NotificationSettingsView: View {
     @State private var hasChanges: Bool = false
     @StateObject private var paymentManager = PaymentManager.shared
     
-    init(event: Event, eventStore: EventStore) {
+    init(event: Event, eventStore: EventStore, isYearTracker: Bool = false) {
         self.event = event
+        self.eventStore = eventStore
+        self.isYearTracker = isYearTracker
         _notificationSettings = State(initialValue: eventStore.getNotificationSettings(for: event.id))
     }
     
@@ -177,7 +180,7 @@ struct NotificationSettingsView: View {
                         }
                     }
                 }
-                .navigationTitle("Notification Settings")
+                .navigationTitle(isYearTracker ? "Year Tracker Notifications" : "Notification Settings")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .navigationBarLeading) {
@@ -205,16 +208,24 @@ struct NotificationSettingsView: View {
                 }
                 .onAppear {
                     checkAuthorizationStatus()
+                    
+                    // For Year Tracker, automatically enable milestone notifications if not already enabled
+                    if isYearTracker && !notificationSettings.milestoneNotificationsEnabled {
+                        // Only set if not already set to avoid unnecessary state changes
+                        notificationSettings.milestoneNotificationsEnabled = true
+                        // Ensure the milestone type is set to days left for the year tracker
+                        notificationSettings.milestoneType = .daysLeft
+                        // Add default milestone days if empty
+                        if notificationSettings.daysLeftMilestones.isEmpty {
+                            notificationSettings.daysLeftMilestones = [183, 100, 92, 30, 7]
+                        }
+                    }
                 }
                 .onChange(of: notificationSettings) { _, _ in
                     hasChanges = true
                 }
             }
         }
-    }
-    
-    private var isYearTracker: Bool {
-        return event.title == String(Calendar.current.component(.year, from: Date()))
     }
     
     private var milestoneSummary: String {
@@ -235,9 +246,28 @@ struct NotificationSettingsView: View {
     }
     
     private func saveSettings() {
+        // Make sure to update the EventStore with our changes
         eventStore.updateNotificationSettings(for: event.id, settings: notificationSettings)
+        
+        // Force a save to UserDefaults to ensure persistence
+        eventStore.saveNotificationSettings()
+        
+        // For year tracker, verify special milestone settings
+        if isYearTracker {
+            // Always force days left milestone type for year tracker
+            if notificationSettings.milestoneType != .daysLeft {
+                notificationSettings.milestoneType = .daysLeft
+                eventStore.updateNotificationSettings(for: event.id, settings: notificationSettings)
+                eventStore.saveNotificationSettings()
+            }
+            
+            // Schedule year tracker milestones if enabled
+            if notificationSettings.milestoneNotificationsEnabled {
+                NotificationManager.shared.scheduleYearTrackerMilestones(for: event, with: notificationSettings)
+            }
+        }
+        
         hasChanges = false
-        print("Saved notification settings for \(event.title): \(notificationSettings)")
     }
 }
 
