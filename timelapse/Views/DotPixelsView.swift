@@ -21,9 +21,25 @@ struct DotPixelsView: View {
     
     // Use State to store calculated grid parameters
     @State private var initialLayoutComplete = false
+    
+    // Track the last version of the events to detect changes
+    @State private var lastEventsVersion: Int = 0
 
     var daysCompleted: Int {
         totalDays - daysLeft
+    }
+    
+    // Add computed property to track events changes
+    private var eventsVersion: Int {
+        // Create a hash of the events' target dates to detect changes
+        var hasher = Hasher()
+        for event in eventStore.events {
+            hasher.combine(event.id)
+            hasher.combine(event.targetDate)
+        }
+        // Also include the totalDays in the hash to detect changes in event duration
+        hasher.combine(totalDays)
+        return hasher.finalize()
     }
     
     private func dateForIndex(_ index: Int) -> Date {
@@ -311,6 +327,24 @@ struct DotPixelsView: View {
                 // Set a flag to indicate that initial layout is complete after a short delay
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     initialLayoutComplete = true
+                    lastEventsVersion = eventsVersion
+                }
+            }
+            .onChange(of: eventsVersion) { oldValue, newValue in
+                if oldValue != newValue {
+                    // If the events have changed, reset the cached grid parameters
+                    DispatchQueue.main.async {
+                        // First reset the layout complete flag to force complete recalculation
+                        initialLayoutComplete = false
+                        // Then clear the cached parameters
+                        self.gridParams = nil
+                        
+                        // After a short delay, mark layout as complete again
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            initialLayoutComplete = true
+                        }
+                    }
+                    lastEventsVersion = newValue
                 }
             }
         }
