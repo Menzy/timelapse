@@ -57,8 +57,6 @@ struct SettingsView: View {
                                 Text("App Icon")
                                     .foregroundColor(.primary)
                                 Spacer()
-                                Image(systemName: "app.fill")
-                                    .foregroundColor(.blue)
                             }
                         }
                     } else {

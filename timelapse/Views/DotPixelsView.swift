@@ -13,11 +13,15 @@ struct DotPixelsView: View {
     @State private var tappedIndex: Int? = nil
     @State private var hoveredIndex: Int? = nil
     @State private var isAnimating = false
+    @State private var gridParams: (columns: Int, dotSize: CGFloat, spacing: CGFloat)? = nil
     // Add binding to control tab selection
     @Binding var selectedTab: Int
     // Add parameter to control whether to show event highlights
     var showEventHighlights: Bool = true
     
+    // Use State to store calculated grid parameters
+    @State private var initialLayoutComplete = false
+
     var daysCompleted: Int {
         totalDays - daysLeft
     }
@@ -100,6 +104,12 @@ struct DotPixelsView: View {
     }
     
     private func calculateGridParameters(for size: CGSize) -> (columns: Int, dotSize: CGFloat, spacing: CGFloat) {
+        // If we already have calculated parameters and initial layout is complete, return them
+        // This prevents recalculation during animations
+        if let params = gridParams, initialLayoutComplete {
+            return params
+        }
+        
         let bottomSpace: CGFloat = DeviceType.isIPad ? 50 : 40
         
         // Use full width and calculate available height
@@ -137,7 +147,12 @@ struct DotPixelsView: View {
             // Use the smaller size to ensure it fits both dimensions
             let dotSize = min(widthBasedSize, heightBasedSize)
             
-            return (columns, dotSize, spacing)
+            let calculatedParams = (columns, dotSize, spacing)
+            // Store the calculated parameters
+            DispatchQueue.main.async {
+                gridParams = calculatedParams
+            }
+            return calculatedParams
         }
         
         // For fewer dots, optimize for both dimensions
@@ -173,6 +188,10 @@ struct DotPixelsView: View {
             }
         }
         
+        // Store the calculated parameters
+        DispatchQueue.main.async {
+            gridParams = bestLayout
+        }
         return bestLayout
     }
     
@@ -243,6 +262,12 @@ struct DotPixelsView: View {
                         ForEach(0..<totalDays, id: \.self) { index in
                             gridItem(index: index, gridParams: gridParams)
                                 .frame(width: gridParams.dotSize, height: gridParams.dotSize)
+                                // Disable any animations for the grid items during layout changes
+                                .transaction { transaction in
+                                    if !initialLayoutComplete {
+                                        transaction.animation = nil
+                                    }
+                                }
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -281,6 +306,18 @@ struct DotPixelsView: View {
                             removal: .scale(scale: 0.8).combined(with: .opacity)
                         ))
                 }
+            }
+            .onAppear {
+                // Set a flag to indicate that initial layout is complete after a short delay
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    initialLayoutComplete = true
+                }
+            }
+        }
+        // Disable animations during initial rendering and parent view transitions
+        .transaction { transaction in
+            if !initialLayoutComplete {
+                transaction.animation = nil
             }
         }
     }

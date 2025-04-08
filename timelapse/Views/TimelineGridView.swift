@@ -6,6 +6,7 @@ struct TimelineGridView: View {
     let yearTrackerSettings: DisplaySettings
     @Binding var selectedTab: Int
     @State private var cardsAppeared: [String: Bool] = [:]
+    @State private var initialLayoutComplete = false
     
     // Fixed columns for portrait mode only
     private var gridColumns: [GridItem] {
@@ -60,20 +61,26 @@ struct TimelineGridView: View {
                         .id(cardId) // Force view update when percentage toggle changes
                         .scaleEffect(cardsAppeared[cardId] == true ? 1.0 : 0.8)
                         .opacity(cardsAppeared[cardId] == true ? 1.0 : 0)
+                        // Control animation to prevent layout recalculations during transitions
                         .animation(
-                            .spring(
-                                response: 0.5, 
-                                dampingFraction: 0.7
-                            )
-                            .delay(Double(index) * 0.05), // Staggered delay based on index
+                            initialLayoutComplete ? 
+                                .spring(
+                                    response: 0.5, 
+                                    dampingFraction: 0.7
+                                )
+                                .delay(Double(index) * 0.05) : nil,
                             value: cardsAppeared[cardId]
                         )
+                        // Add initial layout control using transaction
+                        .transaction { transaction in
+                            if !initialLayoutComplete {
+                                transaction.animation = nil
+                            }
+                        }
                         .onAppear {
-                            // Add a slight delay before starting the animation
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                withAnimation {
-                                    cardsAppeared[cardId] = true
-                                }
+                            // Don't animate cards until initial layout is complete
+                            if !initialLayoutComplete {
+                                cardsAppeared[cardId] = false
                             }
                         }
                     }
@@ -92,8 +99,10 @@ struct TimelineGridView: View {
                     cardsAppeared[cardId] = false
                 }
                 
-                // Slight delay to allow view to fully layout before animations
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                // Longer delay to allow view to fully layout before animations
+                // This ensures DotPixelsView has time to stabilize its layout
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    initialLayoutComplete = true
                     animateCardsAppearance()
                 }
             }
