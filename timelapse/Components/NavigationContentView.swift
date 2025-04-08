@@ -5,30 +5,40 @@ struct NavigationContentView: View {
     let selectedTab: Int
     let eventCount: Int
     
+    // Calculate dot size based on device type
+    private func dotSize(for index: Int) -> CGFloat {
+        let distance = abs(selectedTab - index)
+        let baseSizeSelected = DeviceType.isIPad ? 8.0 : 6.0
+        let baseSizeUnselected = DeviceType.isIPad ? 6.0 : 4.0
+        
+        return distance == 0 ? 
+            baseSizeSelected : 
+            max(baseSizeUnselected, baseSizeSelected - CGFloat(distance))
+    }
+    
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: DeviceType.isIPad ? 10 : 8) {
             // Page control dots
             if !globalSettings.isGridLayoutAvailable || !globalSettings.showGridLayout {
-                HStack(spacing: 6) {
+                HStack(spacing: DeviceType.isIPad ? 8 : 6) {
                     ForEach(0..<eventCount, id: \.self) { index in
                         let distance = abs(selectedTab - index)
-                        let size: CGFloat = distance == 0 ? 6 : max(4, 6 - CGFloat(distance))
                         let opacity: Double = distance == 0 ? 1 : max(0.3, 1 - Double(distance) * 0.2)
                         
                         Circle()
                             .fill(selectedTab == index ? 
                                  (globalSettings.effectiveBackgroundStyle == .light ? Color.black : Color.white) :
                                  (globalSettings.effectiveBackgroundStyle == .light ? Color.black.opacity(opacity) : Color.white.opacity(opacity)))
-                            .frame(width: size, height: size)
+                            .frame(width: dotSize(for: index), height: dotSize(for: index))
                     }
                 }
                 .animation(.easeInOut, value: selectedTab)
-                .padding(.bottom, 8)
+                .padding(.bottom, DeviceType.isIPad ? 10 : 8)
             }
             
             // Navigation bar
             NavigationBar()
         }
-        .padding(.bottom, 40) // Added bottom padding to move navigation up
+        .padding(.bottom, DeviceType.isIPad ? 50 : 40) // Adjusted bottom padding for iPad
     }
 } 

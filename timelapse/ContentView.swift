@@ -86,12 +86,12 @@ struct ContentView: View {
                         .environmentObject(globalSettings)
                         .transition(
                             .asymmetric(
-                                insertion: .scale(scale: 0.95)
-                                    .combined(with: .opacity)
-                                    .animation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0.3)),
-                                removal: .scale(scale: 1.05)
-                                    .combined(with: .opacity)
-                                    .animation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0.3))
+                                insertion: AnyTransition.opacity
+                                    .combined(with: .scale(scale: 0.98))
+                                    .animation(.spring(response: 0.5, dampingFraction: 0.7)),
+                                removal: AnyTransition.opacity
+                                    .combined(with: .scale(scale: 0.95))
+                                    .animation(.spring(response: 0.5, dampingFraction: 0.8))
                             )
                         )
                 } else {
@@ -115,8 +115,8 @@ struct ContentView: View {
                                         isGridView: false,
                                         selectedTab: $navigationState.selectedTab
                                     )
-                                    .frame(width: geometry.size.width * 0.76)
-                                    .offset(y: -40)
+                                    .frame(width: DeviceType.timeCardWidth())
+                                    .offset(y: DeviceType.isIPad ? -60 : -40)
                                     .tag(index)
                                     .environmentObject(globalSettings)
                                     .transition(
@@ -161,24 +161,34 @@ struct ContentView: View {
                                 isGridView: false,
                                 selectedTab: $navigationState.selectedTab
                             )
-                            .frame(width: geometry.size.width * 0.76)
-                            .offset(y: -40)
+                            .frame(width: DeviceType.timeCardWidth())
+                            .offset(y: DeviceType.isIPad ? -60 : -40)
                             .tag(index)
                             .environmentObject(globalSettings)
                             .transition(
                                 .asymmetric(
                                     insertion: .move(edge: .trailing)
                                         .combined(with: .opacity)
-                                        .animation(.spring(response: 0.4, dampingFraction: 0.8)),
+                                        .animation(.spring(response: 0.5, dampingFraction: 0.8)),
                                     removal: .move(edge: .leading)
                                         .combined(with: .opacity)
-                                        .animation(.spring(response: 0.4, dampingFraction: 0.8))
+                                        .animation(.spring(response: 0.5, dampingFraction: 0.8))
                                 )
                             )
                         }
                     }
                 }
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+                .transition(
+                    .asymmetric(
+                        insertion: AnyTransition.opacity
+                            .combined(with: .scale(scale: 1.02))
+                            .animation(.spring(response: 0.5, dampingFraction: 0.8)),
+                        removal: AnyTransition.opacity
+                            .combined(with: .scale(scale: 0.98))
+                            .animation(.spring(response: 0.5, dampingFraction: 0.7))
+                    )
+                )
                 .onChange(of: navigationState.selectedTab) { oldValue, newValue in
                     withAnimation {
                         navigationState.selectedTab = min(max(newValue, 0), displayedEvents.count - 1)
@@ -186,6 +196,7 @@ struct ContentView: View {
                 }
             }
         }
+        .animation(.spring(response: 0.5, dampingFraction: 0.8), value: globalSettings.showGridLayout)
     }
     
     var body: some View {
@@ -209,8 +220,39 @@ struct ContentView: View {
                 )
                 .environmentObject(globalSettings)
                 
-                // Show upgrade banner if events are hidden due to subscription limits
-                if !paymentManager.isSubscribed && eventStore.events.count > eventStore.getEventsLimitedBySubscription().count {
+                // Only show one banner at a time - prioritize trial period banner
+                if PaymentManager.isInTrialPeriod(), let daysLeft = PaymentManager.getDaysLeftInTrial() {
+                    // Show trial period banner for all users in trial period
+                    // (whether they have a subscription or not)
+                    VStack {
+                        Spacer()
+                        Button(action: {
+                            showSubscriptionView = true
+                        }) {
+                            HStack {
+                                Text("Trial ends in \(daysLeft) \(daysLeft == 1 ? "day" : "days")")
+                                    .font(.footnote)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.white)
+                                
+                                Text("Upgrade to Pro")
+                                    .font(.footnote)
+                                    .fontWeight(.bold)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color.yellow)
+                                    .foregroundColor(.black)
+                                    .cornerRadius(4)
+                            }
+                            .padding(.horizontal, 15)
+                            .padding(.vertical, 8)
+                            .background(Color.black.opacity(0.7))
+                            .cornerRadius(20)
+                            .padding(.bottom, 10)
+                        }
+                    }
+                } else if !paymentManager.isSubscribed && eventStore.events.count > eventStore.getEventsLimitedBySubscription().count {
+                    // Show events hidden banner only if not in trial period
                     VStack {
                         Spacer()
                         Button(action: {
@@ -304,6 +346,20 @@ struct ContentView: View {
             // Set up observers for theme change notifications
             let themeObservers = NotificationUtility.setupThemeChangeObservers(for: globalSettings)
             themeObservers.forEach { $0.store(in: &cancellables) }
+            
+            // Check subscription and trial status on app launch
+            Task {
+                await paymentManager.updateSubscriptionStatus()
+            }
+            
+            // Set up a timer to periodically refresh trial status display
+            let timer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
+            
+            // Store the cancellable so we can clean it up later
+            timer.sink { _ in
+                // This will trigger a refresh of the UI to update the days left in trial
+                viewRefreshTrigger.toggle()
+            }.store(in: &cancellables)
         }
         .sheet(isPresented: $navigationState.showingCustomize) {
             if let event = displayedEvents[safe: navigationState.selectedTab] {

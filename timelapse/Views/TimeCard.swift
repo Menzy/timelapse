@@ -65,11 +65,11 @@ struct TimeCard: View {
     
     // Add computed properties for dynamic scaling
     private var scaledWidth: CGFloat {
-        UIScreen.main.bounds.width * 0.76
+        DeviceType.timeCardWidth(isLandscape: false)
     }
     
     private var scaledHeight: CGFloat {
-        UIScreen.main.bounds.height * 0.45
+        DeviceType.timeCardHeight(isLandscape: false)
     }
     
     var daysSpent: Int {
@@ -179,7 +179,7 @@ struct TimeCard: View {
             
             HStack {
                 Text(title)
-                    .font(.custom("Inter", size: isGridView ? 10 : 12))
+                    .scaledFont(name: "Inter", size: isGridView ? 10 : 12)
                     .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .white : .black)
                     .lineLimit(1)
                     .truncationMode(.tail)
@@ -192,23 +192,23 @@ struct TimeCard: View {
                     // Only show the percentage/number if not at target date or overdue
                     if settings.showPercentage && daysLeft > 0 {
                         Text(String(format: "%.0f%%", percentageLeft))
-                            .font(.custom("Inter", size: isGridView ? 10 : 12))
+                            .scaledFont(name: "Inter", size: isGridView ? 10 : 12)
                             .contentTransition(.numericText())
                     } else if settings.showPercentage && daysLeft < 0 {
                         // Show days passed for overdue events in percentage mode
                         Text(String(abs(daysLeft)))
-                            .font(.custom("Inter", size: isGridView ? 10 : 12))
+                            .scaledFont(name: "Inter", size: isGridView ? 10 : 12)
                             .contentTransition(.numericText())
                     } else if !settings.showPercentage && ((showingDaysLeft && daysLeft != 0) || !showingDaysLeft) {
                         // Show positive days left, days spent, or days overdue
                         let displayValue = showingDaysLeft ? (daysLeft < 0 ? abs(daysLeft) : daysLeft) : daysSpent
                         Text(String(displayValue))
-                            .font(.custom("Inter", size: isGridView ? 10 : 12))
+                            .scaledFont(name: "Inter", size: isGridView ? 10 : 12)
                             .contentTransition(.numericText())
                     }
                     
                     Text(daysText)
-                        .font(.custom("Inter", size: isGridView ? 10 : 12))
+                        .scaledFont(name: "Inter", size: isGridView ? 10 : 12)
                 }
                 .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .white : .black)
                 .onTapGesture {
@@ -228,9 +228,12 @@ struct TimeCard: View {
                         .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
                 } else {
                     ZStack {
-                        Image(globalSettings.effectiveBackgroundStyle == .light ? "blackMain" : "whiteMain")
+                        // Use the new mainShape SVG instead of blackMain/whiteMain images
+                        Image("mainShape")
+                            .renderingMode(.template)
                             .resizable()
                             .aspectRatio(contentMode: .fit)
+                            .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? Color.black : Color.white)
                             .frame(width: scaledWidth, height: scaledHeight)
                             .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
                         
@@ -245,29 +248,19 @@ struct TimeCard: View {
                 }
             }
         )
-        // Add visual feedback only during long press, not during swipes
-        .scaleEffect(isLongPressing && isPressed ? 0.96 : 1.0)
-        .animation(.spring(response: 0.3), value: isLongPressing)
+        // Improve the scale animation by using an interpolating spring animation with better parameters
+        .scaleEffect(isPressed ? 0.96 : 1.0)
+        .animation(.interpolatingSpring(mass: 1.0, stiffness: 120, damping: 12, initialVelocity: 2), value: isPressed)
         .onLongPressGesture(minimumDuration: 0.5, pressing: { isPressing in
-            // Only update isPressed state which is used for tracking
-            isPressed = isPressing
+            // Update isPressed state with animation
+            withAnimation {
+                isPressed = isPressing
+                // No need for separate isLongPressing state - simplify the logic
+            }
             
-            // Only set long pressing state after a delay to avoid triggering during swipes
             if isPressing {
                 // Light haptic feedback when touch begins
                 HapticFeedback.impact(style: .light)
-                
-                // Use a timer to only set isLongPressing after a delay
-                // This prevents the scale effect from appearing during quick swipes
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                    // Only set isLongPressing if still pressing after the delay
-                    if isPressed {
-                        isLongPressing = true
-                    }
-                }
-            } else {
-                // Immediately reset long pressing state when touch ends
-                isLongPressing = false
             }
         }) {
             // Perform when long press is triggered
@@ -280,13 +273,19 @@ struct TimeCard: View {
         // Add double tap gesture for grid view cards
         .onTapGesture(count: 2) {
             if isGridView {
+                // Enhanced haptic feedback for a more polished feel
                 HapticFeedback.impact(style: .medium)
+                HapticFeedback.impact(style: .light)
+                
                 // Find this event in the eventStore
                 if let eventIndex = eventStore.findEventIndex(withId: event.id) {
-                    // Switch to detailed view
-                    globalSettings.showGridLayout = false
-                    // Set the tab to this event
-                    navigationState.selectedTab = eventIndex
+                    // Use a more sophisticated animation for the transition
+                    withAnimation(.spring(response: 0.6, dampingFraction: 0.7, blendDuration: 0.1)) {
+                        // Switch to detailed view
+                        globalSettings.showGridLayout = false
+                        // Set the tab to this event
+                        navigationState.selectedTab = eventIndex
+                    }
                 }
             }
         }

@@ -17,9 +17,18 @@ struct SettingsView: View {
                 Section("Display") {
                     if paymentManager.isSubscribed {
                         Toggle("Show All Events in Grid", isOn: $globalSettings.showGridLayout)
-                            .onChange(of: globalSettings.showGridLayout) { _, _ in
-                                globalSettings.saveSettings()
+                            .onChange(of: globalSettings.showGridLayout) { _, newValue in
+                                // Add a subtle haptic feedback when toggling
+                                let generator = UIImpactFeedbackGenerator(style: .light)
+                                generator.impactOccurred()
+                                
+                                // Use animation to make the toggle feel responsive
+                                withAnimation(.spring(response: 0.45, dampingFraction: 0.7)) {
+                                    globalSettings.showGridLayout = newValue
+                                    globalSettings.saveSettings()
+                                }
                             }
+                            .tint(Color.blue) // Make toggle more visible
                     } else {
                         HStack {
                             Text("Show All Events in Grid")

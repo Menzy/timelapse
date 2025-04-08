@@ -15,6 +15,8 @@ class PaymentManager: ObservableObject {
     @Published var purchasedSubscriptions: [Product] = []
     @Published var isSubscribed = false
     @Published var hasLifetimePurchase = false
+    @Published var isInTrialPeriod = false
+    @Published var trialEndDate: Date?
     
     private var productIDs = ProductType.allCases.map { $0.rawValue }
     private var updateListenerTask: Task<Void, Error>?
@@ -33,6 +35,13 @@ class PaymentManager: ObservableObject {
         // Load cached subscription status from UserDefaults
         isSubscribed = UserDefaults.standard.bool(forKey: "isSubscribed")
         hasLifetimePurchase = UserDefaults.standard.bool(forKey: "hasLifetimePurchase")
+        isInTrialPeriod = UserDefaults.standard.bool(forKey: "isInTrialPeriod")
+        if let endDateTimestamp = UserDefaults.standard.object(forKey: "trialEndDate") as? Date {
+            trialEndDate = endDateTimestamp
+        }
+        
+        // Check if this is first launch and handle initial free trial period
+        checkFirstLaunchAndSetupTrialIfNeeded()
         
         // Load products in background without blocking
         Task {
@@ -94,6 +103,8 @@ class PaymentManager: ObservableObject {
         print("Updating subscription status")
         var purchasedProducts: [Product] = []
         var lifetimePurchased = false
+        var inTrialPeriod = false
+        var trialExpirationDate: Date? = nil
         
         // Store current status to check for changes
         let wasSubscribed = isSubscribed
@@ -111,6 +122,29 @@ class PaymentManager: ObservableObject {
                         lifetimePurchased = true
                         print("Lifetime purchase verified")
                     }
+                    
+                    // Check if this is a subscription in trial period
+                    if product.id == ProductType.monthlySubscription.rawValue || product.id == ProductType.yearlySubscription.rawValue {
+                        // Use the StoreKit expirationDate as the trial/subscription end date
+                        // rather than manually calculating
+                        if let expirationDate = transaction.expirationDate {
+                            print("Found subscription with expiration date: \(expirationDate)")
+                            
+                            // Check if this is a trial
+                            // A trial can be detected by checking if the current date is close to
+                            // the original purchase date (within a week) and there's an expiration date
+                            let purchaseDate = transaction.purchaseDate
+                            let now = Date()
+                            let daysSincePurchase = Calendar.current.dateComponents([.day], from: purchaseDate, to: now).day ?? 0
+                            
+                            // If it's been less than 8 days since purchase, likely in trial period
+                            if daysSincePurchase < 8 {
+                                inTrialPeriod = true
+                                trialExpirationDate = expirationDate
+                                print("User is in trial period until \(expirationDate)")
+                            }
+                        }
+                    }
                 }
             case .unverified(let transaction, let error):
                 print("Unverified transaction found: \(transaction.productID), error: \(error.localizedDescription)")
@@ -122,6 +156,26 @@ class PaymentManager: ObservableObject {
                     if product.id == ProductType.lifetime.rawValue {
                         lifetimePurchased = true
                     }
+                    
+                    // Check if this is a subscription in trial period (even if unverified)
+                    if product.id == ProductType.monthlySubscription.rawValue || product.id == ProductType.yearlySubscription.rawValue {
+                        // Use the StoreKit expirationDate rather than manually calculating
+                        if let expirationDate = transaction.expirationDate {
+                            print("Found subscription with expiration date: \(expirationDate)")
+                            
+                            // Check if this is a trial
+                            let purchaseDate = transaction.purchaseDate
+                            let now = Date()
+                            let daysSincePurchase = Calendar.current.dateComponents([.day], from: purchaseDate, to: now).day ?? 0
+                            
+                            // If it's been less than 8 days since purchase, likely in trial period
+                            if daysSincePurchase < 8 {
+                                inTrialPeriod = true
+                                trialExpirationDate = expirationDate
+                                print("User is in trial period until \(expirationDate)")
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -129,16 +183,22 @@ class PaymentManager: ObservableObject {
         self.purchasedSubscriptions = purchasedProducts
         self.hasLifetimePurchase = lifetimePurchased
         self.isSubscribed = !purchasedProducts.isEmpty
+        self.isInTrialPeriod = inTrialPeriod
+        self.trialEndDate = trialExpirationDate
         
-        print("Subscription status updated - isSubscribed: \(isSubscribed), hasLifetimePurchase: \(hasLifetimePurchase)")
+        print("Subscription status updated - isSubscribed: \(isSubscribed), hasLifetimePurchase: \(hasLifetimePurchase), isInTrialPeriod: \(isInTrialPeriod)")
         
         // Save subscription status to UserDefaults for access across the app
         UserDefaults.standard.set(isSubscribed, forKey: "isSubscribed")
         UserDefaults.standard.set(hasLifetimePurchase, forKey: "hasLifetimePurchase")
+        UserDefaults.standard.set(isInTrialPeriod, forKey: "isInTrialPeriod")
+        UserDefaults.standard.set(trialExpirationDate, forKey: "trialEndDate")
         
         // Also save to shared UserDefaults for widget access
         UserDefaults.shared?.set(isSubscribed, forKey: "isSubscribed")
         UserDefaults.shared?.set(hasLifetimePurchase, forKey: "hasLifetimePurchase")
+        UserDefaults.shared?.set(isInTrialPeriod, forKey: "isInTrialPeriod")
+        UserDefaults.shared?.set(trialExpirationDate, forKey: "trialEndDate")
         
         // If subscription status changed, post a notification so the UI can refresh
         if wasSubscribed != isSubscribed {
@@ -239,6 +299,52 @@ class PaymentManager: ObservableObject {
         return UserDefaults.standard.bool(forKey: "hasLifetimePurchase")
     }
     
+    // Helper method to check if user is in trial period
+    static func isInTrialPeriod() -> Bool {
+        // First check if trial period flag is set
+        if !UserDefaults.standard.bool(forKey: "isInTrialPeriod") {
+            return false
+        }
+        
+        // Then check if the trial end date is still in the future
+        if let endDate = UserDefaults.standard.object(forKey: "trialEndDate") as? Date {
+            return endDate > Date()
+        }
+        
+        return false
+    }
+    
+    // Helper method to get trial period end date
+    static func getTrialEndDate() -> Date? {
+        // Return the trial end date from UserDefaults if it exists
+        return UserDefaults.standard.object(forKey: "trialEndDate") as? Date
+    }
+    
+    // Helper method to get days left in trial period
+    static func getDaysLeftInTrial() -> Int? {
+        guard isInTrialPeriod(), let endDate = getTrialEndDate() else {
+            return nil
+        }
+        
+        let calendar = Calendar.current
+        // We want to count the current day if it's not over yet
+        let now = Date()
+        
+        // Calculate components including partial days
+        let components = calendar.dateComponents([.day, .hour, .minute], from: now, to: endDate)
+        
+        // If there are hours/minutes left but day component is 0, show as "1 day" remaining
+        if let days = components.day, let hours = components.hour, let minutes = components.minute {
+            if days == 0 && (hours > 0 || minutes > 0) {
+                return 1
+            }
+            return max(0, days)
+        }
+        
+        // Fallback to just days
+        return components.day
+    }
+    
     // Helper method to get the event limit based on subscription status
     static func getEventLimit() -> Int {
         // Free users can only create 1 custom event (plus the year tracker)
@@ -271,5 +377,38 @@ class PaymentManager: ObservableObject {
                 await MainActor.run { generateMockProducts() }
             }
         }
+    }
+    
+    // Helper to check if this is first launch and setup trial if needed
+    private func checkFirstLaunchAndSetupTrialIfNeeded() {
+        // Skip this if the user is already in a transaction-based subscription
+        if isSubscribed || hasLifetimePurchase {
+            print("User already has a subscription or lifetime purchase, skipping first launch trial setup")
+            return
+        }
+        
+        // Check if first launch date is recorded
+        if UserDefaults.standard.object(forKey: "firstLaunchDate") == nil {
+            // This is first launch, record the date
+            let firstLaunchDate = Date()
+            UserDefaults.standard.set(firstLaunchDate, forKey: "firstLaunchDate")
+            
+            // We won't set an automatic trial here anymore
+            // We'll let the StoreKit transactions determine trial status
+            print("First launch detected, recorded date: \(firstLaunchDate)")
+        }
+    }
+    
+    // Validate trial period based on first launch date
+    private func validateTrialPeriodBasedOnFirstLaunch() {
+        // If user is already in a transaction-based trial or subscription,
+        // we don't want to override that with the first-launch trial
+        if isSubscribed || isInTrialPeriod || trialEndDate != nil {
+            return
+        }
+        
+        // We're leaving this method mostly for backward compatibility,
+        // but we won't be setting trial periods based on first launch anymore.
+        // Trial periods should come from StoreKit transactions only.
     }
 }

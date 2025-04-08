@@ -103,13 +103,45 @@ struct CountdownView: View {
         return String(format: "%03d", daysLeft)
     }
     
+    // Get appropriate font size for the countdown based on device type
+    private func getFontSize() -> CGFloat {
+        let baseSize: CGFloat = isGridView ? 3000 : 4000
+        
+        if DeviceType.isIPad {
+            // Adjust size for iPads
+            switch DeviceType.current {
+            case .iPadSmall:
+                return baseSize * 1.2
+            case .iPadMedium:
+                return baseSize * 1.5
+            case .iPadLarge:
+                return baseSize * 1.8
+            default:
+                return baseSize
+            }
+        } else {
+            return baseSize
+        }
+    }
+    
+    // Get appropriate minimum scale factor based on device type
+    private func getMinScaleFactor() -> CGFloat {
+        let baseFactor = isGridView ? 0.06 : 0.1
+        
+        if DeviceType.isIPad {
+            return baseFactor * 0.8 // Smaller scale factor on iPad for clearer text
+        } else {
+            return baseFactor
+        }
+    }
+    
     var body: some View {
         VStack {
             GeometryReader { geometry in
                 Text(displayText)
-                    .font(.custom("Galgo-Bold", size: isGridView ? 3000 : 4000))
+                    .font(.custom("Galgo-Bold", size: getFontSize()))
                     .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .white : .black)
-                    .minimumScaleFactor(isGridView ? 0.06 : 0.1)
+                    .minimumScaleFactor(getMinScaleFactor())
                     .lineLimit(1)
                     .frame(width: geometry.size.width * (isGridView ? 1.1 : 1.2), 
                            height: geometry.size.height * (isGridView ? 1.1 : 1.2))

@@ -159,9 +159,12 @@ struct ShareableTimeCard: View {
             }
             .background(
                 ZStack {
-                    Image(globalSettings.effectiveBackgroundStyle == .light ? "blackMain" : "whiteMain")
+                    // Use the mainShape SVG instead of blackMain/whiteMain images
+                    Image("mainShape")
+                        .renderingMode(.template)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
+                        .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? Color.black : Color.white)
                         .frame(width: scaledWidth, height: scaledHeight)
                         .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
                     
