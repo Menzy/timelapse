@@ -229,26 +229,26 @@ struct ContentView: View {
                         Button(action: {
                             showSubscriptionView = true
                         }) {
-                            HStack {
+                            HStack(spacing: 6) {
                                 Text("Trial ends in \(daysLeft) \(daysLeft == 1 ? "day" : "days")")
-                                    .font(.footnote)
+                                    .font(.caption)
                                     .fontWeight(.medium)
                                     .foregroundColor(.white)
                                 
-                                Text("Upgrade to Pro")
-                                    .font(.footnote)
+                                Text("Upgrade")
+                                    .font(.caption)
                                     .fontWeight(.bold)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
                                     .background(Color.yellow)
                                     .foregroundColor(.black)
                                     .cornerRadius(4)
                             }
-                            .padding(.horizontal, 15)
-                            .padding(.vertical, 8)
-                            .background(Color.black.opacity(0.7))
-                            .cornerRadius(20)
-                            .padding(.bottom, 10)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Color.black.opacity(0.6))
+                            .cornerRadius(15)
+                            .padding(.bottom, 6)
                         }
                     }
                 } else if !paymentManager.isSubscribed && eventStore.events.count > eventStore.getEventsLimitedBySubscription().count {
@@ -258,26 +258,26 @@ struct ContentView: View {
                         Button(action: {
                             showSubscriptionView = true
                         }) {
-                            HStack {
+                            HStack(spacing: 6) {
                                 Text("\(eventStore.events.count - eventStore.getEventsLimitedBySubscription().count) \(eventStore.events.count - eventStore.getEventsLimitedBySubscription().count == 1 ? "event" : "events") hidden")
-                                    .font(.footnote)
+                                    .font(.caption)
                                     .fontWeight(.medium)
                                     .foregroundColor(.white)
                                 
-                                Text("Upgrade to Pro")
-                                    .font(.footnote)
+                                Text("Upgrade")
+                                    .font(.caption)
                                     .fontWeight(.bold)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
                                     .background(Color.yellow)
                                     .foregroundColor(.black)
                                     .cornerRadius(4)
                             }
-                            .padding(.horizontal, 15)
-                            .padding(.vertical, 8)
-                            .background(Color.black.opacity(0.7))
-                            .cornerRadius(20)
-                            .padding(.bottom, 10)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Color.black.opacity(0.6))
+                            .cornerRadius(15)
+                            .padding(.bottom, 6)
                         }
                     }
                 }

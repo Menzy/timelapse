@@ -32,6 +32,23 @@ struct NavigationContentView: View {
                             .frame(width: dotSize(for: index), height: dotSize(for: index))
                     }
                 }
+                .padding(.horizontal, DeviceType.isIPad ? 8 : 6)
+                .padding(.vertical, DeviceType.isIPad ? 6 : 5)
+                .background(
+                    Capsule()
+                        .fill(
+                            globalSettings.effectiveBackgroundStyle == .light
+                                ? Color.black.opacity(0.15)
+                                : Color.white.opacity(0.15)
+                        )
+                        .blur(radius: 0.2)
+                )
+                // Add blur effect with Material if on iOS 15+
+                .background(
+                    Capsule()
+                        .fill(.ultraThinMaterial.opacity(0.5))
+                )
+                .clipShape(Capsule())
                 .animation(.easeInOut, value: selectedTab)
                 .padding(.bottom, DeviceType.isIPad ? 10 : 8)
             }
