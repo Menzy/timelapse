@@ -68,10 +68,6 @@ class NotificationManager: ObservableObject {
             DispatchQueue.main.async {
                 completion(granted)
             }
-            
-            if let error = error {
-                print("Error requesting notification authorization: \(error.localizedDescription)")
-            }
         }
     }
     
@@ -88,7 +84,6 @@ class NotificationManager: ObservableObject {
     func scheduleNotifications(for event: Event, with settings: NotificationSettings) {
         // Check if user is subscribed or has lifetime purchase
         if !PaymentManager.isUserSubscribed() && !PaymentManager.hasLifetimePurchase() {
-            print("Regular Notifications: User is not subscribed, skipping notification scheduling for \(event.title)")
             return
         }
         
@@ -97,25 +92,18 @@ class NotificationManager: ObservableObject {
         
         // If notifications are disabled, just return
         if !settings.isEnabled {
-            print("Regular Notifications: Notifications are disabled for \(event.title), skipping")
             return
         }
         
-        print("Regular Notifications: Starting to schedule notifications for \(event.title)")
-        
         // Get the progress details
         let (daysLeft, totalDays) = event.progressDetails()
-        print("Regular Notifications: Event progress - \(daysLeft) days left out of \(totalDays) total days")
         
         // Schedule regular notifications based on frequency
         scheduleRegularNotifications(for: event, with: settings, daysLeft: daysLeft)
         
         // Schedule milestone notifications if enabled
         if settings.milestoneNotificationsEnabled {
-            print("Regular Notifications: Milestone notifications enabled, scheduling for \(event.title)")
             scheduleMilestoneNotifications(for: event, with: settings, daysLeft: daysLeft, totalDays: totalDays)
-        } else {
-            print("Regular Notifications: Milestone notifications disabled for \(event.title)")
         }
     }
     
@@ -398,17 +386,13 @@ class NotificationManager: ObservableObject {
     
     // Schedule special milestone notifications for the year tracker
     func scheduleYearTrackerMilestones(for event: Event, with settings: NotificationSettings) {
-        print("Year Tracker Milestones: Starting to schedule for event ID: \(event.id)")
-        
         // Check if user is subscribed or has lifetime purchase
         if !PaymentManager.isUserSubscribed() && !PaymentManager.hasLifetimePurchase() {
-            print("Year Tracker Milestones: User is not subscribed, skipping milestone scheduling")
             return
         }
         
         // Exit if milestone notifications are not enabled
         if !settings.milestoneNotificationsEnabled {
-            print("Year Tracker Milestones: Milestone notifications are disabled, skipping")
             return
         }
         
@@ -420,7 +404,6 @@ class NotificationManager: ObservableObject {
         // Get the current year and create dates for important milestones
         let currentYear = Calendar.current.component(.year, from: Date())
         guard let yearEnd = calendar.date(from: DateComponents(year: currentYear, month: 12, day: 31)) else {
-            print("Year Tracker Milestones: Error creating year end date")
             return
         }
         
@@ -429,8 +412,6 @@ class NotificationManager: ObservableObject {
         
         // Sort the milestones in ascending order (earliest first)
         let sortedMilestones = settings.daysLeftMilestones.sorted()
-        
-        print("Year Tracker Milestones: Processing \(sortedMilestones.count) milestone days: \(sortedMilestones)")
         
         // Loop through each milestone day
         for daysLeft in sortedMilestones {
@@ -441,7 +422,6 @@ class NotificationManager: ObservableObject {
             
             // Skip if the milestone date is in the past
             if milestoneDate < now {
-                print("Year Tracker Milestones: Skipping past milestone: \(daysLeft) days left")
                 continue
             }
             
@@ -456,7 +436,6 @@ class NotificationManager: ObservableObject {
             
             // If the notification date is in the past, skip it
             if notificationDate < now {
-                print("Year Tracker Milestones: Notification time is in the past for \(daysLeft) days left")
                 continue
             }
             
@@ -496,11 +475,7 @@ class NotificationManager: ObservableObject {
             
             // Schedule the notification
             UNUserNotificationCenter.current().add(request) { error in
-                if let error = error {
-                    print("Year Tracker Milestones: Error scheduling notification for \(daysLeft) days left: \(error.localizedDescription)")
-                } else {
-                    print("Year Tracker Milestones: Successfully scheduled for \(daysLeft) days left on \(notificationDate)")
-                }
+                // Error handling is done silently
             }
         }
     }

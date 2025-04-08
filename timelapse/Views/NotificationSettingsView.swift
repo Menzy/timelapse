@@ -219,7 +219,6 @@ struct NotificationSettingsView: View {
                         if notificationSettings.daysLeftMilestones.isEmpty {
                             notificationSettings.daysLeftMilestones = [183, 100, 92, 30, 7]
                         }
-                        print("Year Tracker: Automatically enabled milestone notifications")
                     }
                 }
                 .onChange(of: notificationSettings) { _, _ in
@@ -247,9 +246,6 @@ struct NotificationSettingsView: View {
     }
     
     private func saveSettings() {
-        print("Saving notification settings for event ID: \(event.id)")
-        print("Settings before save: isEnabled = \(notificationSettings.isEnabled), frequency = \(notificationSettings.frequency.rawValue)")
-        
         // Make sure to update the EventStore with our changes
         eventStore.updateNotificationSettings(for: event.id, settings: notificationSettings)
         
@@ -272,11 +268,6 @@ struct NotificationSettingsView: View {
         }
         
         hasChanges = false
-        print("Notification settings saved successfully for \(event.title): \(notificationSettings)")
-        
-        // Verify that the settings were saved properly
-        let verifySettings = eventStore.getNotificationSettings(for: event.id)
-        print("Verification after save - isEnabled: \(verifySettings.isEnabled), frequency: \(verifySettings.frequency.rawValue)")
     }
 }
 

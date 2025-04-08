@@ -225,9 +225,6 @@ class EventStore: ObservableObject {
         // Save to UserDefaults
         saveNotificationSettings()
         
-        print("Updated notification settings for event \(eventId): \(settings)")
-        print("Current notification settings dictionary: \(notificationSettings)")
-        
         // Schedule notifications based on the new settings
         if let event = events.first(where: { $0.id == eventId }) {
             // Check if this is the year tracker
@@ -249,13 +246,9 @@ class EventStore: ObservableObject {
     }
     
     func getNotificationSettings(for eventId: UUID) -> NotificationSettings {
-        print("Looking up notification settings for event ID: \(eventId)")
-        
         if let settings = notificationSettings[eventId] {
-            print("Found existing notification settings: isEnabled = \(settings.isEnabled), frequency = \(settings.frequency.rawValue)")
             return settings
         } else {
-            print("No notification settings found for event ID: \(eventId), returning default settings")
             return NotificationSettings()
         }
     }
@@ -292,12 +285,8 @@ class EventStore: ObservableObject {
             // Synchronize UserDefaults to ensure data is written to disk
             UserDefaults.standard.synchronize()
             
-            print("Saved notification settings to UserDefaults.standard with key: \(notificationSettingsKey)")
-            
             // Force a UI update
             objectWillChange.send()
-        } else {
-            print("Error: Failed to encode notification settings")
         }
     }
     
@@ -306,12 +295,9 @@ class EventStore: ObservableObject {
             do {
                 let decodedSettings = try JSONDecoder().decode([UUID: NotificationSettings].self, from: savedSettings)
                 notificationSettings = decodedSettings
-                print("Successfully loaded notification settings from UserDefaults.standard: \(notificationSettings)")
             } catch {
-                print("Error decoding notification settings: \(error.localizedDescription)")
+                // Error handling is done silently
             }
-        } else {
-            print("No saved notification settings found in UserDefaults.standard")
         }
     }
     
