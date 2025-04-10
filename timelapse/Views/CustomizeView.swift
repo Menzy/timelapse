@@ -66,7 +66,7 @@ struct Triangle: Shape {
 struct ThemeCircleView: View {
     let style: BackgroundStyle
     let isSelected: Bool
-    let onDoubleTap: () -> Void
+    let onLongPress: () -> Void
     @EnvironmentObject var globalSettings: GlobalSettings
     @Environment(\.colorScheme) private var colorScheme
     @StateObject private var paymentManager = PaymentManager.shared
@@ -149,10 +149,10 @@ struct ThemeCircleView: View {
                 }
             }
             .frame(maxWidth: 60, maxHeight: 60)
-            .onTapGesture(count: 2) {
+            .onLongPressGesture {
                 if style == .navy || style == .fire || style == .dream {
                     if paymentManager.isSubscribed {
-                        onDoubleTap()
+                        onLongPress()
                     } else {
                         // This will be handled by the parent view
                     }
@@ -292,7 +292,7 @@ struct CustomizeView: View {
                             
                             if !paymentManager.isSubscribed {
                                 HStack {
-                                    Text("Double-tap to edit (Premium)")
+                                    Text("Long-press to edit (Premium)")
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                     Spacer()
@@ -348,8 +348,8 @@ struct CustomizeView: View {
                                                 eventStore.saveDisplaySettings()
                                             }
                                         }
-                                        .onTapGesture(count: 2) {
-                                            // Double tap to edit - Pro feature
+                                        .onLongPressGesture {
+                                            // Long press to edit - Pro feature
                                             if paymentManager.isSubscribed {
                                                 selectedColorForEdit = preset
                                             } else {
@@ -389,7 +389,7 @@ struct CustomizeView: View {
                 Section("Background Theme") {
                     if !paymentManager.isSubscribed {
                         HStack {
-                            Text("Double-tap customizable themes to edit (Premium)")
+                            Text("Long-press customizable themes to edit (Premium)")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                             Spacer()
@@ -399,8 +399,8 @@ struct CustomizeView: View {
                     
                     LazyVGrid(columns: Array(repeating: .init(.flexible()), count: 3), spacing: 15) {
                         ForEach(BackgroundStyle.allCases, id: \.self) { style in
-                            ThemeCircleView(style: style, isSelected: globalSettings.backgroundStyle == style, onDoubleTap: {
-                                // Double-tap handler
+                            ThemeCircleView(style: style, isSelected: globalSettings.backgroundStyle == style, onLongPress: {
+                                // Long press handler
                                 if style == .navy || style == .fire || style == .dream {
                                     selectedThemeForEdit = style
                                 }
@@ -411,9 +411,13 @@ struct CustomizeView: View {
                                 globalSettings.saveSettings()
                                 eventStore.saveDisplaySettings()
                             }
-                            .onTapGesture(count: 2) {
-                                if (style == .navy || style == .fire || style == .dream) && !paymentManager.isSubscribed {
-                                    showSubscriptionView = true
+                            .onLongPressGesture {
+                                if (style == .navy || style == .fire || style == .dream) {
+                                    if paymentManager.isSubscribed {
+                                        selectedThemeForEdit = style
+                                    } else {
+                                        showSubscriptionView = true
+                                    }
                                 }
                             }
                         }

@@ -270,7 +270,7 @@ struct TimeCard: View {
             // For both year tracker and regular events, show action sheet with options
             showingActionSheet = true
         }
-        // Add double tap gesture for grid view cards
+        // Double tap to expand grid cards to full view
         .onTapGesture(count: 2) {
             if isGridView {
                 // Enhanced haptic feedback for a more polished feel

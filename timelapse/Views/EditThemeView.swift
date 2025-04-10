@@ -2,6 +2,7 @@ import SwiftUI
 
 struct EditThemeView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject var globalSettings: GlobalSettings
     @State private var theme: BackgroundStyle
     @State private var showResetConfirmation = false
@@ -73,13 +74,15 @@ struct EditThemeView: View {
     
     private func updateFromHex(_ hex: String, target: HexTarget) {
         if isValidHex(hex) {
-            switch target {
-            case .solid:
-                selectedColor = Color(hex: hex)
-            case .gradientStart:
-                gradientStartColor = Color(hex: hex)
-            case .gradientEnd:
-                gradientEndColor = Color(hex: hex)
+            withAnimation(.easeInOut(duration: 0.3)) {
+                switch target {
+                case .solid:
+                    selectedColor = Color(hex: hex)
+                case .gradientStart:
+                    gradientStartColor = Color(hex: hex)
+                case .gradientEnd:
+                    gradientEndColor = Color(hex: hex)
+                }
             }
         } else {
             showAlert = true
@@ -114,29 +117,31 @@ struct EditThemeView: View {
     private func resetToDefault() {
         let notificationName = theme.resetToDefault()
         
-        switch theme {
-        case .navy:
-            selectedColor = Color(hex: BackgroundStyle.defaultNavyHex)
-            hexValue = BackgroundStyle.defaultNavyHex
-            
-        case .fire:
-            if let defaults = theme.getDefaultGradientHex() {
-                gradientStartColor = Color(hex: defaults.start)
-                gradientEndColor = Color(hex: defaults.end)
-                startHexValue = defaults.start
-                endHexValue = defaults.end
+        withAnimation(.easeInOut(duration: 0.3)) {
+            switch theme {
+            case .navy:
+                selectedColor = Color(hex: BackgroundStyle.defaultNavyHex)
+                hexValue = BackgroundStyle.defaultNavyHex
+                
+            case .fire:
+                if let defaults = theme.getDefaultGradientHex() {
+                    gradientStartColor = Color(hex: defaults.start)
+                    gradientEndColor = Color(hex: defaults.end)
+                    startHexValue = defaults.start
+                    endHexValue = defaults.end
+                }
+                
+            case .dream:
+                if let defaults = theme.getDefaultGradientHex() {
+                    gradientStartColor = Color(hex: defaults.start)
+                    gradientEndColor = Color(hex: defaults.end)
+                    startHexValue = defaults.start
+                    endHexValue = defaults.end
+                }
+                
+            default:
+                break
             }
-            
-        case .dream:
-            if let defaults = theme.getDefaultGradientHex() {
-                gradientStartColor = Color(hex: defaults.start)
-                gradientEndColor = Color(hex: defaults.end)
-                startHexValue = defaults.start
-                endHexValue = defaults.end
-            }
-            
-        default:
-            break
         }
         
         // Notify of changes
@@ -150,163 +155,238 @@ struct EditThemeView: View {
         case gradientEnd
     }
     
+    // Function to create a reusable hex input view
+    private func hexInputField(value: Binding<String>, target: HexTarget, label: String) -> some View {
+        HStack {
+            Text("#")
+                .font(.system(.body, design: .monospaced))
+                .foregroundColor(.secondary)
+            
+            TextField("Enter hex value", text: value)
+                .font(.system(.body, design: .monospaced))
+                .keyboardType(.asciiCapable)
+                .autocapitalization(.none)
+                .disableAutocorrection(true)
+                .onChange(of: value.wrappedValue) { oldValue, newValue in
+                    // Format the hex value
+                    value.wrappedValue = newValue
+                        .uppercased()
+                        .filter { "0123456789ABCDEF".contains($0) }
+                        .prefix(6)
+                        .description
+                }
+            
+            Spacer()
+            
+            Button {
+                if value.wrappedValue.count == 6 {
+                    updateFromHex(value.wrappedValue, target: target)
+                } else {
+                    showAlert = true
+                    alertMessage = "Please enter a 6-digit hex color"
+                }
+            } label: {
+                Text("Apply")
+                    .fontWeight(.medium)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(target == .solid ? selectedColor :
+                    target == .gradientStart ? gradientStartColor : gradientEndColor)
+            .foregroundColor((target == .solid ? selectedColor :
+                               target == .gradientStart ? gradientStartColor : gradientEndColor).isBright() ? .black : .white)
+            .disabled(value.wrappedValue.count != 6)
+        }
+    }
+    
     var body: some View {
-        NavigationView {
-            Form {
-                // Preview section
-                Section(header: Text("Preview")) {
-                    VStack {
+        NavigationStack {
+            List {
+                // Preview section with enhanced visuals
+                Section {
+                    VStack(spacing: 16) {
                         if theme == .navy {
-                            // Solid color preview
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(selectedColor)
-                                .frame(height: 100)
-                                .padding()
-                        } else {
-                            // Gradient preview
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(
-                                    LinearGradient(
-                                        stops: [
-                                            .init(color: gradientStartColor, location: 0),
-                                            .init(color: gradientEndColor, location: 0.6),
-                                            .init(color: gradientEndColor, location: 1.0)
-                                        ],
-                                        startPoint: .top,
-                                        endPoint: .bottom
+                            // Solid color preview with device frame
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(selectedColor)
+                                    .frame(height: 150)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 20)
+                                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                                     )
-                                )
-                                .frame(height: 100)
-                                .padding()
+                                
+                                // Mock device UI elements
+                                VStack(spacing: 12) {
+                                    Circle()
+                                        .stroke(Color.white.opacity(0.7), lineWidth: 2)
+                                        .frame(width: 50, height: 50)
+                                    
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color.white.opacity(0.15))
+                                        .frame(width: 100, height: 20)
+                                    
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color.white.opacity(0.15))
+                                        .frame(width: 70, height: 20)
+                                }
+                            }
+                            .shadow(color: selectedColor.opacity(0.5), radius: 10, x: 0, y: 5)
+                        } else {
+                            // Gradient preview with device frame
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(
+                                        LinearGradient(
+                                            stops: [
+                                                .init(color: gradientStartColor, location: 0),
+                                                .init(color: gradientEndColor, location: 0.6),
+                                                .init(color: gradientEndColor, location: 1.0)
+                                            ],
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        )
+                                    )
+                                    .frame(height: 150)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 20)
+                                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                    )
+                                
+                                // Mock device UI elements
+                                VStack(spacing: 12) {
+                                    Circle()
+                                        .stroke(Color.white.opacity(0.7), lineWidth: 2)
+                                        .frame(width: 50, height: 50)
+                                    
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color.white.opacity(0.15))
+                                        .frame(width: 100, height: 20)
+                                    
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color.white.opacity(0.15))
+                                        .frame(width: 70, height: 20)
+                                }
+                            }
+                            .shadow(radius: 10)
+                            
+                            // Display the gradient stops visually
+                            HStack(spacing: 0) {
+                                Rectangle()
+                                    .fill(gradientStartColor)
+                                    .frame(height: 12)
+                                Rectangle()
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [gradientStartColor, gradientEndColor],
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
+                                    )
+                                    .frame(height: 12)
+                                Rectangle()
+                                    .fill(gradientEndColor)
+                                    .frame(height: 12)
+                            }
+                            .cornerRadius(6)
                         }
                     }
+                    .padding(.vertical, 8)
+                    .listRowInsets(EdgeInsets(top: 16, leading: 16, bottom: 16, trailing: 16))
+                } header: {
+                    Text("Theme preview")
+                        .textCase(.uppercase)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
                 }
                 
                 if theme == .navy {
                     // Navy (solid color) editor
-                    Section(header: Text("Color Wheel")) {
-                        ColorPicker("Select Color", selection: $selectedColor)
-                            .padding()
+                    Section {
+                        ColorPicker("Select color", selection: $selectedColor)
+                            .padding(.vertical, 8)
                             .onChange(of: selectedColor) { oldValue, newValue in
                                 hexValue = newValue.hexString
                             }
+                    } header: {
+                        Text("Color picker")
+                            .textCase(.uppercase)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
                     }
                     
-                    Section(header: Text("Hex Color Code")) {
-                        HStack {
-                            Text("#")
-                            TextField("Enter hex code (e.g., 001524)", text: $hexValue)
-                                .autocapitalization(.none)
-                                .disableAutocorrection(true)
-                                .onChange(of: hexValue) { oldValue, newValue in
-                                    // Format the hex value
-                                    hexValue = newValue
-                                        .uppercased()
-                                        .filter { "0123456789ABCDEF".contains($0) }
-                                        .prefix(6)
-                                        .description
-                                }
-                            
-                            Button("Apply") {
-                                if hexValue.count == 6 {
-                                    updateFromHex(hexValue, target: .solid)
-                                } else {
-                                    showAlert = true
-                                    alertMessage = "Please enter a 6-digit hex color"
-                                }
-                            }
-                            .buttonStyle(.bordered)
-                        }
-                        .padding(.vertical, 8)
+                    Section {
+                        hexInputField(value: $hexValue, target: .solid, label: "Hex Value")
+                    } header: {
+                        Text("Hex value")
+                            .textCase(.uppercase)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    } footer: {
+                        Text("Enter a 6-digit hex color code (e.g., 001524)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
                 } else {
                     // Gradient theme editor (Fire or Dream)
-                    Section(header: Text("Top Color")) {
-                        ColorPicker("Select Color", selection: $gradientStartColor)
-                            .padding()
+                    Section {
+                        ColorPicker("Select color", selection: $gradientStartColor)
+                            .padding(.vertical, 8)
                             .onChange(of: gradientStartColor) { oldValue, newValue in
                                 startHexValue = newValue.hexString
                             }
                         
-                        HStack {
-                            Text("#")
-                            TextField("Enter hex code", text: $startHexValue)
-                                .autocapitalization(.none)
-                                .disableAutocorrection(true)
-                                .onChange(of: startHexValue) { oldValue, newValue in
-                                    // Format the hex value
-                                    startHexValue = newValue
-                                        .uppercased()
-                                        .filter { "0123456789ABCDEF".contains($0) }
-                                        .prefix(6)
-                                        .description
-                                }
-                            
-                            Button("Apply") {
-                                if startHexValue.count == 6 {
-                                    updateFromHex(startHexValue, target: .gradientStart)
-                                } else {
-                                    showAlert = true
-                                    alertMessage = "Please enter a 6-digit hex color"
-                                }
-                            }
-                            .buttonStyle(.bordered)
-                        }
-                        .padding(.vertical, 8)
+                        hexInputField(value: $startHexValue, target: .gradientStart, label: "Top Color")
+                    } header: {
+                        Text("Top gradient color")
+                            .textCase(.uppercase)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
                     }
                     
-                    Section(header: Text("Bottom Color")) {
-                        ColorPicker("Select Color", selection: $gradientEndColor)
-                            .padding()
+                    Section {
+                        ColorPicker("Select color", selection: $gradientEndColor)
+                            .padding(.vertical, 8)
                             .onChange(of: gradientEndColor) { oldValue, newValue in
                                 endHexValue = newValue.hexString
                             }
                         
-                        HStack {
-                            Text("#")
-                            TextField("Enter hex code", text: $endHexValue)
-                                .autocapitalization(.none)
-                                .disableAutocorrection(true)
-                                .onChange(of: endHexValue) { oldValue, newValue in
-                                    // Format the hex value
-                                    endHexValue = newValue
-                                        .uppercased()
-                                        .filter { "0123456789ABCDEF".contains($0) }
-                                        .prefix(6)
-                                        .description
-                                }
-                            
-                            Button("Apply") {
-                                if endHexValue.count == 6 {
-                                    updateFromHex(endHexValue, target: .gradientEnd)
-                                } else {
-                                    showAlert = true
-                                    alertMessage = "Please enter a 6-digit hex color"
-                                }
-                            }
-                            .buttonStyle(.bordered)
-                        }
-                        .padding(.vertical, 8)
+                        hexInputField(value: $endHexValue, target: .gradientEnd, label: "Bottom Color")
+                    } header: {
+                        Text("Bottom gradient color")
+                            .textCase(.uppercase)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
                     }
                 }
                 
-                Section {
-                    if !theme.isUsingDefaultValues() {
+                if !theme.isUsingDefaultValues() {
+                    Section {
                         Button(role: .destructive) {
                             showResetConfirmation = true
                         } label: {
-                            Text("Reset to Default")
-                                .frame(maxWidth: .infinity)
+                            HStack {
+                                Spacer()
+                                Text("Reset to Default")
+                                    .fontWeight(.medium)
+                                Spacer()
+                            }
                         }
-                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .padding(.vertical, 4)
                     }
                 }
             }
             .navigationTitle("Edit \(theme.rawValue.capitalized) Theme")
-            .navigationBarItems(
-                leading: Button("Cancel") { dismiss() },
-                trailing: Button("Done") { saveTheme() }
-            )
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { saveTheme() }
+                        .fontWeight(.semibold)
+                }
+            }
             .alert(isPresented: $showAlert) {
                 Alert(
                     title: Text("Invalid Hex Code"),
@@ -332,4 +412,5 @@ struct EditThemeView: View {
 
 #Preview {
     EditThemeView(theme: .navy)
+        .environmentObject(GlobalSettings())
 } 

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct EditColorView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject var globalSettings: GlobalSettings
     @State private var displayColor: DisplayColor
     @State private var colorName: String
@@ -33,7 +34,9 @@ struct EditColorView: View {
     
     private func updateFromHex() {
         if isValidHex(hexValue) {
-            selectedColor = Color(hex: hexValue)
+            withAnimation(.easeInOut(duration: 0.3)) {
+                selectedColor = Color(hex: hexValue)
+            }
         } else {
             showAlert = true
             alertMessage = "Please enter a valid 6-digit hex color (e.g., 7F3DE8)"
@@ -59,10 +62,12 @@ struct EditColorView: View {
     
     // Reset to default values
     private func resetToDefault() {
-        let defaultColor = displayColor.resetToDefault()
-        selectedColor = defaultColor.color
-        colorName = defaultColor.name
-        hexValue = defaultColor.color.hexString
+        withAnimation(.easeInOut(duration: 0.3)) {
+            let defaultColor = displayColor.resetToDefault()
+            selectedColor = defaultColor.color
+            colorName = defaultColor.name
+            hexValue = defaultColor.color.hexString
+        }
     }
     
     // Update the year tracker if it's using this color
@@ -99,32 +104,86 @@ struct EditColorView: View {
     }
     
     var body: some View {
-        NavigationView {
-            Form {
-                Section(header: Text("Color Name")) {
-                    TextField("Enter color name", text: $colorName)
-                        .autocapitalization(.words)
-                }
-                
-                Section(header: Text("Color Wheel")) {
-                    VStack {
-                        ColorPicker("Select Color", selection: $selectedColor)
-                            .padding()
-                            .onChange(of: selectedColor) { oldValue, newValue in
-                                hexValue = newValue.hexString
+        NavigationStack {
+            List {
+                // Enhanced color preview section
+                Section {
+                    VStack(spacing: 16) {
+                        // Dynamic color preview with light/dark demonstration
+                        HStack(spacing: 12) {
+                            // Light background preview
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.white)
+                                    .frame(height: 80)
+                                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+                                
+                                Circle()
+                                    .fill(selectedColor)
+                                    .frame(width: 50, height: 50)
                             }
+                            
+                            // Dark background preview
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.black)
+                                    .frame(height: 80)
+                                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+                                
+                                Circle()
+                                    .fill(selectedColor)
+                                    .frame(width: 50, height: 50)
+                            }
+                        }
                         
-                        RoundedRectangle(cornerRadius: 12)
+                        // Full-width color preview
+                        RoundedRectangle(cornerRadius: 16)
                             .fill(selectedColor)
-                            .frame(height: 100)
-                            .padding()
+                            .frame(height: 80)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                            )
+                            .shadow(color: selectedColor.opacity(0.5), radius: 8, x: 0, y: 2)
                     }
+                    .padding(.vertical, 8)
+                    .listRowInsets(EdgeInsets(top: 16, leading: 16, bottom: 16, trailing: 16))
                 }
                 
-                Section(header: Text("Hex Color Code")) {
+                Section {
+                    TextField("Enter color name", text: $colorName)
+                        .font(.headline)
+                        .padding(.vertical, 4)
+                        .autocapitalization(.words)
+                } header: {
+                    Text("Name")
+                        .textCase(.uppercase)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                
+                Section {
+                    ColorPicker("Select color", selection: $selectedColor)
+                        .padding(.vertical, 8)
+                        .onChange(of: selectedColor) { oldValue, newValue in
+                            hexValue = newValue.hexString
+                        }
+                } header: {
+                    Text("Color picker")
+                        .textCase(.uppercase)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                
+                Section {
                     HStack {
                         Text("#")
-                        TextField("Enter hex code (e.g., 7F3DE8)", text: $hexValue)
+                            .font(.system(.body, design: .monospaced))
+                            .foregroundColor(.secondary)
+                        
+                        TextField("Enter hex value", text: $hexValue)
+                            .font(.system(.body, design: .monospaced))
+                            .keyboardType(.asciiCapable)
                             .autocapitalization(.none)
                             .disableAutocorrection(true)
                             .onChange(of: hexValue) { oldValue, newValue in
@@ -136,36 +195,56 @@ struct EditColorView: View {
                                     .description
                             }
                         
-                        Button("Apply") {
-                            if hexValue.count == 6 {
-                                updateFromHex()
-                            } else {
-                                showAlert = true
-                                alertMessage = "Please enter a 6-digit hex color"
-                            }
+                        Spacer()
+                        
+                        Button(action: updateFromHex) {
+                            Text("Apply")
+                                .fontWeight(.medium)
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(.borderedProminent)
+                        .tint(selectedColor)
+                        .foregroundColor(selectedColor.isBright() ? .black : .white)
+                        .disabled(hexValue.count != 6)
                     }
-                    .padding(.vertical, 8)
+                } header: {
+                    Text("Hex value")
+                        .textCase(.uppercase)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                } footer: {
+                    Text("Enter a 6-digit hex color code (e.g., 7F3DE8)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
                 
-                Section {
-                    if !displayColor.isUsingDefaultValues() {
+                if !displayColor.isUsingDefaultValues() {
+                    Section {
                         Button(role: .destructive) {
                             showResetConfirmation = true
                         } label: {
-                            Text("Reset to Default")
-                                .frame(maxWidth: .infinity)
+                            HStack {
+                                Spacer()
+                                Text("Reset to Default")
+                                    .fontWeight(.medium)
+                                Spacer()
+                            }
                         }
-                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .padding(.vertical, 4)
                     }
                 }
             }
             .navigationTitle("Edit \(displayColor.name)")
-            .navigationBarItems(
-                leading: Button("Cancel") { dismiss() },
-                trailing: Button("Done") { saveColor() }
-            )
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { saveColor() }
+                        .fontWeight(.semibold)
+                }
+            }
             .alert(isPresented: $showAlert) {
                 Alert(
                     title: Text("Invalid Hex Code"),
@@ -189,10 +268,28 @@ struct EditColorView: View {
     }
 }
 
+// Extension to check color brightness for appropriate text color 
+extension Color {
+    func isBright() -> Bool {
+        let uiColor = UIColor(self)
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
+        
+        uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        
+        // Calculate perceived brightness
+        let brightness = (0.299 * red + 0.587 * green + 0.114 * blue)
+        return brightness > 0.7
+    }
+}
+
 #Preview {
     EditColorView(
         displayColor: DisplayColor(id: "orange", name: "Orange", color: Color(hex: "FF7F00")),
         needsRefresh: .constant(false),
         eventStore: EventStore()
     )
+    .environmentObject(GlobalSettings())
 } 
