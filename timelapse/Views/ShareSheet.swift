@@ -10,6 +10,23 @@ struct ShareSheet: UIViewControllerRepresentable {
             activityItems: activityItems,
             applicationActivities: applicationActivities
         )
+        
+        // Handle iPad presentation properly
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            // In iOS 15+, get the active scene's window
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+               let rootVC = windowScene.windows.first?.rootViewController,
+               let sourceView = rootVC.view {
+                controller.popoverPresentationController?.sourceView = sourceView
+                controller.popoverPresentationController?.sourceRect = CGRect(
+                    x: sourceView.bounds.midX,
+                    y: sourceView.bounds.midY,
+                    width: 0, height: 0
+                )
+                controller.popoverPresentationController?.permittedArrowDirections = []
+            }
+        }
+        
         return controller
     }
     
@@ -35,6 +52,26 @@ struct ShareableCardView: View {
         return title == String(Calendar.current.component(.year, from: Date()))
     }
     
+    // Get proper card dimensions for the device
+    private var cardWidth: CGFloat {
+        DeviceType.timeCardWidth(isLandscape: false)
+    }
+    
+    private var cardHeight: CGFloat {
+        DeviceType.timeCardHeight(isLandscape: false)
+    }
+    
+    // Preview container size
+    private var previewWidth: CGFloat {
+        let screenWidth = UIScreen.main.bounds.width
+        return DeviceType.isIPad ? screenWidth * 0.6 : screenWidth * 0.9
+    }
+    
+    private var previewHeight: CGFloat {
+        let screenHeight = UIScreen.main.bounds.height
+        return DeviceType.isIPad ? screenHeight * 0.5 : screenHeight * 0.6
+    }
+    
     var body: some View {
         VStack {
             // Header
@@ -51,7 +88,7 @@ struct ShareableCardView: View {
                 Spacer()
                 
                 Text(isYearTracker ? "Share Your Year" : "Share Event")
-                    .font(.custom("Inter", size: 18))
+                    .scaledFont(name: "Inter", size: 18)
                     .foregroundColor(globalSettings.invertedColor)
                 
                 Spacer()
@@ -77,7 +114,7 @@ struct ShareableCardView: View {
                 // Background for the card
                 RoundedRectangle(cornerRadius: 20)
                     .fill(Color.gray.opacity(0.1))
-                    .frame(width: UIScreen.main.bounds.width * 0.9, height: UIScreen.main.bounds.height * 0.6)
+                    .frame(width: previewWidth, height: previewHeight)
                 
                 // The actual card
                 ShareableTimeCard(
@@ -116,6 +153,10 @@ struct ShareableCardView: View {
     private func shareEvent() {
         isGeneratingImage = true
         
+        // Use device-appropriate sizing for the image generation
+        let imageWidth = DeviceType.isIPad ? cardWidth * 1.2 : UIScreen.main.bounds.width * 0.9
+        let imageHeight = DeviceType.isIPad ? cardHeight * 1.3 : UIScreen.main.bounds.height * 0.6
+        
         // Create a container view with proper padding and background
         let containerView = ZStack {
             // Apply background color to the entire view
@@ -146,19 +187,19 @@ struct ShareableCardView: View {
                 
                 // Watermark
                 Text(isYearTracker ? "My Year so Far - Created with Timelapse" : "Created with Timelapse")
-                    .font(.custom("Inter", size: 8))
+                    .scaledFont(name: "Inter", size: 8)
                     .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .black.opacity(0.7) : .white.opacity(0.7))
                     .padding(.top, 16)
             }
-            .frame(width: UIScreen.main.bounds.width * 0.9)
+            .frame(width: imageWidth)
             .padding(.horizontal, 20)
         }
         .cornerRadius(20)
         
-        // Generate a larger image to accommodate padding
+        // Generate image with device-appropriate dimensions
         let size = CGSize(
-            width: UIScreen.main.bounds.width * 0.9,
-            height: UIScreen.main.bounds.height * 0.6
+            width: imageWidth,
+            height: imageHeight
         )
         
         // Generate the image asynchronously

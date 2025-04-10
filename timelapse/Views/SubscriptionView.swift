@@ -108,7 +108,7 @@ struct SubscriptionView: View {
                             .foregroundStyle(.secondary)
                         
                         HStack(spacing: 4) {
-                            Link("Terms of Service", destination: URL(string: "https://www.wanmenzy.me/terms")!)
+                            Link("Terms of Use", destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
                                 .font(.caption.bold())
                                 .foregroundStyle(accentColor)
                             

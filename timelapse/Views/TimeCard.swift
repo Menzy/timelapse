@@ -175,7 +175,7 @@ struct TimeCard: View {
             timeDisplayView()
                 .frame(height: isGridView ? scaledHeight * 0.35 : scaledHeight * 0.8)
                 .frame(maxWidth: scaledWidth, alignment: .center)
-                .padding(isGridView ? 12 : 14) // Use consistent padding for all styles
+                .padding(isGridView ? 10 : 14) // Use consistent padding for all styles
             
             HStack {
                 Text(title)

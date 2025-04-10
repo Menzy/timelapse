@@ -10,13 +10,13 @@ struct ShareableTimeCard: View {
     let showingDaysLeft: Bool
     @EnvironmentObject var globalSettings: GlobalSettings
     
-    // Add computed properties for dynamic scaling
+    // Update computed properties to use DeviceTypeHelper for proper iPad scaling
     private var scaledWidth: CGFloat {
-        UIScreen.main.bounds.width * 0.76 // Match TimeCard width
+        DeviceType.timeCardWidth(isLandscape: false)
     }
     
     private var scaledHeight: CGFloat {
-        UIScreen.main.bounds.height * 0.45 // Match TimeCard height
+        DeviceType.timeCardHeight(isLandscape: false)
     }
     
     var daysSpent: Int {
@@ -125,7 +125,7 @@ struct ShareableTimeCard: View {
                 
                 HStack {
                     Text(title)
-                        .font(.custom("Inter", size: 12))
+                        .scaledFont(name: "Inter", size: 12)
                         .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .white : .black)
                         .lineLimit(1)
                         .truncationMode(.tail)
@@ -137,20 +137,20 @@ struct ShareableTimeCard: View {
                         // Only show the percentage/number if not at target date or overdue
                         if settings.showPercentage && daysLeft > 0 {
                             Text(String(format: "%.0f%%", percentageLeft))
-                                .font(.custom("Inter", size: 12))
+                                .scaledFont(name: "Inter", size: 12)
                         } else if settings.showPercentage && daysLeft < 0 {
                             // Show days passed for overdue events in percentage mode
                             Text(String(abs(daysLeft)))
-                                .font(.custom("Inter", size: 12))
+                                .scaledFont(name: "Inter", size: 12)
                         } else if !settings.showPercentage && ((showingDaysLeft && daysLeft != 0) || !showingDaysLeft) {
                             // Show positive days left, days spent, or days overdue
                             let displayValue = showingDaysLeft ? (daysLeft < 0 ? abs(daysLeft) : daysLeft) : daysSpent
                             Text(String(displayValue))
-                                .font(.custom("Inter", size: 12))
+                                .scaledFont(name: "Inter", size: 12)
                         }
                         
                         Text(daysText)
-                            .font(.custom("Inter", size: 12))
+                            .scaledFont(name: "Inter", size: 12)
                     }
                     .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .white : .black)
                 }
@@ -182,7 +182,7 @@ struct ShareableTimeCard: View {
             
             // Watermark below the card
             Text(isYearTracker ? "My Year so Far - Created with Timelapse" : "Created with Timelapse")
-                .font(.custom("Inter", size: 8))
+                .scaledFont(name: "Inter", size: 8)
                 .foregroundColor(globalSettings.effectiveBackgroundStyle == .light ? .black.opacity(0.7) : .white.opacity(0.7))
         }
     }
