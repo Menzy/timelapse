@@ -610,12 +610,12 @@ struct AboutView: View {
                         .padding(.horizontal, 12)
                     
                     Button {
-                        if let url = URL(string: "https://www.wanmenzy.me/terms") {
+                        if let url = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/") {
                             openURL(url)
                         }
                     } label: {
                         HStack {
-                            Label("Terms of Service", systemImage: "doc.text")
+                            Label("Terms of Use", systemImage: "doc.text")
                                 .foregroundStyle(.primary, .blue)
                             Spacer()
                             Image(systemName: "chevron.right")
